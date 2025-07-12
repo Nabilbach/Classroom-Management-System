@@ -1,0 +1,283 @@
+# دليل النشر - نظام إدارة الفصل الدراسي
+
+## نظرة عامة
+
+هذا الدليل يوضح كيفية نشر نظام إدارة الفصل الدراسي في بيئات مختلفة.
+
+## 🚀 النشر السريع
+
+### النشر المحلي (Development)
+
+```bash
+# تثبيت التبعيات
+npm install
+
+# تشغيل خادم التطوير
+npm run dev
+
+# الوصول للتطبيق
+http://localhost:5173
+```
+
+### النشر للإنتاج (Production)
+
+```bash
+# بناء التطبيق
+npm run build
+
+# معاينة البناء
+npm run preview
+
+# النشر على خادم ويب
+# انسخ محتويات مجلد dist/ إلى خادم الويب
+```
+
+## 🌐 خيارات النشر
+
+### 1. النشر على Vercel
+
+```bash
+# تثبيت Vercel CLI
+npm i -g vercel
+
+# النشر
+vercel
+
+# النشر للإنتاج
+vercel --prod
+```
+
+### 2. النشر على Netlify
+
+```bash
+# تثبيت Netlify CLI
+npm i -g netlify-cli
+
+# بناء التطبيق
+npm run build
+
+# النشر
+netlify deploy --dir=dist
+
+# النشر للإنتاج
+netlify deploy --prod --dir=dist
+```
+
+### 3. النشر على خادم Apache/Nginx
+
+```bash
+# بناء التطبيق
+npm run build
+
+# نسخ الملفات
+cp -r dist/* /var/www/html/
+
+# إعداد Apache
+# أضف .htaccess للتوجيه
+```
+
+### 4. النشر باستخدام Docker
+
+```dockerfile
+# Dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=0 /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+```bash
+# بناء الصورة
+docker build -t classroom-management .
+
+# تشغيل الحاوية
+docker run -p 80:80 classroom-management
+```
+
+## ⚙️ إعدادات البيئة
+
+### متغيرات البيئة
+
+```env
+# .env.production
+VITE_API_URL=https://api.classroom-system.com
+VITE_APP_NAME=نظام إدارة الفصل الدراسي
+VITE_VERSION=1.0.0
+VITE_SUPPORT_EMAIL=support@classroom-system.com
+```
+
+### إعدادات قاعدة البيانات
+
+```bash
+# إعداد SQLite للإنتاج
+sqlite3 production.db < database/init.sql
+
+# أو PostgreSQL للمؤسسات الكبيرة
+psql -d classroom_db -f database/init.sql
+```
+
+## 🔒 إعدادات الأمان
+
+### HTTPS
+
+```nginx
+# إعداد Nginx مع SSL
+server {
+    listen 443 ssl;
+    server_name classroom-system.com;
+    
+    ssl_certificate /path/to/certificate.crt;
+    ssl_certificate_key /path/to/private.key;
+    
+    location / {
+        root /var/www/html;
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
+
+### Headers الأمان
+
+```nginx
+# إضافة headers الأمان
+add_header X-Frame-Options "SAMEORIGIN";
+add_header X-Content-Type-Options "nosniff";
+add_header X-XSS-Protection "1; mode=block";
+add_header Strict-Transport-Security "max-age=31536000";
+```
+
+## 📊 المراقبة والصيانة
+
+### مراقبة الأداء
+
+```bash
+# مراقبة استخدام الموارد
+htop
+iotop
+netstat -tulpn
+```
+
+### النسخ الاحتياطي
+
+```bash
+# نسخ احتياطي لقاعدة البيانات
+sqlite3 classroom.db ".backup backup_$(date +%Y%m%d).db"
+
+# نسخ احتياطي للملفات
+tar -czf backup_$(date +%Y%m%d).tar.gz /var/www/html/
+```
+
+### التحديثات
+
+```bash
+# تحديث التطبيق
+git pull origin main
+npm install
+npm run build
+cp -r dist/* /var/www/html/
+```
+
+## 🐛 استكشاف الأخطاء
+
+### مشاكل شائعة
+
+**مشكلة: 404 عند التنقل**
+```nginx
+# إضافة إعادة توجيه في Nginx
+try_files $uri $uri/ /index.html;
+```
+
+**مشكلة: بطء التحميل**
+```nginx
+# تفعيل الضغط
+gzip on;
+gzip_types text/css application/javascript application/json;
+```
+
+**مشكلة: مشاكل CORS**
+```nginx
+# إضافة headers CORS
+add_header Access-Control-Allow-Origin "*";
+add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE";
+```
+
+## 📈 تحسين الأداء
+
+### تحسين الخادم
+
+```nginx
+# تحسين Nginx
+worker_processes auto;
+worker_connections 1024;
+
+# تفعيل التخزين المؤقت
+location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+}
+```
+
+### تحسين قاعدة البيانات
+
+```sql
+-- إضافة فهارس للأداء
+CREATE INDEX idx_students_section ON students(section_id);
+CREATE INDEX idx_evaluations_student ON evaluations(student_id);
+CREATE INDEX idx_classes_section ON classes(section_id);
+```
+
+## 🔄 التحديث التلقائي
+
+### CI/CD مع GitHub Actions
+
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Build
+      run: npm run build
+      
+    - name: Deploy
+      run: |
+        # أوامر النشر هنا
+```
+
+## 📞 الدعم
+
+للحصول على مساعدة في النشر:
+- البريد الإلكتروني: deployment@classroom-system.com
+- الوثائق: https://docs.classroom-system.com
+- المجتمع: https://community.classroom-system.com
+
+---
+
+**تم إعداده بواسطة فريق مانوس التقني**
+
