@@ -1,50 +1,15 @@
+const withMT = require("@material-tailwind/react/utils/withMT");
+
 /** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: ["./index.html", "./src/**/*.{js,jsx}"],
+module.exports = withMT({
+  content: [
+    "./index.html",
+    "./src/**/*.{vue,js,ts,jsx,tsx}",
+    "node_modules/@material-tailwind/react/components/**/*.{js,ts,jsx,tsx}",
+    "node_modules/@material-tailwind/react/theme/components/**/*.{js,ts,jsx,tsx}",
+  ],
   theme: {
-    // Custom colors defined here will generate utility classes like bg-background, text-foreground, border-primary, etc.
-    colors: {
-      transparent: 'transparent',
-      current: 'currentColor',
-      // Include all your custom colors that you intend to use as direct Tailwind utility classes
-      background: "var(--background)",
-      foreground: "var(--foreground)",
-      card: "var(--card)",
-      "card-foreground": "var(--card-foreground)",
-      popover: "var(--popover)",
-      "popover-foreground": "var(--popover-foreground)",
-      primary: "var(--primary)",
-      "primary-foreground": "var(--primary-foreground)",
-      secondary: "var(--secondary)",
-      "secondary-foreground": "var(--secondary-foreground)",
-      muted: "var(--muted)",
-      "muted-foreground": "var(--muted-foreground)",
-      accent: "var(--accent)",
-      "accent-foreground": "var(--accent-foreground)",
-      destructive: "var(--destructive)",
-      border: "var(--border)",
-      input: "var(--input)",
-      ring: "var(--ring)",
-      // Chart colors (if used as direct utility classes)
-      "chart-1": "var(--chart-1)",
-      "chart-2": "var(--chart-2)",
-      "chart-3": "var(--chart-3)",
-      "chart-4": "var(--chart-4)",
-      "chart-5": "var(--chart-5)",
-      // Sidebar colors (if used as direct utility classes)
-      sidebar: "var(--sidebar)",
-      "sidebar-foreground": "var(--sidebar-foreground)",
-      "sidebar-primary": "var(--sidebar-primary)",
-      "sidebar-primary-foreground": "var(--sidebar-primary-foreground)",
-      "sidebar-accent": "var(--sidebar-accent)",
-      "sidebar-accent-foreground": "var(--sidebar-accent-foreground)",
-      "sidebar-border": "var(--sidebar-border)",
-      "sidebar-ring": "var(--sidebar-ring)",
-    },
-    extend: {
-      // This 'extend' section can be empty or used for colors that do NOT need utility classes
-      // (e.g., if you only reference them by name in your custom CSS or JS)
-    },
+    extend: {},
   },
   plugins: [],
-};
+});
