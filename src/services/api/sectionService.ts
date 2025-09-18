@@ -1,6 +1,6 @@
 import { Section } from '../contexts/SectionsContext'; // Import Section interface
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 const SECTIONS_ENDPOINT = `${API_BASE_URL}/sections`;
 
 // Helper for handling responses

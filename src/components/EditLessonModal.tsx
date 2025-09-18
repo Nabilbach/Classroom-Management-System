@@ -318,9 +318,4 @@ const EditLessonModal: React.FC<EditLessonModalProps> = ({ lesson, onClose, onSa
     </Modal>
   );
 };
-
-export default EditLessonModal;
-;
-};
-
 export default EditLessonModal;

@@ -4,6 +4,7 @@ const db = require('./models');
 
 const LESSONS_DATA_FILE = path.join(__dirname, 'lessons.json');
 const SECTIONS_DATA_FILE = path.join(__dirname, 'sections.json');
+const SCHEDULED_LESSONS_DATA_FILE = path.join(__dirname, 'scheduledLessons.json'); // New constant
 
 const readData = (filePath) => {
   if (!fs.existsSync(filePath)) {
@@ -15,19 +16,40 @@ const readData = (filePath) => {
 
 const migrate = async () => {
   try {
-    await db.sequelize.sync({ force: true });
+    await db.sequelize.sync(); // Removed { force: true }
     console.log('Database synchronized');
 
-    const sections = readData(SECTIONS_DATA_FILE);
-    if (sections.length > 0) {
-      await db.Section.bulkCreate(sections);
-      console.log('Sections migrated');
+    const sectionsData = readData(SECTIONS_DATA_FILE);
+    if (sectionsData.length > 0) {
+      const existingSections = await db.Section.count();
+      if (existingSections === 0) { // Only bulkCreate if no sections exist
+        await db.Section.bulkCreate(sectionsData);
+        console.log('Sections migrated');
+      } else {
+        console.log('Sections already exist, skipping migration.');
+      }
     }
 
-    const lessons = readData(LESSONS_DATA_FILE);
-    if (lessons.length > 0) {
-      await db.Lesson.bulkCreate(lessons);
-      console.log('Lessons migrated');
+    const lessonsData = readData(LESSONS_DATA_FILE);
+    if (lessonsData.length > 0) {
+      const existingLessons = await db.Lesson.count();
+      if (existingLessons === 0) { // Only bulkCreate if no lessons exist
+        await db.Lesson.bulkCreate(lessonsData);
+        console.log('Lessons migrated');
+      } else {
+        console.log('Lessons already exist, skipping migration.');
+      }
+    }
+
+    const scheduledLessonsData = readData(SCHEDULED_LESSONS_DATA_FILE);
+    if (scheduledLessonsData.length > 0) {
+      const existingScheduledLessons = await db.ScheduledLesson.count();
+      if (existingScheduledLessons === 0) { // Only bulkCreate if no scheduled lessons exist
+        await db.ScheduledLesson.bulkCreate(scheduledLessonsData);
+        console.log('ScheduledLessons migrated');
+      } else {
+        console.log('ScheduledLessons already exist, skipping migration.');
+      }
     }
 
     console.log('Migration completed successfully.');

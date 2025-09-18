@@ -266,7 +266,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
   const filteredScheduledLessons = useMemo(() => {
     const weekStart = startOfWeek(currentWeekStart, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
-    return scheduledLessons.filter(lesson => {
+    return (scheduledLessons || []).filter(lesson => {
+      if (!lesson || !lesson.date) return false;
       const lessonDate = new Date(lesson.date);
       return isWithinInterval(lessonDate, { start: weekStart, end: weekEnd });
     });
@@ -353,7 +354,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
                               }}
                           >
                               {cellLessons.map(lesson => (
-                                  <LessonCard key={lesson.id} lesson={lesson} onDoubleClick={setEditingLesson} onDelete={handleDeleteLesson} allScheduledLessons={scheduledLessons} />
+                                  <LessonCard key={lesson.id} lesson={lesson} onDoubleClick={setEditingLesson} onDelete={handleDeleteLesson} allScheduledLessons={scheduledLessons || []} />
                               ))}
                           </Paper>
                       );

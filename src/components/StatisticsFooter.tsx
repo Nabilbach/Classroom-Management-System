@@ -32,7 +32,7 @@ const StatisticsFooter = () => {
     });
   }, []);
 
-  const adaptedLessons = useMemo(() => scheduledLessons.map(lesson => migrateLessonToAdapted(lesson as any)).filter(Boolean), [scheduledLessons]);
+  const adaptedLessons = useMemo(() => (scheduledLessons || []).map(lesson => migrateLessonToAdapted(lesson as any)).filter(Boolean), [scheduledLessons]);
   const stats = useMemo(() => calculateStatistics(adaptedLessons), [adaptedLessons, calculateStatistics]);
 
   const completionPercentage = stats.total > 0 ? (stats.completed / stats.total) * 100 : 0;

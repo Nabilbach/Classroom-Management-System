@@ -4,6 +4,7 @@ const Lesson = require('./lesson');
 const LessonLog = require('./lessonLog');
 const Student = require('./student');
 const StudentAssessment = require('./studentAssessment');
+const ScheduledLesson = require('./scheduledLesson');
 
 // Define associations
 Section.hasMany(Lesson, { foreignKey: 'sectionId' });
@@ -29,6 +30,7 @@ const db = {
   LessonLog,
   Student,
   StudentAssessment,
+  ScheduledLesson,
 };
 
 module.exports = db;

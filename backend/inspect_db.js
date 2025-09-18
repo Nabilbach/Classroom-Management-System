@@ -1,4 +1,5 @@
 const sequelize = require('./config/database');
+const sequelize = require('./config/database');
 
 async function inspectStudentSchema() {
   try {
