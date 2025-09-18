@@ -1,0 +1,19 @@
+Day;Start Time;Duration;Section Name;Subject;Teacher;Classroom;Session Type
+Monday;15:00;1;TCS-1;حصة دراسية;;8;official
+Monday;16:00;1;TCSF-1;حصة دراسية;;8;official
+Monday;17:00;1;TCLSH-3;حصة دراسية;;8;official
+Monday;18:00;1;TCS-3;حصة دراسية;;8;official
+Tuesday;15:00;1;TCS-2;حصة دراسية;;12;official
+Tuesday;16:00;1;1BACSH-3;حصة دراسية;;12;official
+Tuesday;17:00;1;TCLSH-1;حصة دراسية;;12;official
+Tuesday;18:00;1;1BACSH-2;حصة دراسية;;12;official
+Wednesday;10:00;1;TCSF-1;حصة دراسية;;11;official
+Wednesday;11:00;1;TCS-3;حصة دراسية;;11;official
+Wednesday;12:00;1;TCLSH-2;حصة دراسية;;11;official
+Thursday;10:00;1;1BACSH-2;حصة دراسية;;8;official
+Thursday;11:00;1;TCS-2;حصة دراسية;;8;official
+Thursday;12:00;1;TCLSH-3;حصة دراسية;;8;official
+Friday;09:00;1;TCLSH-2;حصة دراسية;;1;official
+Friday;10:00;1;1BACSH-3;حصة دراسية;;1;official
+Friday;11:00;1;TCS-1;حصة دراسية;;1;official
+Friday;12:00;1;TCLSH-1;حصة دراسية;;1;official
