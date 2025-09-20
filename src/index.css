@@ -5,3 +5,91 @@
 body {
   font-family: 'Cairo', sans-serif;
 }
+
+html, body, #root {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+/* Global box sizing */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Ensure content never gets hidden on zoom */
+body > #root {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+}
+
+/* Responsive containers */
+.responsive-container {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Chips scrollbar styling */
+.chips-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #bdbdbd #f8f9fa;
+}
+
+.chips-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.chips-scrollbar::-webkit-scrollbar-thumb {
+  background: #bdbdbd;
+  border-radius: 3px;
+}
+
+.chips-scrollbar::-webkit-scrollbar-track {
+  background: #f8f9fa;
+}
+
+/* Flex container that never shrinks buttons */
+.flex-no-shrink {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.flex-no-shrink > * {
+  flex-shrink: 0;
+}
+
+/* Responsive typography */
+@layer utilities {
+  .text-responsive {
+    font-size: clamp(0.875rem, 2vw, 1rem);
+  }
+  
+  .heading-responsive {
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+  }
+}
+
+/* Ensure tables are responsive */
+.table-responsive {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+/* Prevent content from being cut off when zooming */
+@media screen and (max-width: 100%) {
+  .zoom-friendly {
+    min-width: max-content;
+    width: auto;
+  }
+}
+
+/* Fix for potential overflow issues */
+.overflow-fix {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}

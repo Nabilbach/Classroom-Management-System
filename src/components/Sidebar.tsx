@@ -1,22 +1,30 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Box, Button, Typography } from '@mui/material';
+import { FaHome, FaUsers, FaThLarge, FaCalendarAlt, FaChartBar, FaChartLine, FaCog } from 'react-icons/fa';
 
 function Sidebar() {
   return (
     <Box
       sx={{
-        width: 250,
+        width: { xs: 220, sm: 240, md: 260 },
+        minWidth: 200,
+        maxWidth: 300,
         height: '100vh',
+        position: 'fixed',
+        right: 0,
+        top: 0,
         backgroundColor: '#1976d2',
         color: 'white',
-        padding: 3,
+        p: 3,
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'start',
-        boxShadow: '2px 0 5px rgba(0,0,0,0.2)',
+        alignItems: 'flex-end',
+        boxShadow: '-2px 0 6px rgba(0,0,0,0.2)',
         direction: 'rtl',
         fontFamily: 'Arial, sans-serif',
+        overflowY: 'auto',
+        zIndex: 100,
       }}
     >
       {/* عنوان التطبيق */}
@@ -34,12 +42,12 @@ function Sidebar() {
       </Typography>
 
       {/* القائمة */}
-      <Box component="nav" sx={{ mt: 2, width: '100%' }}>
+  <Box component="nav" sx={{ mt: 2, width: '100%' }}>
         <Link to="/" style={{ textDecoration: 'none' }}>
           <Button
             fullWidth
             sx={{
-              justifyContent: 'right',
+              justifyContent: 'flex-end',
               color: 'white',
               py: 1.2,
               fontSize: '1rem',
@@ -48,7 +56,7 @@ function Sidebar() {
               ':hover': { bgcolor: 'rgba(255,255,255,0.2)' },
             }}
           >
-            🏠 لوحة القيادة
+            <FaHome style={{ color: 'white', marginRight: '8px' }} /> لوحة القيادة
           </Button>
         </Link>
 
@@ -56,7 +64,7 @@ function Sidebar() {
           <Button
             fullWidth
             sx={{
-              justifyContent: 'right',
+              justifyContent: 'flex-end',
               color: 'white',
               py: 1.2,
               fontSize: '1rem',
@@ -65,7 +73,7 @@ function Sidebar() {
               ':hover': { bgcolor: 'rgba(255,255,255,0.2)' },
             }}
           >
-            👥 إدارة التلاميذ
+            <FaUsers style={{ color: 'white', marginRight: '8px' }} /> إدارة التلاميذ
           </Button>
         </Link>
 
@@ -73,7 +81,7 @@ function Sidebar() {
           <Button
             fullWidth
             sx={{
-              justifyContent: 'right',
+              justifyContent: 'flex-end',
               color: 'white',
               py: 1.2,
               fontSize: '1rem',
@@ -82,7 +90,7 @@ function Sidebar() {
               ':hover': { bgcolor: 'rgba(255,255,255,0.2)' },
             }}
           >
-            🧩 إدارة الأقسام
+            <FaThLarge style={{ color: 'white', marginRight: '8px' }} /> إدارة الأقسام
           </Button>
         </Link>
 
@@ -90,7 +98,7 @@ function Sidebar() {
           <Button
             fullWidth
             sx={{
-              justifyContent: 'right',
+              justifyContent: 'flex-end',
               color: 'white',
               py: 1.2,
               fontSize: '1rem',
@@ -99,7 +107,7 @@ function Sidebar() {
               ':hover': { bgcolor: 'rgba(255,255,255,0.2)' },
             }}
           >
-            🗓️ الجدول الزمني
+            <FaCalendarAlt style={{ color: 'white', marginLeft: '8px' }} /> الجدول الزمني
           </Button>
         </Link>
 
@@ -107,7 +115,7 @@ function Sidebar() {
           <Button
             fullWidth
             sx={{
-              justifyContent: 'right',
+              justifyContent: 'flex-end',
               color: '#fff',
               py: 1.2,
               fontSize: '1rem',
@@ -118,7 +126,7 @@ function Sidebar() {
               ':hover': { bgcolor: '#b71c1c' },
             }}
           >
-            📊 التقدم والتعلم
+            <FaChartBar style={{ color: 'white', marginLeft: '8px' }} /> التقدم والتعلم
           </Button>
         </Link>
 
@@ -126,7 +134,7 @@ function Sidebar() {
           <Button
             fullWidth
             sx={{
-              justifyContent: 'right',
+              justifyContent: 'flex-end',
               color: 'white',
               py: 1.2,
               fontSize: '1rem',
@@ -135,7 +143,7 @@ function Sidebar() {
               ':hover': { bgcolor: 'rgba(255,255,255,0.2)' },
             }}
           >
-            📈 الإحصائيات والتقارير
+            <FaChartLine style={{ color: 'white', marginLeft: '8px' }} /> الإحصائيات والتقارير
           </Button>
         </Link>
 
@@ -143,7 +151,7 @@ function Sidebar() {
           <Button
             fullWidth
             sx={{
-              justifyContent: 'right',
+              justifyContent: 'flex-end',
               color: 'white',
               py: 1.2,
               fontSize: '1rem',
@@ -152,7 +160,7 @@ function Sidebar() {
               ':hover': { bgcolor: 'rgba(255,255,255,0.2)' },
             }}
           >
-            ⚙️ الإعدادات
+            <FaCog style={{ color: 'white', marginLeft: '8px' }} /> الإعدادات
           </Button>
         </Link>
       </Box>

@@ -1,32 +1,24 @@
-import React from 'react';
+// No explicit React import needed with react-jsx runtime
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@material-tailwind/react";
 import { FaEdit, FaTrash, FaInfoCircle, FaGripVertical, FaStar } from 'react-icons/fa';
-
-interface Student {
-  id: string;
-  firstName: string;
-  lastName: string;
-  trackNumber: string;
-  sectionId: string;
-  gender: string;
-  dateOfBirth: string;
-  studentNumberInSection?: number;
-  badge: string;
-}
+import { Student } from '../../types/student';
 
 interface SortableStudentRowProps {
   student: Student;
   onEdit: (student: Student) => void;
-  onDelete: (studentId: string) => void;
+  onDelete: (studentId: number) => void;
   onDetail: (student: Student) => void;
   onAssess: (student: Student) => void;
-  onBadgeChange: (studentId: string, newBadge: string) => void;
-  rowIndex: number; // This prop is no longer used for display
+  onUpdateNumber: (studentId: number, newNumber: number) => void;
+  rowIndex: number;
+  isAttendanceMode?: boolean;
+  attendanceStatus?: Record<string, boolean>;
+  onToggleAttendance?: (studentId: string, isPresent: boolean) => void;
 }
 
-function SortableStudentRow({ student, onEdit, onDelete, onDetail, onAssess, rowIndex }: SortableStudentRowProps) {
+function SortableStudentRow({ student, onEdit, onDelete, onDetail, onAssess, rowIndex: _rowIndex, isAttendanceMode, attendanceStatus, onToggleAttendance }: SortableStudentRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: student.id });
 
   const style = {
@@ -41,32 +33,56 @@ function SortableStudentRow({ student, onEdit, onDelete, onDetail, onAssess, row
       className="border-b border-blue-gray-100 hover:bg-blue-gray-50"
     >
       <td className="px-4 py-3 text-sm flex items-center">
-        <Button variant="text" size="sm" {...listeners} {...attributes} className="cursor-grab mr-2 p-0">
-          <FaGripVertical />
-        </Button>
-        {/* CORRECTED: Using the student's actual property instead of the array index */}
-        {student.studentNumberInSection}
+        {!isAttendanceMode && (
+          <Button variant="text" size="sm" {...listeners} {...attributes} className="cursor-grab mr-2 p-0">
+            <FaGripVertical />
+          </Button>
+        )}
+        {student.classOrder}
       </td>
-      <td className="px-4 py-3 text-sm">{student.trackNumber}</td>
+      <td className="px-4 py-3 text-sm">{student.pathwayNumber}</td>
       <td className="px-4 py-3 text-sm">{student.lastName}</td>
       <td className="px-4 py-3 text-sm">{student.firstName}</td>
       <td className="px-4 py-3 text-sm">{student.gender}</td>
-      <td className="px-4 py-3 text-sm">{student.dateOfBirth}</td>
+      <td className="px-4 py-3 text-sm">{student.birthDate}</td>
       <td className="px-4 py-3 text-sm">
-        <div className="flex gap-2">
-          <Button variant="text" size="sm" color="yellow" className="p-1" onClick={() => onAssess(student)}>
-            <FaStar />
-          </Button>
-          <Button variant="text" size="sm" color="blue" className="p-1" onClick={() => onEdit(student)}>
-            <FaEdit />
-          </Button>
-          <Button variant="text" size="sm" color="red" className="p-1" onClick={() => onDelete(student.id)}>
-            <FaTrash />
-          </Button>
-          <Button variant="text" size="sm" color="gray" className="p-1" onClick={() => onDetail(student)}>
-            <FaInfoCircle />
-          </Button>
-        </div>
+        {isAttendanceMode ? (
+          <div className="flex gap-2">
+            <Button
+              variant={(attendanceStatus && attendanceStatus[student.id]) ? 'filled' : 'outlined'}
+              size="sm"
+              color="green"
+              className="px-3"
+              onClick={() => onToggleAttendance && onToggleAttendance(String(student.id), true)}
+            >
+              {student.gender && student.gender.includes('ة') ? 'حاضرة' : 'حاضر'}
+            </Button>
+            <Button
+              variant={(attendanceStatus && attendanceStatus[student.id] === false) ? 'filled' : 'outlined'}
+              size="sm"
+              color="red"
+              className="px-3"
+              onClick={() => onToggleAttendance && onToggleAttendance(String(student.id), false)}
+            >
+              {student.gender && student.gender.includes('ة') ? 'غائبة' : 'غائب'}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <Button variant="text" size="sm" color="yellow" className="p-1" onClick={() => onAssess(student)}>
+              <FaStar />
+            </Button>
+            <Button variant="text" size="sm" color="blue" className="p-1" onClick={() => onEdit(student)}>
+              <FaEdit />
+            </Button>
+            <Button variant="text" size="sm" color="red" className="p-1" onClick={() => onDelete(student.id)}>
+              <FaTrash />
+            </Button>
+            <Button variant="text" size="sm" color="gray" className="p-1" onClick={() => onDetail(student)}>
+              <FaInfoCircle />
+            </Button>
+          </div>
+        )}
       </td>
     </tr>
   );

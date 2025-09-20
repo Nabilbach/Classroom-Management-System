@@ -39,6 +39,7 @@ interface SectionContextType {
   addSection: (section: Omit<Section, 'id'>) => Promise<Section>; // Changed from Promise<void>
   editSection: (id: string, updatedData: Partial<Section>) => Promise<Section>; // Changed from Promise<void>
   deleteSection: (id: string) => Promise<void>;
+  deleteAllSections: () => Promise<void>;
   currentSection: Section | null;
   setCurrentSection: (section: Section | null) => void;
 }
@@ -142,6 +143,19 @@ export const SectionProvider = ({ children }: SectionProviderProps) => {
     }
   };
 
+  const deleteAllSections = async () => {
+    setIsLoading(true);
+    try {
+      await deleteAllSectionsAPI(); // Call the new API function
+      setSections([]); // Clear all sections from state
+      console.log("All sections deleted successfully!");
+    } catch (error) {
+      console.error("Failed to delete all sections:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <SectionContext.Provider value={{
       sections,
@@ -149,6 +163,7 @@ export const SectionProvider = ({ children }: SectionProviderProps) => {
       addSection,
       editSection,
       deleteSection,
+      deleteAllSections,
       currentSection,
       setCurrentSection,
     }}>

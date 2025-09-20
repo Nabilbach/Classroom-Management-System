@@ -7,27 +7,37 @@ const Student = sequelize.define('Student', {
     primaryKey: true,
     autoIncrement: true,
   },
-  first_name: {
+  firstName: {
     type: DataTypes.STRING,
     allowNull: false,
+    field: 'first_name'
   },
-  last_name: {
+  lastName: {
     type: DataTypes.STRING,
     allowNull: false,
+    field: 'last_name'
   },
-  pathway_number: {
+  pathwayNumber: {
     type: DataTypes.STRING,
     unique: true,
+    field: 'pathway_number'
   },
-  birth_date: {
+  birthDate: {
     type: DataTypes.STRING,
+    field: 'birth_date'
   },
-  class_order: {
+  classOrder: {
     type: DataTypes.INTEGER,
+    field: 'class_order'
   },
   gender: {
     type: DataTypes.STRING,
   },
+  sectionId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'section_id'
+  }
 });
 
 module.exports = Student;

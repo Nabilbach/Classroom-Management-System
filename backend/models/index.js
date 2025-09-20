@@ -5,6 +5,8 @@ const LessonLog = require('./lessonLog');
 const Student = require('./student');
 const StudentAssessment = require('./studentAssessment');
 const ScheduledLesson = require('./scheduledLesson');
+const AdministrativeTimetableEntry = require('./administrativeTimetableEntry');
+const Attendance = require('./attendance');
 
 // Define associations
 Section.hasMany(Lesson, { foreignKey: 'sectionId' });
@@ -22,6 +24,13 @@ Student.belongsTo(Section, { foreignKey: 'sectionId' });
 Student.hasMany(StudentAssessment, { foreignKey: 'studentId' });
 StudentAssessment.belongsTo(Student, { foreignKey: 'studentId' });
 
+// Attendance associations
+Student.hasMany(Attendance, { foreignKey: 'studentId' });
+Attendance.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
+
+Section.hasMany(Attendance, { foreignKey: 'sectionId' });
+Attendance.belongsTo(Section, { foreignKey: 'sectionId' });
+
 const db = {
   sequelize,
   Sequelize: sequelize.Sequelize,
@@ -31,6 +40,8 @@ const db = {
   Student,
   StudentAssessment,
   ScheduledLesson,
+  AdministrativeTimetableEntry,
+  Attendance,
 };
 
 module.exports = db;

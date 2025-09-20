@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Typography, Button, TextField, Select, MenuItem, Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions, Radio, FormControlLabel } from '@mui/material';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Typography, Button, Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import FilterDrawer from '../components/students/FilterDrawer';
+import { Student } from '../types/student';
 import { useSections } from '../contexts/SectionsContext';
 import { useStudents } from '../contexts/StudentsContext';
 import AddStudentForm from '../components/students/AddStudentForm';
@@ -7,32 +9,26 @@ import EditStudentModal from '../components/students/EditStudentModal';
 import StudentCard from '../components/students/StudentCard';
 import StudentTable from '../components/students/StudentTable';
 import StudentDetailModal from '../components/students/StudentDetailModal';
+import BackToTopButton from '../components/BackToTopButton';
 import AssessmentModal from '../components/students/AssessmentModal';
 import StudentTableSkeleton from '../components/students/StudentTableSkeleton';
 import StudentCardSkeleton from '../components/students/StudentCardSkeleton';
 import ExcelUploadModal from '../components/students/ExcelUploadModal';
+import AbsenceHistoryContent from '../components/AbsenceHistoryContent';
 import useDebounce from '../hooks/useDebounce';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { ChartBarIcon, UserGroupIcon, ExclamationCircleIcon, CalendarDaysIcon, PencilSquareIcon } from "@heroicons/react/24/solid";
 
-interface Student {
-  id: string;
-  firstName: string;
-  lastName: string;
-  pathwayNumber: string;
-  sectionId: number;
-  gender: string;
-  birthDate: string;
-  classOrder: number;
-  score?: number;
-  hasWarnings?: boolean;
-  assessed?: boolean;
-  isPresent?: boolean;
+// Absent Students Modal Component
+interface AbsentStudentsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  absentStudents: Student[];
+  sectionName: string;
 }
 
-// Absent Students Modal Component
-const AbsentStudentsModal = ({ isOpen, onClose, absentStudents, sectionName }) => {
+const AbsentStudentsModal: React.FC<AbsentStudentsModalProps> = ({ isOpen, onClose, absentStudents, sectionName }) => {
   const printContent = () => {
     const printableContent = document.getElementById('printable-absent-list');
     const printWindow = window.open('', '', 'height=600,width=800');
@@ -65,7 +61,7 @@ const AbsentStudentsModal = ({ isOpen, onClose, absentStudents, sectionName }) =
               </tr>
             </thead>
             <tbody>
-              {absentStudents.map((student) => (
+              {absentStudents.map((student: Student) => (
                 <tr key={student.id}>
                   <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{student.classOrder}</td>
                   <td style={{ padding: '8px', border: '1px solid #ddd' }}>{`${student.firstName} ${student.lastName}`}</td>
@@ -88,7 +84,7 @@ const MemoizedStudentTable = React.memo(StudentTable);
 
 function StudentManagement() {
   const { sections, currentSection, setCurrentSection } = useSections();
-  const { students, setStudents, deleteStudent, editStudent, isLoading, fetchStudents } = useStudents();
+  const { students, deleteStudent, isLoading, fetchStudents } = useStudents();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -99,7 +95,6 @@ function StudentManagement() {
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
-  const [badgeFilter, setBadgeFilter] = useState<string>('الكل');
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -115,12 +110,19 @@ function StudentManagement() {
   const [scoreRangeFilter, setScoreRangeFilter] = useState<string>('الكل');
   const [assessmentStatusFilter, setAssessmentStatusFilter] = useState<string>('الكل');
   const [warningStatusFilter, setWarningStatusFilter] = useState<string>('الكل');
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
 
   // Attendance State
   const [isAttendanceMode, setIsAttendanceMode] = useState(false);
   const [attendanceStatus, setAttendanceStatus] = useState<Record<string, boolean>>({});
   const [showAbsentListModal, setShowAbsentListModal] = useState(false);
   const [absentStudents, setAbsentStudents] = useState<Student[]>([]);
+
+  // Local optimistic order: list of student IDs in their temporary order
+  const [localOrderIds, setLocalOrderIds] = useState<number[] | null>(null);
+
+  // Absence History Modal State
+  const [showAbsenceHistoryModal, setShowAbsenceHistoryModal] = useState(false);
 
   useEffect(() => {
     if (sections.length > 0 && !currentSection) {
@@ -129,24 +131,46 @@ function StudentManagement() {
   }, [sections, setCurrentSection]);
 
   const sectionStudents = useMemo(() => {
-    if (!currentSection) return students.sort((a, b) => a.classOrder - b.classOrder);
-    return students
-      .filter((student) => student.sectionId === currentSection.id)
-      .sort((a, b) => a.classOrder - b.classOrder);
-  }, [students, currentSection]);
-
-  const studentStats = useMemo(() => {
-    if (!currentSection || sectionStudents.length === 0) {
-      return { averageScore: "0.0", topStudents: 0, studentsNeedingSupport: 0, assessmentsThisWeek: 0 };
+    // Helper to get index in local order map (if any)
+    let orderIndex: Map<number, number> | null = null;
+    if (localOrderIds) {
+      orderIndex = new Map(localOrderIds.map((id, idx) => [id, idx]));
     }
-    const totalScore = sectionStudents.reduce((sum, student) => sum + (student.score || 0), 0);
-    const averageScore = (totalScore / sectionStudents.length).toFixed(1);
-    const topStudents = sectionStudents.filter(student => (student.score || 0) >= 85).length;
-    const studentsNeedingSupport = sectionStudents.filter(student => (student.score || 0) < 60).length;
-    const assessmentsThisWeek = 0;
-    return { averageScore, topStudents, studentsNeedingSupport, assessmentsThisWeek };
-  }, [sectionStudents, currentSection]);
 
+    const sortWithLocal = (a: Student, b: Student) => {
+      if (orderIndex) {
+        const ai = orderIndex.has(a.id) ? (orderIndex.get(a.id) as number) : Number.MAX_SAFE_INTEGER;
+        const bi = orderIndex.has(b.id) ? (orderIndex.get(b.id) as number) : Number.MAX_SAFE_INTEGER;
+        if (ai !== bi) return ai - bi;
+      }
+      return a.classOrder - b.classOrder;
+    };
+
+    if (!currentSection) return [...students].sort(sortWithLocal);
+    return students
+      .filter((student) => {
+        const sId = student.sectionId as any;
+        const cId = currentSection.id as any;
+        return sId != null && cId != null && String(sId) === String(cId);
+      })
+      .slice()
+      .sort(sortWithLocal);
+  }, [students, currentSection, localOrderIds]);
+
+  const { averageScore, topStudents, needsAttention, weeklyAssessments } = useMemo(() => {
+    if (!currentSection || sectionStudents.length === 0) {
+      return { averageScore: 0, topStudents: 0, needsAttention: 0, weeklyAssessments: 0 };
+    }
+
+    const totalScore = sectionStudents.reduce((sum, student) => sum + (student.score || 0), 0);
+    const averageScore = totalScore / sectionStudents.length;
+    const topStudents = sectionStudents.filter(student => (student.score || 0) >= 18).length;
+    const needsAttention = sectionStudents.filter(student => (student.score || 0) < 10).length;
+    const weeklyAssessments = sectionStudents.filter(student => student.score !== undefined).length;
+
+    return { averageScore, topStudents, needsAttention, weeklyAssessments };
+  }, [sectionStudents, currentSection]);
+  
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -163,13 +187,11 @@ function StudentManagement() {
       classOrder: index + 1,
     }));
 
-    setStudents(prevStudents => {
-      const studentMap = new Map(updatedWithOrder.map(s => [s.id, s]));
-      return prevStudents.map(s => studentMap.get(s.id) || s);
-    });
-
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/students/reorder`, {
+      // Optimistically update local order for instant UI feedback
+      setLocalOrderIds(updatedWithOrder.map(s => s.id as number));
+
+      const response = await fetch(`http://localhost:3000/api/students/reorder`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderedIds: updatedWithOrder.map(s => s.id) }),
@@ -180,10 +202,15 @@ function StudentManagement() {
       }
 
       console.log('✅ الترتيب تم حفظه بنجاح');
+      // Refresh from server to sync classOrder and clear local override
+      await fetchStudents();
+      setLocalOrderIds(null);
 
     } catch (error) {
       console.error('❌ خطأ في حفظ الترتيب:', error);
       alert('تعذر حفظ الترتيب. تحقق من الاتصال وحاول لاحقًا.');
+      // Clear local override on failure
+      setLocalOrderIds(null);
       // Optional: Revert state or refetch on failure
       // For now, we just alert the user.
     }
@@ -224,7 +251,7 @@ function StudentManagement() {
     }
     if (assessmentStatusFilter !== 'الكل') {
       studentsToFilter = studentsToFilter.filter(student => {
-        const isAssessed = Boolean(student.assessed);
+        const isAssessed = Boolean(student.score && student.score > 0);
         if (assessmentStatusFilter === 'مقيم') return isAssessed;
         if (assessmentStatusFilter === 'غير مقيم') return !isAssessed;
         return true;
@@ -232,7 +259,7 @@ function StudentManagement() {
     }
     if (warningStatusFilter !== 'الكل') {
       studentsToFilter = studentsToFilter.filter(student => {
-        const hasWarnings = Boolean(student.hasWarnings);
+        const hasWarnings = Boolean(student.score && student.score < 10);
         if (warningStatusFilter === 'مع إنذار') return hasWarnings;
         if (warningStatusFilter === 'بدون إنذار') return !hasWarnings;
         return true;
@@ -259,7 +286,6 @@ function StudentManagement() {
 
   const handleClearFilters = useCallback(() => {
     setSearchTerm('');
-    setBadgeFilter('الكل');
     setScoreRangeFilter('الكل');
     setAssessmentStatusFilter('الكل');
     setWarningStatusFilter('الكل');
@@ -297,9 +323,9 @@ function StudentManagement() {
       `هل أنت متأكد أنك تريد حذف جميع طلاب قسم ${currentSection.name}؟ هذا الإجراء لا يمكن التراجع عنه.`,
       async () => {
         try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/sections/${currentSection.id}/students`, { method: 'DELETE' });
+          const response = await fetch(`http://localhost:3000/api/sections/${currentSection.id}/students`, { method: 'DELETE' });
           if (!response.ok) throw new Error('فشل في الحذف');
-          setStudents(prev => prev.filter(s => s.sectionId !== currentSection.id));
+          fetchStudents(); // Refresh the list
           alert(`تم حذف جميع طلاب قسم ${currentSection.name} من السيرفر والواجهة.`);
         } catch (error) {
           console.error("Error deleting students:", error);
@@ -309,7 +335,7 @@ function StudentManagement() {
         }
       }
     );
-  }, [currentSection, handleConfirmModalOpen, setStudents, fetchStudents]);
+  }, [currentSection, handleConfirmModalOpen, fetchStudents]);
 
   // --- Attendance Functions ---
   const handleEnterAttendanceMode = () => {
@@ -341,7 +367,7 @@ function StudentManagement() {
     }));
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/attendance`, {
+      const response = await fetch(`http://localhost:3000/api/attendance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ attendance: attendanceData }),
@@ -352,7 +378,7 @@ function StudentManagement() {
       }
 
       // Update local student data
-      setStudents(prev => prev.map(s => ({ ...s, isPresent: attendanceStatus[s.id] ?? s.isPresent })))
+      fetchStudents(); // Refresh after attendance update
 
       const absent = sectionStudents.filter(s => !attendanceStatus[s.id]);
       setAbsentStudents(absent);
@@ -366,14 +392,19 @@ function StudentManagement() {
   };
 
   return (
-    <div dir="rtl">
-      <div className="flex justify-between items-center mb-4">
+  <div dir="rtl" style={{ paddingTop: 0, background: '#f8f9fa' }}>
+  {/* Sticky action bar */}
+      <div className="flex flex-wrap justify-between items-center mb-2 sticky top-0 z-20 bg-white shadow-sm py-1 px-2" style={{ borderBottom: '1px solid #eee', marginRight: 0 }}>
         <Typography variant="h4" color="blue-gray">إدارة الطلاب</Typography>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 overflow-x-auto" style={{ maxWidth: '100%' }}>
+          <Button onClick={() => setIsFilterDrawerOpen(true)} variant="outlined" color="primary">الفلاتر</Button>
           {!isAttendanceMode ? (
             <>
               <Button onClick={handleEnterAttendanceMode} variant="contained" color="secondary" startIcon={<PencilSquareIcon className="h-5 w-5" />}>
                 📝 تسجيل الحضور والغياب
+              </Button>
+              <Button onClick={() => setShowAbsenceHistoryModal(true)} variant="outlined" color="info">
+                📊 سجل الغياب
               </Button>
               <Button onClick={() => setIsAddModalOpen(true)} variant="contained" color="primary">
                 إضافة طالب جديد
@@ -396,17 +427,31 @@ function StudentManagement() {
             </>
           )}
         </div>
+        <FilterDrawer
+          open={isFilterDrawerOpen}
+          onClose={() => setIsFilterDrawerOpen(false)}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          scoreRangeFilter={scoreRangeFilter}
+          setScoreRangeFilter={setScoreRangeFilter}
+          assessmentStatusFilter={assessmentStatusFilter}
+          setAssessmentStatusFilter={setAssessmentStatusFilter}
+          warningStatusFilter={warningStatusFilter}
+          setWarningStatusFilter={setWarningStatusFilter}
+          onClear={handleClearFilters}
+        />
       </div>
 
       {/* Statistic Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card className="bg-blue-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="blue-gray">متوسط الدرجات</Typography><ChartBarIcon className="h-6 w-6 text-blue-900" /></div><Typography variant="h4" color="blue-gray" className="font-bold">{studentStats.averageScore}</Typography><Typography variant="small" color="blue-gray">في القسم</Typography></CardContent></Card>
-        <Card className="bg-green-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="blue-gray">المتفوقون</Typography><UserGroupIcon className="h-6 w-6 text-green-900" /></div><Typography variant="h4" color="blue-gray" className="font-bold">{studentStats.topStudents}</Typography><Typography variant="small" color="blue-gray">أداء ممتاز</Typography></CardContent></Card>
-        <Card className="bg-yellow-50 p-4 border border-yellow-200"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="blue-gray">يحتاج دعمًا</Typography><ExclamationCircleIcon className="h-6 w-6 text-yellow-900" /></div><Typography variant="h4" color="blue-gray" className="font-bold">{studentStats.studentsNeedingSupport}</Typography><Typography variant="small" color="blue-gray">أقل من 60%</Typography></CardContent></Card>
-        <Card className="bg-indigo-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="blue-gray">تقييمات هذا الأسبوع</Typography><CalendarDaysIcon className="h-6 w-6 text-indigo-900" /></div><Typography variant="h4" color="blue-gray" className="font-bold">{studentStats.assessmentsThisWeek}</Typography><Typography variant="small" color="blue-gray">تم التسجيل</Typography></CardContent></Card>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 mt-2">
+                <Card className="bg-blue-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">متوسط الدرجات</Typography><ChartBarIcon className="h-5 w-5 text-blue-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold">{averageScore.toFixed(1)}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">من 20 نقطة</Typography></CardContent></Card>
+                <Card className="bg-green-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">المتفوقون</Typography><UserGroupIcon className="h-5 w-5 text-green-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold">{topStudents}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">18+ نقطة</Typography></CardContent></Card>
+                <Card className="bg-yellow-50 p-4 border border-yellow-200"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">يحتاج متابعة</Typography><ExclamationCircleIcon className="h-5 w-5 text-yellow-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold">{needsAttention}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">أقل من 10 نقاط</Typography></CardContent></Card>
+                <Card className="bg-indigo-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">تقييمات هذا الأسبوع</Typography><CalendarDaysIcon className="h-5 w-5 text-indigo-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold">{weeklyAssessments}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">طالب تم تقييمه</Typography></CardContent></Card>
       </div>
 
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+  {/* Sticky section chips bar */}
+  <div className="flex gap-2 mb-4 overflow-x-auto pb-2 sticky top-[56px] z-10 bg-white border-b border-gray-100 chips-scrollbar w-full" style={{ minHeight: '48px' }}>
         <Button variant={!currentSection ? "contained" : "outlined"} onClick={() => setCurrentSection(null)} className="flex-shrink-0">
           جميع التلاميذ
         </Button>
@@ -417,32 +462,16 @@ function StudentManagement() {
         ))}
       </div>
 
-      <div className="min-h-[500px]">
+      <div className="min-h-[500px] w-full overflow-fix">
         {sections.length > 0 ? (
-          <Card className="p-4">
+          <Card className="p-4 w-full responsive-container">
             <div className="flex justify-between items-center mb-4">
               <Typography variant="h5" color="blue-gray">
                 {currentSection ? `طلاب قسم ${currentSection.name}` : 'جميع التلاميذ'} ({finalFilteredStudents.length} طالب)
               </Typography>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 mb-4">
-              <TextField type="text" label="ابحث بالاسم، رقم التلميذ، أو رقم التتبع (H...)" value={searchTerm} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)} fullWidth />
-              <Button onClick={handleClearFilters} variant="outlined" color="primary">مسح الفلاتر</Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <TextField select label="تصفية حسب المعدل" value={scoreRangeFilter} onChange={(e) => setScoreRangeFilter(e.target.value as string)} sx={{ direction: 'rtl', width: '100%', maxWidth: '180px', margin: '0 auto', '& .MuiInputBase-root': { fontSize: '0.875rem', padding: '4px 8px' }, '& .MuiFormLabel-root': { fontSize: '0.875rem' } }} size="small">
-                <MenuItem value="الكل">الكل</MenuItem>
-                <MenuItem value="0-4">من 0 إلى 4</MenuItem>
-                <MenuItem value="4-6">من 4 إلى 6</MenuItem>
-                <MenuItem value="6-8">من 6 إلى 8</MenuItem>
-                <MenuItem value="8-10">من 8 إلى 10</MenuItem>
-              </TextField>
-              <div className="flex flex-col gap-2"><Typography variant="small" color="blue-gray" className="font-normal">حالة التقييم:</Typography><div className="flex gap-6"><FormControlLabel value="الكل" control={<Radio sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }} />} label={<Typography variant="body2">الكل</Typography>} checked={assessmentStatusFilter === 'الكل'} onChange={(e) => setAssessmentStatusFilter((e.target as HTMLInputElement).value)} name="assessmentStatus" componentsProps={{ typography: { variant: 'body2' } }} /><FormControlLabel value="مقيم" control={<Radio sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }} />} label={<Typography variant="body2">مقيم</Typography>} checked={assessmentStatusFilter === 'مقيم'} onChange={(e) => setAssessmentStatusFilter((e.target as HTMLInputElement).value)} name="assessmentStatus" componentsProps={{ typography: { variant: 'body2' } }} /><FormControlLabel value="غير مقيم" control={<Radio sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }} />} label={<Typography variant="body2">غير مقيم</Typography>} checked={assessmentStatusFilter === 'غير مقيم'} onChange={(e) => setAssessmentStatusFilter((e.target as HTMLInputElement).value)} name="assessmentStatus" componentsProps={{ typography: { variant: 'body2' } }} /></div></div>
-              <div className="flex flex-col gap-2"><Typography variant="small" color="blue-gray" className="font-normal">حالة الإنذار:</Typography><div className="flex gap-6
-              "><FormControlLabel value="الكل" control={<Radio sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }} />} label={<Typography variant="body2">الكل</Typography>} checked={warningStatusFilter === 'الكل'} onChange={(e) => setWarningStatusFilter((e.target as HTMLInputElement).value)} name="warningStatus" componentsProps={{ typography: { variant: 'body2' } }} /><FormControlLabel value="مع إنذار" control={<Radio sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }} />} label={<Typography variant="body2">مع إنذار</Typography>} checked={warningStatusFilter === 'مع إنذار'} onChange={(e) => setWarningStatusFilter((e.target as HTMLInputElement).value)} name="warningStatus" componentsProps={{ typography: { variant: 'body2' } }} /><FormControlLabel value="بدون إنذار" control={<Radio sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }} />} label={<Typography variant="body2">بدون إنذار</Typography>} checked={warningStatusFilter === 'بدون إنذار'} onChange={(e) => setWarningStatusFilter((e.target as HTMLInputElement).value)} name="warningStatus" componentsProps={{ typography: { variant: 'body2' } }} /></div></div>
-            </div>
+            {/* Filter controls moved to FilterDrawer */}
 
             <div className="flex justify-end gap-2 mb-4">
               <Button variant={viewMode === 'table' ? "contained" : "outlined"} onClick={() => setViewMode('table')} size="small">عرض الجدول</Button>
@@ -463,6 +492,7 @@ function StudentManagement() {
                     onDelete={handleDeleteStudent}
                     onDetail={handleDetailStudent}
                     onAssess={handleAssessStudent}
+                    onUpdateNumber={() => {}}
                     isAttendanceMode={isAttendanceMode}
                     attendanceStatus={attendanceStatus}
                     onToggleAttendance={handleToggleAttendance}
@@ -478,6 +508,7 @@ function StudentManagement() {
                         onDelete={handleDeleteStudent}
                         onDetail={handleDetailStudent}
                         onAssess={handleAssessStudent}
+                        onUpdateNumber={() => {}}
                         isAttendanceMode={isAttendanceMode}
                         attendanceStatus={attendanceStatus}
                         onToggleAttendance={handleToggleAttendance}
@@ -491,16 +522,33 @@ function StudentManagement() {
             </DndContext>
           </Card>
         ) : (
-          <Typography variant="paragraph" color="blue-gray" className="mt-4">لا توجد أقسام متاحة. الرجاء إضافة قسم جديد أولاً.</Typography>
+          <Typography variant="body1" color="textSecondary" className="mt-4">لا توجد أقسام متاحة. الرجاء إضافة قسم جديد أولاً.</Typography>
         )}
       </div>
 
       <AddStudentForm isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
-      <EditStudentModal isOpen={isEditModalOpen} onClose={() => { setIsEditModalOpen(false); setEditingStudent(null); }} student={editingStudent} />
-      <StudentDetailModal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} student={selectedStudent} onAssess={handleAssessStudent} />
-      <AssessmentModal isOpen={isAssessmentModalOpen} onClose={() => setIsAssessmentModalOpen(false)} studentId={selectedStudent?.id} />
-      <ExcelUploadModal isOpen={isExcelUploadModalOpen} onClose={() => setIsExcelUploadModalOpen(false)} section={currentSection} />
+  <EditStudentModal isOpen={isEditModalOpen} onClose={() => { setIsEditModalOpen(false); setEditingStudent(null); }} student={editingStudent as any} />
+  <StudentDetailModal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} student={selectedStudent as any} onAssess={handleAssessStudent as any} />
+  <AssessmentModal isOpen={isAssessmentModalOpen} onClose={() => setIsAssessmentModalOpen(false)} studentId={selectedStudent ? String(selectedStudent.id) : undefined} />
+      <ExcelUploadModal isOpen={isExcelUploadModalOpen} onClose={() => setIsExcelUploadModalOpen(false)} />
       <AbsentStudentsModal isOpen={showAbsentListModal} onClose={() => setShowAbsentListModal(false)} absentStudents={absentStudents} sectionName={currentSection?.name || ''} />
+
+      {/* Absence History Modal */}
+      <Dialog 
+        open={showAbsenceHistoryModal} 
+        onClose={() => setShowAbsenceHistoryModal(false)} 
+        maxWidth="lg" 
+        fullWidth
+        dir="rtl"
+      >
+        <DialogTitle>سجل الغياب والحضور</DialogTitle>
+        <DialogContent dividers>
+          <AbsenceHistoryContent onClose={() => setShowAbsenceHistoryModal(false)} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowAbsenceHistoryModal(false)}>إغلاق</Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={isConfirmModalOpen} onClose={handleConfirmModalClose} maxWidth="xs" fullWidth>
         <DialogTitle>تأكيد الإجراء</DialogTitle>
@@ -510,6 +558,7 @@ function StudentManagement() {
           <Button variant="text" color="inherit" onClick={handleConfirmModalClose}>إلغاء</Button>
         </DialogActions>
       </Dialog>
+      <BackToTopButton />
     </div>
   );
 }

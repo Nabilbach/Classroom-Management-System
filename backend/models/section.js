@@ -10,7 +10,26 @@ const Section = sequelize.define('Section', {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  // Add other fields as necessary based on your sections.json structure
+  educationalLevel: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  specialization: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  roomNumber: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  teacherName: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  courseName: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  }
 });
 
 module.exports = Section;

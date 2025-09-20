@@ -39,13 +39,13 @@ function EditStudentModal({ isOpen, onClose, student }: EditStudentModalProps) {
 
   useEffect(() => {
     if (student) {
-      setFirstName(student.firstName);
-      setLastName(student.lastName);
-      setTrackNumber(student.trackNumber);
-      setSectionId(student.sectionId);
-      setGender(student.gender);
-      setDateOfBirth(student.dateOfBirth);
-      setBadge(student.badge);
+      setFirstName(student.firstName || '');
+      setLastName(student.lastName || '');
+      setTrackNumber(student.trackNumber || '');
+      setSectionId(student.sectionId || '');
+      setGender(student.gender || '');
+      setDateOfBirth(student.dateOfBirth || '');
+      setBadge(student.badge || 'لا يوجد');
     } else {
       // Reset form when modal is closed or no student is passed
       setFirstName('');
@@ -90,7 +90,7 @@ function EditStudentModal({ isOpen, onClose, student }: EditStudentModalProps) {
             label="الاسم الأول"
             value={firstName}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFirstName(e.target.value)}
-            fullWidth
+            crossOrigin={undefined}
             error={!!error && !firstName.trim()}
           />
           <Input
@@ -98,7 +98,7 @@ function EditStudentModal({ isOpen, onClose, student }: EditStudentModalProps) {
             label="الاسم العائلي"
             value={lastName}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastName(e.target.value)}
-            fullWidth
+            crossOrigin={undefined}
             error={!!error && !lastName.trim()}
           />
           <Input
@@ -106,13 +106,13 @@ function EditStudentModal({ isOpen, onClose, student }: EditStudentModalProps) {
             label="رمز مسار"
             value={trackNumber}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTrackNumber(e.target.value)}
-            fullWidth
+            crossOrigin={undefined}
             error={!!error && !trackNumber.trim()}
           />
           <Select
             label="القسم"
             value={sectionId}
-            onChange={(value: string) => setSectionId(value)}
+            onChange={(value: string | undefined) => setSectionId(value || '')}
             error={!!error && !sectionId.trim()}
           >
             {sections.map((section) => (
@@ -122,7 +122,7 @@ function EditStudentModal({ isOpen, onClose, student }: EditStudentModalProps) {
           <Select
             label="النوع"
             value={gender}
-            onChange={(value: string) => setGender(value)}
+            onChange={(value: string | undefined) => setGender(value || '')}
             error={!!error && !gender.trim()}
           >
             {genderOptions.map((option) => (
@@ -134,14 +134,14 @@ function EditStudentModal({ isOpen, onClose, student }: EditStudentModalProps) {
             label="تاريخ الازدياد"
             value={dateOfBirth}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateOfBirth(e.target.value)}
-            fullWidth
+            crossOrigin={undefined}
             error={!!error && !dateOfBirth.trim()}
           />
           {/* Removed رقم التلميذ في القسم input */}
           <Select
             label="الشارة"
             value={badge}
-            onChange={(value: string) => setBadge(value)}
+            onChange={(value: string | undefined) => setBadge(value || 'لا يوجد')}
             error={!!error && !badge.trim()}
           >
             {badgeOptions.map((option) => (

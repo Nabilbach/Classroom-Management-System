@@ -4,7 +4,7 @@ import TemplateLibrary from '../components/TemplateLibrary';
 import StatisticsFooter from '../components/StatisticsFooter';
 import EditLessonModal from '../components/EditLessonModal';
 import { startOfWeek, addWeeks, subWeeks, endOfWeek, format } from 'date-fns';
-import ar from 'date-fns/locale/ar';
+import { ar } from 'date-fns/locale/ar';
 import { Box, Typography, IconButton, Button } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useCurriculum } from '../contexts/CurriculumContext';

@@ -1,7 +1,7 @@
 import { Section } from '../contexts/SectionsContext'; // Import Section interface
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-const SECTIONS_ENDPOINT = `${API_BASE_URL}/sections`;
+const SECTIONS_ENDPOINT = `${API_BASE_URL}/api/sections`;
 
 // Helper for handling responses
 const handleResponse = async <T>(response: Response): Promise<T> => {
@@ -41,6 +41,17 @@ export const updateSection = async (sectionId: string, sectionData: Partial<Sect
 
 export const deleteSection = async (sectionId: string): Promise<void> => {
   const response = await fetch(`${SECTIONS_ENDPOINT}/${sectionId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Something went wrong');
+  }
+  // No content for successful delete
+};
+
+export const deleteAllSectionsAPI = async (): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/api/sections/all`, {
     method: 'DELETE',
   });
   if (!response.ok) {

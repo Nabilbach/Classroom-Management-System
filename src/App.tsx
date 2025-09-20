@@ -20,9 +20,9 @@ import SectionProgress from './pages/SectionProgress'; // New import
 function App() {
   return (
     <Router>
-      <div className="flex">
-        <Sidebar />
-        <div className="flex-1 flex flex-col">
+      <div className="flex h-screen overflow-x-hidden" dir="rtl">
+        {/* Main content first, sidebar on the right */}
+        <div className="flex-1 flex flex-col min-h-0 min-w-0" style={{ marginRight: 260, width: 'calc(100% - 260px)' }}>
           <Header />
           <MainContent>
             <LessonLogProvider>
@@ -41,6 +41,7 @@ function App() {
             </LessonLogProvider>
           </MainContent>
         </div>
+        <Sidebar />
       </div>
     </Router>
   );

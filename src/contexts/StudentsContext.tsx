@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, ReactNode } from 'react';
 
 // This interface should match the Student model in your backend
 interface Student {
@@ -6,7 +6,7 @@ interface Student {
   firstName: string;
   lastName: string;
   pathwayNumber: string;
-  sectionId: number;
+  sectionId: string; // Section IDs are strings in the DB (e.g., "1BACSE-1")
   gender: string;
   birthDate: string;
   classOrder: number;
@@ -43,20 +43,11 @@ export const StudentsProvider = ({ children }: StudentsProviderProps) => {
       }
       const data = await response.json();
       
-      // Convert snake_case to camelCase
-      const camelCaseData = data.map((student: any) => ({
-        id: student.id,
-        firstName: student.first_name,
-        lastName: student.last_name,
-        pathwayNumber: student.pathway_number,
-        sectionId: student.sectionId,
-        gender: student.gender,
-        birthDate: student.birth_date,
-        classOrder: student.class_order,
-        score: student.score, // This will be undefined until backend provides it
-      }));
-
-      setStudents(camelCaseData);
+      console.log('✅ Students received from API:', data?.length || 0, 'students');
+      console.log('Sample student:', data?.[0]);
+      
+      // Data is already in camelCase from the backend
+      setStudents(data);
     } catch (error) {
       console.error('Error fetching students:', error);
     } finally {
@@ -69,16 +60,16 @@ export const StudentsProvider = ({ children }: StudentsProviderProps) => {
   }, [fetchStudents]);
 
   const addStudent = async (student: Omit<Student, 'id'>) => {
-    // Convert camelCase to snake_case for sending to backend
+    // Send camelCase to match backend model attributes
     const studentToSend = {
-      first_name: student.firstName,
-      last_name: student.lastName,
-      pathway_number: student.pathwayNumber,
+      firstName: student.firstName,
+      lastName: student.lastName,
+      pathwayNumber: student.pathwayNumber ?? '',
       sectionId: student.sectionId,
       gender: student.gender,
-      birth_date: student.birthDate,
-      class_order: student.classOrder,
-    };
+      birthDate: student.birthDate ?? null,
+      classOrder: student.classOrder ?? null,
+    } as any;
 
     try {
       const response = await fetch(`${API_URL}/students`, {
@@ -89,7 +80,12 @@ export const StudentsProvider = ({ children }: StudentsProviderProps) => {
         body: JSON.stringify(studentToSend),
       });
       if (!response.ok) {
-        throw new Error('Failed to add student');
+        let message = 'Failed to add student';
+        try {
+          const err = await response.json();
+          if (err?.message) message = err.message;
+        } catch {}
+        throw new Error(message);
       }
       await fetchStudents(); // Refetch to get the updated list
     } catch (error) {
@@ -98,15 +94,15 @@ export const StudentsProvider = ({ children }: StudentsProviderProps) => {
   };
 
   const editStudent = async (id: number, updatedData: Partial<Student>) => {
-    // Convert camelCase to snake_case for sending to backend
+    // Keep attribute names in camelCase to match backend model; only map when backend expects snake_case
     const updatedDataToSend: any = {};
-    if (updatedData.firstName !== undefined) updatedDataToSend.first_name = updatedData.firstName;
-    if (updatedData.lastName !== undefined) updatedDataToSend.last_name = updatedData.lastName;
-    if (updatedData.pathwayNumber !== undefined) updatedDataToSend.pathway_number = updatedData.pathwayNumber;
+    if (updatedData.firstName !== undefined) updatedDataToSend.firstName = updatedData.firstName;
+    if (updatedData.lastName !== undefined) updatedDataToSend.lastName = updatedData.lastName;
+    if (updatedData.pathwayNumber !== undefined) updatedDataToSend.pathwayNumber = updatedData.pathwayNumber;
     if (updatedData.sectionId !== undefined) updatedDataToSend.sectionId = updatedData.sectionId;
     if (updatedData.gender !== undefined) updatedDataToSend.gender = updatedData.gender;
-    if (updatedData.birthDate !== undefined) updatedDataToSend.birth_date = updatedData.birthDate;
-    if (updatedData.classOrder !== undefined) updatedDataToSend.class_order = updatedData.classOrder;
+    if (updatedData.birthDate !== undefined) updatedDataToSend.birthDate = updatedData.birthDate;
+    if (updatedData.classOrder !== undefined) updatedDataToSend.classOrder = updatedData.classOrder;
 
     try {
       const response = await fetch(`${API_URL}/students/${id}`, {

@@ -1,10 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent, KeyboardEvent } from 'react';
 import { Typography, IconButton, Input } from "@material-tailwind/react";
 import { FaEdit, FaTrash, FaInfoCircle, FaStar } from 'react-icons/fa';
+import { Student } from '../../types/student';
 
 // Final merged version of the Student Card
 
-const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNumber }) => {
+interface StudentCardProps {
+  student: Student;
+  onEdit: (student: Student) => void;
+  onDelete: (studentId: number) => void;
+  onDetail: (student: Student) => void;
+  onAssess: (student: Student) => void;
+  onUpdateNumber: (studentId: number, newNumber: number) => void;
+  isAttendanceMode?: boolean;
+  attendanceStatus?: Record<string, boolean>;
+  onToggleAttendance?: (studentId: string, isPresent: boolean) => void;
+}
+
+const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNumber, isAttendanceMode, attendanceStatus, onToggleAttendance }: StudentCardProps) => {
 
   // --- State for Editable Number ---
   const [isEditingNumber, setIsEditingNumber] = useState(false);
@@ -18,10 +31,10 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
   const average = 85;
   const attendance = 98;
   const warnings = 1;
-  const goal = "اجتياز جميع الاختبارات بنجاح";
+  // const goal = "اجتياز جميع الاختبارات بنجاح";
   // -------------------------------------
 
-  const getBadgeStyle = (badge) => {
+  const getBadgeStyle = (badge?: string) => {
     switch (badge) {
       case 'Excellent': case 'ممتاز': return 'bg-green-100 text-green-800 border-green-300';
       case 'Good': case 'جيد': return 'bg-blue-100 text-blue-800 border-blue-300';
@@ -30,7 +43,7 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
     }
   };
 
-  const getAverageColor = (avg) => {
+  const getAverageColor = (avg: number) => {
     if (avg > 79) return 'bg-green-500';
     if (avg >= 50) return 'bg-yellow-500';
     return 'bg-red-500';
@@ -44,7 +57,7 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
     }
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') handleNumberUpdate();
     else if (e.key === 'Escape') {
       setIsEditingNumber(false);
@@ -65,16 +78,17 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
           onClick={() => !isEditingNumber && setIsEditingNumber(true)}
         >
           {isEditingNumber ? (
-            <Input 
+              <Input 
               type="number" 
               value={numberValue} 
-              onChange={(e) => setNumberValue(Number(e.target.value))} 
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setNumberValue(Number(e.target.value))} 
               onBlur={handleNumberUpdate} 
               onKeyDown={handleKeyDown} 
               autoFocus 
               className="!w-12 text-center p-0 bg-transparent border-none focus:ring-0"
               labelProps={{ className: "hidden" }}
               containerProps={{ className: "min-w-0" }}
+                crossOrigin={undefined}
             />
           ) : (
             <>
@@ -122,32 +136,51 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
 
       
 
-      {/* Footer: Action Buttons */}
+      {/* Footer: Action Buttons or Attendance Controls */}
       <div className="mt-auto pt-4 border-t border-gray-200 flex justify-around items-center">
-        <div className="flex flex-col items-center">
-          <IconButton variant="text" onClick={() => onAssess(student)} className="hover:bg-yellow-100">
-            <FaStar className="text-yellow-600" />
-          </IconButton>
-          <Typography variant="small" className="text-xs text-gray-600 font-semibold">تقييم</Typography>
-        </div>
-        <div className="flex flex-col items-center">
-          <IconButton variant="text" onClick={() => onEdit(student)} className="hover:bg-blue-100">
-            <FaEdit className="text-blue-500" />
-          </IconButton>
-          <Typography variant="small" className="text-xs text-gray-600 font-semibold">تعديل</Typography>
-        </div>
-        <div className="flex flex-col items-center">
-          <IconButton variant="text" onClick={() => onDetail(student)} className="hover:bg-gray-200">
-            <FaInfoCircle className="text-gray-500" />
-          </IconButton>
-          <Typography variant="small" className="text-xs text-gray-600 font-semibold">تفاصيل</Typography>
-        </div>
-        <div className="flex flex-col items-center">
-          <IconButton variant="text" onClick={() => onDelete(student.id)} className="hover:bg-red-100">
-            <FaTrash className="text-red-500" />
-          </IconButton>
-          <Typography variant="small" className="text-xs text-gray-600 font-semibold">حذف</Typography>
-        </div>
+        {isAttendanceMode ? (
+          <div className="flex gap-2">
+            <button
+              className={`px-3 py-1 rounded text-sm ${attendanceStatus && attendanceStatus[student.id] ? 'bg-green-600 text-white' : 'border border-green-600 text-green-700'}`}
+              onClick={() => onToggleAttendance && onToggleAttendance(String(student.id), true)}
+            >
+              {student.gender && student.gender.includes('ة') ? 'حاضرة' : 'حاضر'}
+            </button>
+            <button
+              className={`px-3 py-1 rounded text-sm ${attendanceStatus && attendanceStatus[student.id] === false ? 'bg-red-600 text-white' : 'border border-red-600 text-red-700'}`}
+              onClick={() => onToggleAttendance && onToggleAttendance(String(student.id), false)}
+            >
+              {student.gender && student.gender.includes('ة') ? 'غائبة' : 'غائب'}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-col items-center">
+              <IconButton variant="text" onClick={() => onAssess(student)} className="hover:bg-yellow-100">
+                <FaStar className="text-yellow-600" />
+              </IconButton>
+              <Typography variant="small" className="text-xs text-gray-600 font-semibold">تقييم</Typography>
+            </div>
+            <div className="flex flex-col items-center">
+              <IconButton variant="text" onClick={() => onEdit(student)} className="hover:bg-blue-100">
+                <FaEdit className="text-blue-500" />
+              </IconButton>
+              <Typography variant="small" className="text-xs text-gray-600 font-semibold">تعديل</Typography>
+            </div>
+            <div className="flex flex-col items-center">
+              <IconButton variant="text" onClick={() => onDetail(student)} className="hover:bg-gray-200">
+                <FaInfoCircle className="text-gray-500" />
+              </IconButton>
+              <Typography variant="small" className="text-xs text-gray-600 font-semibold">تفاصيل</Typography>
+            </div>
+            <div className="flex flex-col items-center">
+              <IconButton variant="text" onClick={() => onDelete(student.id)} className="hover:bg-red-100">
+                <FaTrash className="text-red-500" />
+              </IconButton>
+              <Typography variant="small" className="text-xs text-gray-600 font-semibold">حذف</Typography>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

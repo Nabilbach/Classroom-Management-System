@@ -11,28 +11,29 @@ const Attendance = sequelize.define('Attendance', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'Students', // Assumes the table name for Student model is 'Students'
-      key: 'id',
-    },
+      model: 'Students',
+      key: 'id'
+    }
   },
   sectionId: {
     type: DataTypes.STRING,
     allowNull: false,
     references: {
-      model: 'Sections', // Assumes the table name for Section model is 'Sections'
-      key: 'id',
-    },
-  },
-  isPresent: {
-    type: DataTypes.BOOLEAN,
-    allowNull: false,
+      model: 'Sections',
+      key: 'id'
+    }
   },
   date: {
     type: DataTypes.DATEONLY,
     allowNull: false,
   },
+  isPresent: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  },
 }, {
-  tableName: 'Attendance',
+  tableName: 'Attendances',
   timestamps: true,
   indexes: [
     {

@@ -15,8 +15,7 @@ import {
   CardContent,
 } from '@mui/material';
 import { useSections } from '../contexts/SectionsContext';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, isSameDay, parseISO, isValid, isWithinInterval, addWeeks } from 'date-fns';
-import ar from 'date-fns/locale/ar';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, isSameDay, parseISO, isValid, isWithinInterval } from 'date-fns';
 import { useCurriculum } from '../contexts/CurriculumContext';
 import { AdaptedLesson, ScheduledLesson, LessonTemplate } from '../types/lessonLogTypes';
 import { migrateLessonToAdapted } from '../utils/lessonLogMigrationUtils';
@@ -117,9 +116,9 @@ const StatCard = ({ title, value, icon, details }: { title: string, value: strin
           <Icon className="h-6 w-6" />
         </div>
         <div>
-          <Typography variant="small" color="blue-gray" className="font-semibold">{title}</Typography>
+          <Typography variant="body2" color="textSecondary" className="font-semibold">{title}</Typography>
           <Typography variant="h5" color="blue-gray" className="font-bold">{value}</Typography>
-          {details && <Typography variant="small" className="text-gray-600">{details}</Typography>}
+          {details && <Typography variant="body2" className="text-gray-600">{details}</Typography>}
         </div>
       </CardContent>
     </Card>
@@ -432,11 +431,11 @@ function Schedule() {
   // --- Get Display ---
   const getSessionDisplay = (session: WeeklyScheduleSession) => (
     <div className="text-center">
-      <Typography variant="small" className="text-white font-bold">
+      <Typography variant="body2" className="text-white font-bold">
         {session.sectionName}
       </Typography>
       {session.classroom && (
-        <Typography variant="small" className="text-white opacity-90 flex items-center justify-center gap-1">
+        <Typography variant="body2" className="text-white opacity-90 flex items-center justify-center gap-1">
           <FaMapMarkerAlt /> {session.classroom}
         </Typography>
       )}
@@ -572,7 +571,7 @@ function Schedule() {
                         </div>
                       ))
                     ) : (
-                      <Typography variant="small" color="blue-gray">+</Typography>
+                      <Typography variant="body2" color="textSecondary">+</Typography>
                     )}
                   </div>
                 );

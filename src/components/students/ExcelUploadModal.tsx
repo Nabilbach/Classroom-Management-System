@@ -16,6 +16,13 @@ function ExcelUploadModal({ isOpen, onClose }: ExcelUploadModalProps) {
   const [error, setError] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
 
+  // Normalize strings to compare section names strictly (remove spaces/symbols, lowercase, unicode aware)
+  const normalize = (s: string) => s
+    .toLowerCase()
+    .replace(/\.[^.]+$/g, '') // drop extension if present
+    .replace(/\([^)]*\)/g, '') // drop trailing (1), (copy), etc.
+    .replace(/[^\p{L}\p{N}]+/gu, ''); // keep only letters and digits (Arabic/Latin)
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -23,6 +30,17 @@ function ExcelUploadModal({ isOpen, onClose }: ExcelUploadModalProps) {
       const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
 
       if (validExtensions.includes(fileExtension)) {
+        // Strict: ensure file name matches the selected section
+        if (currentSection) {
+          const expected = normalize(currentSection.name);
+          const baseName = normalize(file.name);
+          if (expected.length > 0 && baseName !== expected) {
+            setFile(null);
+            setError(`اسم الملف لا يطابق اسم القسم المحدد.\nالقسم المتوقع: "${currentSection.name}"\nاسم الملف: "${file.name}"`);
+            setSuccessMessage('');
+            return;
+          }
+        }
         setFile(file);
         setError('');
         setSuccessMessage('');
@@ -58,6 +76,8 @@ function ExcelUploadModal({ isOpen, onClose }: ExcelUploadModalProps) {
           setError('الملف فارغ أو لا يحتوي على بيانات طلاب.');
           return;
         }
+
+        // Note: We do not enforce header row section name. Only the file name is strictly validated.
 
         const dataRows = json.slice(1);
 
@@ -110,7 +130,12 @@ function ExcelUploadModal({ isOpen, onClose }: ExcelUploadModalProps) {
 
   return (
     <Dialog open={isOpen} handler={onClose} size="sm">
-      <DialogHeader>رفع ملف Excel بأسماء الطلاب</DialogHeader>
+      <DialogHeader>
+        رفع ملف Excel بأسماء الطلاب
+        {currentSection && (
+          <span className="text-sm text-blue-700 mr-2">— القسم: {currentSection.name}</span>
+        )}
+      </DialogHeader>
       <DialogBody divider>
         <div className="flex flex-col gap-4">
           <Input
@@ -120,6 +145,9 @@ function ExcelUploadModal({ isOpen, onClose }: ExcelUploadModalProps) {
             accept=".xlsx, .xls"
             crossOrigin="anonymous"
           />
+          {currentSection && (
+            <Typography color="blue-gray" className="text-sm">سيتم رفع اللائحة للقسم: <strong>{currentSection.name}</strong>. تأكد أن اسم الملف يطابق اسم القسم تمامًا.</Typography>
+          )}
           {error && <Typography color="red">{error}</Typography>}
           {successMessage && <Typography color="green">{successMessage}</Typography>}
         </div>

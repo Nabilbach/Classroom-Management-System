@@ -2,7 +2,7 @@ import { Lesson } from '../contexts/CurriculumContext'; // Import Lesson interfa
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
-const LESSONS_ENDPOINT = `${API_BASE_URL}/lessons`;
+const LESSONS_ENDPOINT = `${API_BASE_URL}/api/lessons`;
 
 // Helper for handling responses
 const handleResponse = async <T>(response: Response): Promise<T> => {

@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const db = require('./models');
+const SequelizeLib = require('sequelize');
+const { Op } = require('sequelize');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -8,6 +10,10 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Routes
+const attendanceRoutes = require('./routes/attendance');
+app.use('/api/attendance', attendanceRoutes);
 
 // Helper function to get the current score for a student
 const getCurrentScore = async (studentId) => {
@@ -164,7 +170,30 @@ app.delete('/api/sections/:id', async (req, res) => {
       res.status(404).json({ message: 'Section not found' });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Error deleting section', error: error.message, stack: error.stack });
+    res.status(500).json({ message: 'Error updating section', error: error.message, stack: error.stack });
+  }
+});
+
+// Route to delete all sections
+app.delete('/api/sections/all', async (req, res) => {
+  try {
+    await db.Section.destroy({ truncate: true });
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting all sections:', error);
+    res.status(500).json({ message: 'Error deleting all sections', error: error.message, stack: error.stack });
+  }
+});
+
+// Delete all students in a specific section
+app.delete('/api/sections/:id/students', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await db.Student.destroy({ where: { sectionId: id } });
+    res.json({ message: `Deleted ${deleted} students from section ${id}`, deletedCount: deleted });
+  } catch (error) {
+    console.error('Error deleting students by section:', error);
+    res.status(500).json({ message: 'Error deleting students by section', error: error.message, stack: error.stack });
   }
 });
 
@@ -175,9 +204,24 @@ app.get('/api/students', async (req, res) => {
     const where = section_id ? { sectionId: section_id } : {};
     const students = await db.Student.findAll({ where });
 
-    const studentsWithScores = await Promise.all(students.map(async (student) => {
-      const score = await getCurrentScore(student.id);
-      return { ...student.toJSON(), score };
+    // Get all scores at once instead of individual queries
+    const studentIds = students.map(student => student.id);
+    const scores = await db.StudentAssessment.findAll({
+      where: { studentId: studentIds },
+      order: [['date', 'DESC']],
+      group: ['studentId']
+    });
+
+    const scoreMap = {};
+    scores.forEach(assessment => {
+      if (!scoreMap[assessment.studentId]) {
+        scoreMap[assessment.studentId] = assessment.new_score;
+      }
+    });
+
+    const studentsWithScores = students.map(student => ({
+      ...student.toJSON(),
+      score: scoreMap[student.id] || 0
     }));
 
     res.json(studentsWithScores);
@@ -205,34 +249,95 @@ app.get('/api/students/:id', async (req, res) => {
 
 app.post('/api/students', async (req, res) => {
   try {
-    const newStudent = await db.Student.create(req.body);
+    const s = req.body || {};
+    // Normalize payload keys to match model attributes (camelCase)
+    const firstNameRaw = s.firstName ?? s.first_name ?? s.first ?? '';
+    const lastNameRaw = s.lastName ?? s.last_name ?? s.last ?? '';
+    const pnRaw = s.pathwayNumber ?? s.pathway_number ?? s.trackNumber ?? '';
+    const bdRaw = s.birthDate ?? s.birth_date ?? s.dateOfBirth ?? null;
+    const coRaw = s.classOrder ?? s.class_order ?? null;
+    const genderRaw = s.gender ?? null;
+    const sectionIdRaw = s.sectionId ?? s.section_id ?? null;
+
+    const firstName = typeof firstNameRaw === 'string' ? firstNameRaw.trim() : firstNameRaw;
+    const lastName = typeof lastNameRaw === 'string' ? lastNameRaw.trim() : lastNameRaw;
+    const pathwayNumber = typeof pnRaw === 'string' ? pnRaw.trim() : pnRaw;
+    const birthDate = typeof bdRaw === 'string' ? bdRaw.trim() : bdRaw;
+    const classOrder = typeof coRaw === 'string' && /^\d+$/.test(coRaw) ? Number(coRaw) : coRaw;
+    const gender = typeof genderRaw === 'string' ? genderRaw.trim() : genderRaw;
+    const sectionId = sectionIdRaw != null ? String(sectionIdRaw) : null;
+
+    if (!firstName || !lastName) {
+      return res.status(400).json({ message: 'firstName and lastName are required.' });
+    }
+    const payload = { firstName, lastName, pathwayNumber, birthDate, classOrder, gender, sectionId };
+    const newStudent = await db.Student.create(payload);
     res.status(201).json(newStudent);
   } catch (error) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ message: 'Duplicate pathway number detected. Ensure pathwayNumber is unique or blank.', error: error.message, stack: error.stack });
+    }
+    const errMsg = `${error?.message || ''} ${error?.original?.message || ''}`;
+    if (error instanceof SequelizeLib.ForeignKeyConstraintError || error.name === 'SequelizeForeignKeyConstraintError' || /FOREIGN KEY constraint failed/i.test(errMsg)) {
+      return res.status(400).json({ message: 'Invalid sectionId. Please choose an existing section.', error: error.message, stack: error.stack });
+    }
     res.status(500).json({ message: 'Error creating student', error: error.message, stack: error.stack });
   }
 });
 
 app.post('/api/students/bulk', async (req, res) => {
-  const students = req.body;
-  if (!students || !Array.isArray(students)) {
+  const rawStudents = req.body;
+  if (!rawStudents || !Array.isArray(rawStudents)) {
     return res.status(400).json({ message: 'Invalid request body. Expected an array of students.' });
   }
 
   const transaction = await db.sequelize.transaction();
 
   try {
-    // Check for duplicate pathway numbers within the payload
-    const pathwayNumbers = students.map(s => s.pathway_number);
+    // Normalize incoming records to model attribute names (camelCase)
+    const students = rawStudents.map((s) => {
+      const sectionIdRaw = s.sectionId ?? s.section_id ?? null;
+      const sectionId = sectionIdRaw != null ? String(sectionIdRaw).trim() : null;
+
+      const firstNameRaw = s.firstName ?? s.first_name ?? s.first ?? '';
+      const lastNameRaw = s.lastName ?? s.last_name ?? s.last ?? '';
+      const pnRaw = s.pathwayNumber ?? s.pathway_number ?? s.trackNumber ?? '';
+      const bdRaw = s.birthDate ?? s.birth_date ?? s.dateOfBirth ?? '';
+
+      const firstName = typeof firstNameRaw === 'string' ? firstNameRaw.trim() : firstNameRaw;
+      const lastName = typeof lastNameRaw === 'string' ? lastNameRaw.trim() : lastNameRaw;
+      const pathwayNumber = typeof pnRaw === 'string' && pnRaw.trim().length > 0 ? pnRaw.trim() : null;
+      const birthDate = typeof bdRaw === 'string' && bdRaw.trim().length > 0 ? bdRaw.trim() : null;
+
+      const classOrderRaw = s.classOrder ?? s.class_order ?? null;
+      const classOrder = typeof classOrderRaw === 'string' && /^\d+$/.test(classOrderRaw) ? Number(classOrderRaw) : classOrderRaw;
+
+      const genderRaw = s.gender ?? null;
+      const gender = typeof genderRaw === 'string' ? genderRaw.trim() : genderRaw;
+
+      return { firstName, lastName, pathwayNumber, birthDate, gender, classOrder, sectionId };
+    });
+
+    // Validate required fields
+    const invalid = students.filter((s) => !s.firstName || !s.lastName);
+    if (invalid.length > 0) {
+      return res.status(400).json({ message: 'Missing required student fields (firstName, lastName) in one or more records.' });
+    }
+
+    // Check for duplicate pathway numbers within the payload (after normalization)
+  const pathwayNumbers = students.map((s) => s.pathwayNumber).filter(Boolean);
     const duplicatePathwayNumbers = pathwayNumbers.filter((item, index) => pathwayNumbers.indexOf(item) !== index);
     if (duplicatePathwayNumbers.length > 0) {
       return res.status(400).json({ message: `Duplicate pathway numbers found in the request: ${duplicatePathwayNumbers.join(', ')}` });
     }
 
     // Check for existing pathway numbers in the database
-    const existingStudents = await db.Student.findAll({ where: { pathway_number: pathwayNumbers } });
-    if (existingStudents.length > 0) {
-      const existingPathwayNumbers = existingStudents.map(s => s.pathway_number);
-      return res.status(400).json({ message: `The following pathway numbers already exist in the database: ${existingPathwayNumbers.join(', ')}` });
+    if (pathwayNumbers.length > 0) {
+      const existingStudents = await db.Student.findAll({ where: { pathwayNumber: { [Op.in]: pathwayNumbers } } });
+      if (existingStudents.length > 0) {
+        const existingPathwayNumbers = existingStudents.map((s) => s.pathwayNumber);
+        return res.status(400).json({ message: `The following pathway numbers already exist in the database: ${existingPathwayNumbers.join(', ')}` });
+      }
     }
 
     const newStudents = await db.Student.bulkCreate(students, { transaction });
@@ -241,6 +346,9 @@ app.post('/api/students/bulk', async (req, res) => {
   } catch (error) {
     await transaction.rollback();
     console.error('Error during bulk student creation:', error);
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ message: 'Duplicate pathway number detected. Ensure all pathway numbers are unique or blank.', error: error.message, stack: error.stack });
+    }
     if (error.name === 'SequelizeForeignKeyConstraintError') {
       return res.status(400).json({ message: 'One or more students refer to a non-existent section. Please ensure all section IDs are valid.', error: error.message, stack: error.stack });
     }
@@ -274,6 +382,89 @@ app.delete('/api/students/:id', async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ message: 'Error deleting student', error: error.message, stack: error.stack });
+  }
+});
+
+// Route to delete all students
+app.delete('/api/students/all', async (req, res) => {
+  try {
+    await db.Student.destroy({ truncate: true });
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting all students:', error);
+    res.status(500).json({ message: 'Error deleting all students', error: error.message, stack: error.stack });
+  }
+});
+
+// Route to reorder students
+app.patch('/api/students/reorder', async (req, res) => {
+  try {
+    const { orderedIds } = req.body;
+    
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({ message: 'orderedIds must be an array' });
+    }
+
+    // Update class order for each student
+    for (let i = 0; i < orderedIds.length; i++) {
+      await db.Student.update(
+        { classOrder: i + 1 },
+        { where: { id: orderedIds[i] } }
+      );
+    }
+
+    res.json({ message: 'Students reordered successfully' });
+  } catch (error) {
+    console.error('Error reordering students:', error);
+    res.status(500).json({ message: 'Error reordering students', error: error.message, stack: error.stack });
+  }
+});
+
+// Routes for Administrative Timetable Entries (Admin Schedule)
+app.get('/api/admin-schedule', async (req, res) => {
+  try {
+    const entries = await db.AdministrativeTimetableEntry.findAll();
+    res.json(entries);
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving admin schedule entries', error: error.message, stack: error.stack });
+  }
+});
+
+app.post('/api/admin-schedule', async (req, res) => {
+  try {
+    const newEntry = await db.AdministrativeTimetableEntry.create({ id: Date.now().toString(), ...req.body });
+    res.status(201).json(newEntry);
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating admin schedule entry', error: error.message, stack: error.stack });
+  }
+});
+
+app.put('/api/admin-schedule/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [updated] = await db.AdministrativeTimetableEntry.update(req.body, { where: { id } });
+    if (updated) {
+      const updatedEntry = await db.AdministrativeTimetableEntry.findByPk(id);
+      res.json(updatedEntry);
+    } else {
+      res.status(404).json({ message: 'Admin schedule entry not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating admin schedule entry', error: error.message, stack: error.stack });
+  }
+});
+
+app.delete('/api/admin-schedule/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await db.AdministrativeTimetableEntry.destroy({ where: { id } });
+    if (deleted) {
+      res.status(204).send();
+    } else {
+      res.status(404).json({ message: 'Admin schedule entry not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting admin schedule entry', error: error.message, stack: error.stack });
   }
 });
 
@@ -314,9 +505,101 @@ app.get('/api/students/:studentId/assessments', async (req, res) => {
   }
 });
 
+// Pre-migration cleanup for SQLite FK/type changes
+const preMigrateCleanup = async () => {
+  try {
+    // Disable FK checks during cleanup
+    await db.sequelize.query('PRAGMA foreign_keys=OFF;');
+
+    // Fetch existing section ids
+    const [sectionRows] = await db.sequelize.query('SELECT id FROM Sections;');
+    const validIds = Array.isArray(sectionRows) ? sectionRows.map(r => r.id) : [];
+
+    // If there are any valid ids, nullify any student.section_id not matching these
+    if (validIds.length > 0) {
+      // Build a parameterized IN clause
+      const placeholders = validIds.map(() => '?').join(',');
+      const sql = `UPDATE Students SET section_id = NULL WHERE section_id IS NOT NULL AND section_id NOT IN (${placeholders});`;
+      await db.sequelize.query(sql, { replacements: validIds });
+    }
+
+    // Re-enable FK checks
+    await db.sequelize.query('PRAGMA foreign_keys=ON;');
+  } catch (e) {
+    console.warn('preMigrateCleanup warning:', e?.message || e);
+  }
+};
+
+// Ensure proper unique constraint on Attendances: UNIQUE(studentId, date)
+// If an old schema enforced UNIQUE(date) only, rebuild the table safely.
+const ensureAttendanceIndexes = async () => {
+  try {
+    // List indexes on Attendances
+    const [indexes] = await db.sequelize.query("PRAGMA index_list('Attendances');");
+    let hasBadUniqueOnDate = false;
+    for (const idx of indexes) {
+      try {
+        const [cols] = await db.sequelize.query(`PRAGMA index_info('${idx.name}');`);
+        const colNames = cols.map(c => c.name);
+        if (idx.unique === 1 && colNames.length === 1 && colNames[0] === 'date') {
+          hasBadUniqueOnDate = true;
+          break;
+        }
+      } catch (e) {
+        console.warn('Index inspection warning:', idx?.name, e?.message || e);
+      }
+    }
+
+    if (hasBadUniqueOnDate) {
+      console.warn('Detected old UNIQUE(date) on Attendances. Rebuilding table with UNIQUE(studentId, date)...');
+      await db.sequelize.query('PRAGMA foreign_keys=OFF;');
+      await db.sequelize.transaction(async (t) => {
+        // Create new table with correct schema
+        await db.sequelize.query(`
+          CREATE TABLE IF NOT EXISTS "Attendances_new" (
+            "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+            "studentId" INTEGER NOT NULL REFERENCES "Students" ("id"),
+            "sectionId" VARCHAR(255) NOT NULL REFERENCES "Sections" ("id"),
+            "date" DATE NOT NULL,
+            "isPresent" TINYINT(1) NOT NULL DEFAULT 1,
+            "createdAt" DATETIME NOT NULL,
+            "updatedAt" DATETIME NOT NULL,
+            UNIQUE("studentId", "date")
+          );
+        `, { transaction: t });
+
+        // Copy data from old to new (will respect the new unique; duplicates by date only will be allowed if studentId differs)
+        await db.sequelize.query(`
+          INSERT OR IGNORE INTO "Attendances_new" (id, studentId, sectionId, date, isPresent, createdAt, updatedAt)
+          SELECT id, studentId, sectionId, date, isPresent, createdAt, updatedAt FROM "Attendances";
+        `, { transaction: t });
+
+        // Drop old table and rename new
+        await db.sequelize.query('DROP TABLE "Attendances";', { transaction: t });
+        await db.sequelize.query('ALTER TABLE "Attendances_new" RENAME TO "Attendances";', { transaction: t });
+        // Create composite unique index explicitly (optional as UNIQUE is declared)
+        await db.sequelize.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_attendance_student_date ON Attendances (studentId, date);', { transaction: t });
+      });
+      await db.sequelize.query('PRAGMA foreign_keys=ON;');
+    } else {
+      // Ensure composite index exists
+      await db.sequelize.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_attendance_student_date ON Attendances (studentId, date);');
+    }
+  } catch (e) {
+    console.warn('ensureAttendanceIndexes warning:', e?.message || e);
+  }
+};
+
 // Start the server
-db.sequelize.sync({ alter: true }).then(() => {
-  app.listen(PORT, () => {
-    console.log(`Backend server running on http://localhost:${PORT}`);
+preMigrateCleanup()
+  .then(() => db.sequelize.sync())
+  .then(() => ensureAttendanceIndexes())
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Backend server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('Failed to start backend after migration:', err);
+    process.exit(1);
   });
-});

@@ -1,34 +1,12 @@
-import React from 'react';
-import { Typography, Button, Select, Option } from "@material-tailwind/react";
-import { FaEdit, FaTrash, FaInfoCircle } from 'react-icons/fa';
+// No explicit React import needed with react-jsx runtime
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableStudentRow from './SortableStudentRow';
+import { StudentTableProps } from '../../types/student';
 
-interface Student {
-  id: string;
-  firstName: string;
-  lastName: string;
-  trackNumber: string;
-  sectionId: string;
-  gender: string;
-  dateOfBirth: string;
-  studentNumberInSection?: number;
-  badge: string;
-}
-
-interface StudentTableProps {
-  students: Student[];
-  onEdit: (student: Student) => void;
-  onDelete: (studentId: string) => void;
-  onDetail: (student: Student) => void;
-  onAssess: (student: Student) => void; // New prop
-  onBadgeChange: (studentId: string, newBadge: string) => void;
-}
-
-function StudentTable({ students, onEdit, onDelete, onDetail, onAssess, onBadgeChange }: StudentTableProps) {
+function StudentTable({ students, onEdit, onDelete, onDetail, onAssess, onUpdateNumber, isAttendanceMode, attendanceStatus, onToggleAttendance }: StudentTableProps) {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full table-auto border-collapse">
+    <div className="overflow-x-auto" style={{ paddingLeft: 0, paddingRight: 0 }}>
+      <table className="w-full table-auto border-collapse" style={{ margin: 0 }}>
         <thead>
           <tr className="bg-blue-gray-50/50">
             <th className="px-4 py-3 text-right text-blue-gray-900 font-semibold text-sm">ر.ت</th>
@@ -37,7 +15,7 @@ function StudentTable({ students, onEdit, onDelete, onDetail, onAssess, onBadgeC
             <th className="px-4 py-3 text-right text-blue-gray-900 font-semibold text-sm">الاسم</th>
             <th className="px-4 py-3 text-right text-blue-gray-900 font-semibold text-sm">النوع</th>
             <th className="px-4 py-3 text-right text-blue-gray-900 font-semibold text-sm">تاريخ الازدياد</th>
-            <th className="px-4 py-3 text-right text-blue-gray-900 font-semibold text-sm">الإجراءات</th>
+            <th className="px-4 py-3 text-right text-blue-gray-900 font-semibold text-sm">{isAttendanceMode ? 'الحضور' : 'الإجراءات'}</th>
           </tr>
         </thead>
         <tbody>
@@ -50,14 +28,17 @@ function StudentTable({ students, onEdit, onDelete, onDetail, onAssess, onBadgeC
                   onEdit={onEdit}
                   onDelete={onDelete}
                   onDetail={onDetail}
-                  onAssess={onAssess} // Pass prop
-                  onBadgeChange={onBadgeChange}
-                  rowIndex={index} // Pass index for R.T.
+                  onAssess={onAssess}
+                  onUpdateNumber={onUpdateNumber}
+                  rowIndex={index}
+                  isAttendanceMode={!!isAttendanceMode}
+                  attendanceStatus={attendanceStatus}
+                  onToggleAttendance={onToggleAttendance}
                 />
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="px-4 py-4 text-center text-blue-gray-500 text-sm"> {/* Adjusted colSpan */}
+                <td colSpan={7} className="px-4 py-4 text-center text-blue-gray-500 text-sm">
                   لا يوجد طلاب في هذا القسم أو لا توجد نتائج للبحث/التصفية.
                 </td>
               </tr>
