@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -19,10 +19,15 @@ import SectionProgress from './pages/SectionProgress'; // New import
 
 function App() {
   return (
-    <Router>
-      <div className="flex h-screen overflow-x-hidden" dir="rtl">
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
+      <div className="flex h-screen w-full overflow-x-hidden" dir="rtl">
         {/* Main content first, sidebar on the right */}
-        <div className="flex-1 flex flex-col min-h-0 min-w-0" style={{ marginRight: 260, width: 'calc(100% - 260px)' }}>
+        <div className="flex-1 flex flex-col min-h-0 min-w-0 w-full transition-all duration-300" style={{ marginRight: 'var(--sidebar-width, 260px)' }}>
           <Header />
           <MainContent>
             <LessonLogProvider>

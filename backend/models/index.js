@@ -6,6 +6,7 @@ const Student = require('./student');
 const StudentAssessment = require('./studentAssessment');
 const ScheduledLesson = require('./scheduledLesson');
 const AdministrativeTimetableEntry = require('./administrativeTimetableEntry');
+const AdminScheduleEntry = require('./adminScheduleEntry');
 const Attendance = require('./attendance');
 
 // Define associations
@@ -41,6 +42,7 @@ const db = {
   StudentAssessment,
   ScheduledLesson,
   AdministrativeTimetableEntry,
+  AdminScheduleEntry,
   Attendance,
 };
 

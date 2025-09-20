@@ -7,9 +7,11 @@ interface MainContentProps {
 
 function MainContent({ children }: MainContentProps) {
   return (
-    <main className="flex-1 min-h-0 pl-6 pr-0 bg-gray-100 flex flex-col" dir="rtl">
-      <Card className="p-6 shadow-md flex-1 min-h-0 overflow-y-auto">
-        {children}
+    <main className="flex-1 min-h-0 bg-gray-100 flex flex-col w-full" dir="rtl">
+      <Card className="shadow-md flex-1 min-h-0 overflow-y-auto w-full">
+        <div className="p-10 pr-10">
+          {children}
+        </div>
       </Card>
     </main>
   );

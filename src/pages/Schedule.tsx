@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, forwardRef, useCallback } from 'react';
 import {
   Typography,
@@ -391,7 +392,11 @@ function Schedule() {
       description: newEventDescription || undefined,
       color: newEventColor,
     };
-    setCalendarEvents(prev => [...prev, newEvent]);
+    setCalendarEvents(prev => {
+      const updated = [...prev, newEvent];
+      localStorage.setItem('calendarEvents', JSON.stringify(updated));
+      return updated;
+    });
     setIsAddEventModalOpen(false);
     // Reset form
     setNewEventTitle('');
@@ -405,7 +410,11 @@ function Schedule() {
   };
 
   const handleDeleteEvent = (eventId: string) => {
-    setCalendarEvents(prev => prev.filter(e => e.id !== eventId));
+    setCalendarEvents(prev => {
+      const updated = prev.filter(e => e.id !== eventId);
+      localStorage.setItem('calendarEvents', JSON.stringify(updated));
+      return updated;
+    });
     setIsEventDetailsModalOpen(false);
   };
 
@@ -482,7 +491,25 @@ function Schedule() {
     return calendarEvents.filter(event => isSameDay(parseISO(event.date), targetDate));
   };
 
+  // Get events for a specific date object
+  const getEventsForDate = (date: Date) => {
+    return calendarEvents.filter(event => isSameDay(parseISO(event.date), date));
+  };
+
   const currentWeekRange = `${format(currentWeekStart, 'dd MMMM yyyy')} - ${format(endOfWeek(currentWeekStart, { weekStartsOn: 1 }), 'dd MMMM yyyy')}`;
+
+  // Get dates for each day of the current week
+  const getWeekDates = useMemo(() => {
+    const weekDays = eachDayOfInterval({ 
+      start: currentWeekStart, 
+      end: endOfWeek(currentWeekStart, { weekStartsOn: 1 }) 
+    });
+    return DAYS.map((day, index) => ({
+      dayName: day,
+      date: weekDays[index],
+      formattedDate: format(weekDays[index], 'dd MMMM')
+    }));
+  }, [currentWeekStart]);
 
   return (
     <div className="p-4" dir="rtl">
@@ -528,18 +555,34 @@ function Schedule() {
           }}
         >
           <div className="p-2 font-bold text-center border-b border-r border-gray-300"></div>
-          {DAYS.map(day => (
-            <div key={day} className="p-2 font-bold text-center border-b border-gray-300">
-              {day}
-            </div>
-          ))}
+          {getWeekDates.map(({ dayName, formattedDate, date }) => {
+            const dayEvents = getEventsForDate(date);
+            return (
+              <div key={dayName} className="p-2 font-bold text-center border-b border-gray-300 space-y-1">
+                <div className="text-base">{dayName}</div>
+                <div className="text-xs text-gray-600">{formattedDate}</div>
+                
+                {/* Display Events */}
+                {dayEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    onClick={() => handleEventClick(event)}
+                    className="text-xs px-2 py-1 rounded cursor-pointer hover:opacity-80 text-white font-medium"
+                    style={{ backgroundColor: event.color || '#1976d2' }}
+                  >
+                    {event.title}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
 
           {TIME_SLOTS.map(timeSlot => (
             <React.Fragment key={timeSlot}>
               <div className="p-2 font-bold text-center border-r border-gray-300 whitespace-nowrap">
                 {formatTimeRange(timeSlot, 1)}
               </div>
-              {DAYS.map(day => {
+              {DAYS.map((day, dayIndex) => {
                 const sessionsAtThisSlot = weeklyScheduleTemplate.filter(
                   s => s.day === day && s.startTime === timeSlot
                 );
@@ -555,23 +598,28 @@ function Schedule() {
                 return (
                   <div
                     key={`${day}-${timeSlot}`}
-                    className={`p-2 border border-gray-200 flex items-center justify-center relative cursor-pointer ${
+                    className={`p-2 border border-gray-200 flex flex-col relative cursor-pointer ${
                       hasSession ? '' : 'bg-gray-100 hover:bg-gray-200'
                     }`}
                     style={{ gridRow: `span ${rowSpan}` }}
                     onClick={() => handleCellClick(day, timeSlot)}
                   >
+                    {/* Sessions */}
                     {hasSession ? (
-                      sessionsAtThisSlot.map(session => (
-                        <div
-                          key={session.id}
-                          className={`w-full p-1 rounded ${getSessionColorClass(session.sectionId)}`}
-                        >
-                          {getSessionDisplay(session)}
-                        </div>
-                      ))
+                      <div className="flex-1">
+                        {sessionsAtThisSlot.map(session => (
+                          <div
+                            key={session.id}
+                            className={`w-full p-1 rounded mb-1 ${getSessionColorClass(session.sectionId)}`}
+                          >
+                            {getSessionDisplay(session)}
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                      <Typography variant="body2" color="textSecondary">+</Typography>
+                      <div className="flex-1 flex items-center justify-center">
+                        <Typography variant="body2" color="textSecondary">+</Typography>
+                      </div>
                     )}
                   </div>
                 );

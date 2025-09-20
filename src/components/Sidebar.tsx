@@ -1,169 +1,224 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Box, Button, Typography } from '@mui/material';
-import { FaHome, FaUsers, FaThLarge, FaCalendarAlt, FaChartBar, FaChartLine, FaCog } from 'react-icons/fa';
+import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Box, Button, Typography, IconButton, Tooltip } from '@mui/material';
+import { FaHome, FaUsers, FaThLarge, FaCalendarAlt, FaChartBar, FaChartLine, FaCog, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 function Sidebar() {
+  const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
+
+  const toggleCollapse = () => {
+    setCollapsed(!collapsed);
+  };
+
+  const isActive = (path: string) => location.pathname === path;
+
+  const menuItems = [
+    { path: '/', icon: FaHome, label: 'لوحة القيادة' },
+    { path: '/student-management', icon: FaUsers, label: 'إدارة التلاميذ' },
+    { path: '/section-management', icon: FaThLarge, label: 'إدارة الأقسام' },
+    { path: '/schedule', icon: FaCalendarAlt, label: 'الجدول الزمني' },
+    { path: '/learning-progress', icon: FaChartBar, label: 'إدارة التعلم' },
+    { path: '/statistics-and-reports', icon: FaChartLine, label: 'الإحصائيات والتقارير' },
+    { path: '/settings', icon: FaCog, label: 'الإعدادات' },
+  ];
+
   return (
     <Box
       sx={{
-        width: { xs: 220, sm: 240, md: 260 },
-        minWidth: 200,
-        maxWidth: 300,
+        width: collapsed ? 80 : { xs: 220, sm: 240, md: 260 },
+        minWidth: collapsed ? 80 : 200,
+        maxWidth: collapsed ? 80 : 300,
         height: '100vh',
         position: 'fixed',
         right: 0,
         top: 0,
-        backgroundColor: '#1976d2',
+        background: 'linear-gradient(135deg, #1a237e 0%, #283593 50%, #3949ab 100%)',
         color: 'white',
-        p: 3,
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'flex-end',
-        boxShadow: '-2px 0 6px rgba(0,0,0,0.2)',
+        boxShadow: '-4px 0 20px rgba(0,0,0,0.3)',
         direction: 'rtl',
-        fontFamily: 'Arial, sans-serif',
+        fontFamily: 'Cairo, Arial, sans-serif',
         overflowY: 'auto',
-        zIndex: 100,
+        overflowX: 'hidden',
+        zIndex: 1000,
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        '&::-webkit-scrollbar': {
+          width: 6,
+        },
+        '&::-webkit-scrollbar-track': {
+          background: 'rgba(255,255,255,0.1)',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          background: 'rgba(255,255,255,0.3)',
+          borderRadius: 3,
+        },
       }}
     >
-      {/* عنوان التطبيق */}
-      <Typography
-        variant="h6"
-        sx={{
-          fontWeight: 'bold',
-          color: 'white',
-          mb: 4,
-          textAlign: 'center',
-          width: '100%',
-        }}
-      >
-        نظام إدارة الصف
-      </Typography>
+      {/* Header with collapse button */}
+      <Box sx={{ 
+        p: collapsed ? 1 : 3, 
+        borderBottom: '1px solid rgba(255,255,255,0.1)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: collapsed ? 'center' : 'space-between',
+        flexDirection: 'row-reverse', // RTL for header
+      }}>
+        <IconButton
+          onClick={toggleCollapse}
+          sx={{
+            color: 'white',
+            backgroundColor: 'rgba(255,255,255,0.1)',
+            '&:hover': {
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              transform: 'scale(1.1)',
+            },
+            transition: 'all 0.2s',
+            mr: collapsed ? 0 : 1,
+          }}
+        >
+          {collapsed ? <FaChevronLeft /> : <FaChevronRight />}
+        </IconButton>
 
-      {/* القائمة */}
-  <Box component="nav" sx={{ mt: 2, width: '100%' }}>
-        <Link to="/" style={{ textDecoration: 'none' }}>
-          <Button
-            fullWidth
+        {!collapsed && (
+          <Typography
+            variant="h6"
             sx={{
-              justifyContent: 'flex-end',
-              color: 'white',
-              py: 1.2,
-              fontSize: '1rem',
-              borderRadius: 1,
-              mb: 1,
-              ':hover': { bgcolor: 'rgba(255,255,255,0.2)' },
-            }}
-          >
-            <FaHome style={{ color: 'white', marginRight: '8px' }} /> لوحة القيادة
-          </Button>
-        </Link>
-
-        <Link to="/student-management" style={{ textDecoration: 'none' }}>
-          <Button
-            fullWidth
-            sx={{
-              justifyContent: 'flex-end',
-              color: 'white',
-              py: 1.2,
-              fontSize: '1rem',
-              borderRadius: 1,
-              mb: 1,
-              ':hover': { bgcolor: 'rgba(255,255,255,0.2)' },
-            }}
-          >
-            <FaUsers style={{ color: 'white', marginRight: '8px' }} /> إدارة التلاميذ
-          </Button>
-        </Link>
-
-        <Link to="/section-management" style={{ textDecoration: 'none' }}>
-          <Button
-            fullWidth
-            sx={{
-              justifyContent: 'flex-end',
-              color: 'white',
-              py: 1.2,
-              fontSize: '1rem',
-              borderRadius: 1,
-              mb: 1,
-              ':hover': { bgcolor: 'rgba(255,255,255,0.2)' },
-            }}
-          >
-            <FaThLarge style={{ color: 'white', marginRight: '8px' }} /> إدارة الأقسام
-          </Button>
-        </Link>
-
-        <Link to="/schedule" style={{ textDecoration: 'none' }}>
-          <Button
-            fullWidth
-            sx={{
-              justifyContent: 'flex-end',
-              color: 'white',
-              py: 1.2,
-              fontSize: '1rem',
-              borderRadius: 1,
-              mb: 1,
-              ':hover': { bgcolor: 'rgba(255,255,255,0.2)' },
-            }}
-          >
-            <FaCalendarAlt style={{ color: 'white', marginLeft: '8px' }} /> الجدول الزمني
-          </Button>
-        </Link>
-
-        <Link to="/learning-progress" style={{ textDecoration: 'none' }}>
-          <Button
-            fullWidth
-            sx={{
-              justifyContent: 'flex-end',
-              color: '#fff',
-              py: 1.2,
-              fontSize: '1rem',
               fontWeight: 'bold',
-              bgcolor: '#d32f2f',
-              borderRadius: 1,
-              mb: 1,
-              ':hover': { bgcolor: '#b71c1c' },
-            }}
-          >
-            <FaChartBar style={{ color: 'white', marginLeft: '8px' }} /> التقدم والتعلم
-          </Button>
-        </Link>
-
-        <Link to="/statistics-and-reports" style={{ textDecoration: 'none' }}>
-          <Button
-            fullWidth
-            sx={{
-              justifyContent: 'flex-end',
               color: 'white',
-              py: 1.2,
-              fontSize: '1rem',
-              borderRadius: 1,
-              mb: 1,
-              ':hover': { bgcolor: 'rgba(255,255,255,0.2)' },
+              textAlign: 'right',
+              fontSize: '1.1rem',
+              fontFamily: 'Cairo, Arial, sans-serif',
+              flex: 1,
             }}
           >
-            <FaChartLine style={{ color: 'white', marginLeft: '8px' }} /> الإحصائيات والتقارير
-          </Button>
-        </Link>
-
-        <Link to="/settings" style={{ textDecoration: 'none' }}>
-          <Button
-            fullWidth
-            sx={{
-              justifyContent: 'flex-end',
-              color: 'white',
-              py: 1.2,
-              fontSize: '1rem',
-              borderRadius: 1,
-              mb: 1,
-              ':hover': { bgcolor: 'rgba(255,255,255,0.2)' },
-            }}
-          >
-            <FaCog style={{ color: 'white', marginLeft: '8px' }} /> الإعدادات
-          </Button>
-        </Link>
+            نظام إدارة الصف
+          </Typography>
+        )}
       </Box>
+
+      {/* Navigation Menu */}
+      <Box component="nav" sx={{ 
+        mt: 2, 
+        width: '100%', 
+        px: collapsed ? 0.5 : 2,
+        flex: 1,
+      }}>
+        {menuItems.map((item) => {
+          const IconComponent = item.icon;
+          const active = isActive(item.path);
+          
+          return (
+            <Tooltip 
+              key={item.path}
+              title={collapsed ? item.label : ''}
+              placement="left"
+              arrow
+            >
+              <Link to={item.path} style={{ textDecoration: 'none' }}>
+                <Button
+                  fullWidth
+                  sx={{
+                    justifyContent: collapsed ? 'center' : 'flex-start', // Changed to flex-start for RTL
+                    color: active ? '#fff' : 'rgba(255,255,255,0.9)',
+                    py: 1.5,
+                    px: collapsed ? 1 : 2,
+                    fontSize: collapsed ? 0 : '0.95rem',
+                    fontWeight: active ? 'bold' : 'normal',
+                    borderRadius: 2,
+                    mb: 1,
+                    minHeight: 48,
+                    background: active 
+                      ? 'linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%)'
+                      : item.highlight 
+                        ? 'linear-gradient(90deg, #d32f2f 0%, #f44336 100%)'
+                        : 'transparent',
+                    border: active ? '1px solid rgba(255,255,255,0.3)' : '1px solid transparent',
+                    transform: active ? 'translateX(2px)' : 'translateX(0)', // Changed direction for RTL
+                    boxShadow: active 
+                      ? '0 4px 12px rgba(0,0,0,0.2)' 
+                      : item.highlight 
+                        ? '0 2px 8px rgba(211,47,47,0.3)'
+                        : 'none',
+                    '&:hover': {
+                      bgcolor: active 
+                        ? 'rgba(255,255,255,0.25)' 
+                        : item.highlight 
+                          ? '#b71c1c'
+                          : 'rgba(255,255,255,0.15)',
+                      transform: 'translateX(4px) scale(1.02)', // Changed direction for RTL
+                      boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
+                    },
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      right: active ? 0 : -100,
+                      width: 4,
+                      height: '100%',
+                      backgroundColor: '#fff',
+                      transition: 'right 0.3s ease',
+                    }
+                  }}
+                >
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: collapsed ? 0 : 1.5, // مسافة مناسبة بين العناصر
+                    width: '100%',
+                    justifyContent: collapsed ? 'center' : 'flex-end', // تغيير إلى flex-start لإزالة المسافة الكبيرة
+                    flexDirection: 'row-reverse', // استخدام row-reverse لترتيب RTL صحيح
+                  }}>
+                    {!collapsed && (  
+                      <Typography
+                        sx={{
+                          fontFamily: 'Cairo, Arial, sans-serif',
+                          fontSize: '0.95rem',
+                          fontWeight: active ? 'bold' : 'normal',
+                          textShadow: active ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
+                          textAlign: 'right',
+                        }}
+                      >
+                        {item.label}
+                      </Typography>
+                    )}
+                    <IconComponent 
+                      size={collapsed ? 20 : 18}
+                      style={{ 
+                        color: active ? '#fff' : 'rgba(255,255,255,0.9)',
+                        filter: active ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' : 'none',
+                      }} 
+                    />
+                  </Box>
+                </Button>
+              </Link>
+            </Tooltip>
+          );
+        })}
+      </Box>
+
+      {/* Footer */}
+      {!collapsed && (
+        <Box sx={{ 
+          p: 2, 
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          textAlign: 'center'
+        }}>
+          <Typography 
+            variant="caption" 
+            sx={{ 
+              color: 'rgba(255,255,255,0.7)',
+              fontFamily: 'Cairo, Arial, sans-serif'
+            }}
+          >
+            الإصدار 1.0.0
+          </Typography>
+        </Box>
+      )}
     </Box>
   );
 }

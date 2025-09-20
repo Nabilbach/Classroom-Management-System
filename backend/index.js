@@ -421,52 +421,8 @@ app.patch('/api/students/reorder', async (req, res) => {
 });
 
 // Routes for Administrative Timetable Entries (Admin Schedule)
-app.get('/api/admin-schedule', async (req, res) => {
-  try {
-    const entries = await db.AdministrativeTimetableEntry.findAll();
-    res.json(entries);
-  } catch (error) {
-    res.status(500).json({ message: 'Error retrieving admin schedule entries', error: error.message, stack: error.stack });
-  }
-});
-
-app.post('/api/admin-schedule', async (req, res) => {
-  try {
-    const newEntry = await db.AdministrativeTimetableEntry.create({ id: Date.now().toString(), ...req.body });
-    res.status(201).json(newEntry);
-  } catch (error) {
-    res.status(500).json({ message: 'Error creating admin schedule entry', error: error.message, stack: error.stack });
-  }
-});
-
-app.put('/api/admin-schedule/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const [updated] = await db.AdministrativeTimetableEntry.update(req.body, { where: { id } });
-    if (updated) {
-      const updatedEntry = await db.AdministrativeTimetableEntry.findByPk(id);
-      res.json(updatedEntry);
-    } else {
-      res.status(404).json({ message: 'Admin schedule entry not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating admin schedule entry', error: error.message, stack: error.stack });
-  }
-});
-
-app.delete('/api/admin-schedule/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deleted = await db.AdministrativeTimetableEntry.destroy({ where: { id } });
-    if (deleted) {
-      res.status(204).send();
-    } else {
-      res.status(404).json({ message: 'Admin schedule entry not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Error deleting admin schedule entry', error: error.message, stack: error.stack });
-  }
-});
+const adminScheduleRoutes = require('./routes/adminSchedule');
+app.use('/api/admin-schedule', adminScheduleRoutes);
 
 // Routes for Student Assessments
 app.post('/api/students/:studentId/assessment', async (req, res) => {
