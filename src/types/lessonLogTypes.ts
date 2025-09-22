@@ -1,4 +1,4 @@
-/ New status system
+// New status system
 export type LessonStatus = 'planned' | 'in-progress' | 'completed';
 
 // Stage inside a lesson/template

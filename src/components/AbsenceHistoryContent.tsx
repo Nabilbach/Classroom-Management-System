@@ -24,7 +24,6 @@ import {
 } from '@mui/material';
 import { Print as PrintIcon } from '@mui/icons-material';
 import { useSections } from '../contexts/SectionsContext';
-import { useReactToPrint } from 'react-to-print';
 
 interface AttendanceRecord {
   id: number;
@@ -129,77 +128,80 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     }
   };
 
-  // Print handling via react-to-print
+  // Print handling via window.print
   const printRef = useRef<HTMLDivElement>(null);
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: `سجل-الحضور-والغياب-${selectedSection?.name ?? 'قسم'}-${selectedDate}`,
-    pageStyle: `
-      @page { 
-        size: A4; 
-        margin: 15mm 10mm; 
-      }
-      @media print {
-        body { 
-          -webkit-print-color-adjust: exact; 
-          print-color-adjust: exact; 
-          font-family: 'Arial', sans-serif;
-          direction: rtl;
-          text-align: right;
-        }
-        .no-print { display: none !important; }
-        .print-container { 
-          width: 100%; 
-          max-width: none;
-          margin: 0;
-          padding: 0;
-        }
-        table { 
-          border-collapse: collapse; 
-          width: 100%; 
-          margin-bottom: 20px;
-          page-break-inside: avoid;
-        }
-        th, td { 
-          border: 1px solid #000; 
-          padding: 8px 4px; 
-          font-size: 11px;
-          text-align: center;
-          vertical-align: middle;
-        }
-        thead th { 
-          background: #f0f0f0 !important; 
-          font-weight: bold;
-          page-break-inside: avoid;
-          page-break-after: avoid;
-        }
-        tbody tr {
-          page-break-inside: avoid;
-        }
-        h1, h2, h3, h4, h5, h6 { 
-          margin: 0 0 10px 0; 
-          page-break-after: avoid;
-        }
-        .section-title {
-          font-size: 14px;
-          font-weight: bold;
-          margin: 15px 0 8px 0;
-          page-break-after: avoid;
-        }
-        .header-title {
-          font-size: 18px;
-          font-weight: bold;
-          text-align: center;
-          margin-bottom: 5px;
-        }
-        .header-subtitle {
-          font-size: 14px;
-          text-align: center;
-          margin-bottom: 20px;
-        }
-      }
-    `,
-  } as any);
+
+  const triggerPrint = () => {
+    // Alternative print method using window.print
+    const printContent = printRef.current;
+    if (!printContent) return;
+
+    const documentTitle = `سجل الحضور والغياب-${selectedSection?.name || 'قسم غير محدد'}-${selectedDate}`;
+    
+    const printWindow = window.open('', '', 'width=800,height=600');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${documentTitle}</title>
+          <style>
+            @page { 
+              size: A4 portrait; 
+              margin: 15mm 10mm; 
+            }
+            body { 
+              font-family: Arial, sans-serif;
+              direction: rtl;
+              margin: 0;
+              padding: 20px;
+            }
+            table { 
+              border-collapse: collapse; 
+              width: 100%; 
+              margin-bottom: 15px;
+            }
+            th, td { 
+              border: 1px solid #000; 
+              padding: 5px; 
+              font-size: 10px;
+              text-align: center;
+            }
+            th { 
+              background: #f0f0f0; 
+              font-weight: bold;
+            }
+            .header-title {
+              font-size: 16px;
+              font-weight: bold;
+              text-align: center;
+              margin-bottom: 10px;
+            }
+            .section-title {
+              font-size: 12px;
+              font-weight: bold;
+              margin: 10px 0 5px 0;
+              text-align: right;
+            }
+            .name-cell {
+              text-align: right !important;
+            }
+          </style>
+        </head>
+        <body>
+          ${printContent.innerHTML}
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  };
 
   const handleDeleteDay = async () => {
     if (!selectedSectionId || !selectedDate) return;
@@ -390,35 +392,24 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
         </Box>
       </CardContent>
 
-      {/* Hidden print-only content: includes both tables without actions */}
-      <Box 
+      {/* Hidden print-only content */}
+      <div 
         ref={printRef} 
-        className="print-container" 
-        sx={{ 
-          display: 'none', 
-          p: 2,
-          direction: 'rtl',
-          '@media print': { 
-            display: 'block',
-            p: 0,
-            m: 0,
-            width: '100%'
-          } 
-        }}
+        style={{ display: 'none' }}
       >
         <div className="header-title">سجل الحضور والغياب</div>
-        <div className="header-subtitle">
+        <div style={{ textAlign: 'center', marginBottom: '20px', fontSize: '12px' }}>
           {selectedSection?.name || 'قسم غير محدد'} - {selectedDate}
         </div>
 
-        <div style={{ marginBottom: '25px' }}>
+        <div style={{ marginBottom: '20px' }}>
           <div className="section-title">الحاضرون ({presentSorted.length})</div>
-          <table style={{ width: '100%', marginBottom: '15px' }}>
+          <table>
             <thead>
               <tr>
-                <th style={{ width: '8%' }}>ر.ت</th>
+                <th style={{ width: '10%' }}>ر.ت</th>
                 <th style={{ width: '50%' }}>الاسم الكامل</th>
-                <th style={{ width: '22%' }}>عدد الغيابات</th>
+                <th style={{ width: '20%' }}>عدد الغيابات</th>
                 <th style={{ width: '20%' }}>الحالة</th>
               </tr>
             </thead>
@@ -426,7 +417,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
               {presentSorted.map((r, idx) => (
                 <tr key={`p-${r.id}`}>
                   <td>{r.student?.classOrder ?? (idx + 1)}</td>
-                  <td style={{ textAlign: 'right', paddingRight: '8px' }}>
+                  <td className="name-cell">
                     {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
                   </td>
                   <td>{r.absences ?? 0}</td>
@@ -444,12 +435,12 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
 
         <div>
           <div className="section-title">الغائبون ({absentSorted.length})</div>
-          <table style={{ width: '100%' }}>
+          <table>
             <thead>
               <tr>
-                <th style={{ width: '8%' }}>ر.ت</th>
+                <th style={{ width: '10%' }}>ر.ت</th>
                 <th style={{ width: '50%' }}>الاسم الكامل</th>
-                <th style={{ width: '22%' }}>عدد الغيابات</th>
+                <th style={{ width: '20%' }}>عدد الغيابات</th>
                 <th style={{ width: '20%' }}>الحالة</th>
               </tr>
             </thead>
@@ -457,7 +448,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
               {absentSorted.map((r, idx) => (
                 <tr key={`a-${r.id}`}>
                   <td>{r.student?.classOrder ?? (idx + 1)}</td>
-                  <td style={{ textAlign: 'right', paddingRight: '8px' }}>
+                  <td className="name-cell">
                     {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
                   </td>
                   <td>{r.absences ?? 0}</td>
@@ -472,7 +463,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
             </tbody>
           </table>
         </div>
-      </Box>
+      </div>
 
       {/* Sticky Action Bar */}
       <Box className="no-print" sx={{ position: 'sticky', bottom: 0, left: 0, right: 0, bgcolor: 'grey.100', borderTop: '1px solid #e0e0e0', py: 2, px: 3, display: 'flex', justifyContent: 'center', gap: 2, zIndex: 10 }}>
@@ -487,7 +478,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
         <Button
           variant="contained"
           startIcon={<PrintIcon />}
-          onClick={handlePrint}
+          onClick={triggerPrint}
           sx={{ minWidth: 100 }}
         >
           طباعة
