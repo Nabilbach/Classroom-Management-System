@@ -8,6 +8,7 @@ const ScheduledLesson = require('./scheduledLesson');
 const AdministrativeTimetableEntry = require('./administrativeTimetableEntry');
 const AdminScheduleEntry = require('./adminScheduleEntry');
 const Attendance = require('./attendance');
+const TextbookEntry = require('./textbookEntry');
 
 // Define associations
 Section.hasMany(Lesson, { foreignKey: 'sectionId' });
@@ -44,6 +45,7 @@ const db = {
   AdministrativeTimetableEntry,
   AdminScheduleEntry,
   Attendance,
+  TextbookEntry,
 };
 
 module.exports = db;

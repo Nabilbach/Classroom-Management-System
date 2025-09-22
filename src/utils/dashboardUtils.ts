@@ -1,6 +1,6 @@
-import { ScheduledLesson } from '../services/api/curriculumService';
+import { ScheduledLesson } from '../types/lessonLogTypes';
 import { Section } from '../contexts/SectionsContext';
-import { differenceInDays, isAfter, subDays, startOfWeek, endOfWeek, format, addWeeks, isBefore, isSameWeek } from 'date-fns';
+import { differenceInDays, isAfter, subDays, endOfWeek, addWeeks, isBefore } from 'date-fns';
 
 // 1. DATA INTERFACES as specified
 export interface SectionPerformanceData {
@@ -35,15 +35,15 @@ export interface WeeklyTrendData {
  * Determines the status of a single scheduled lesson based on its stages.
  */
 const getScheduledLessonStatus = (lesson: ScheduledLesson): 'completed' | 'in-progress' | 'planned' => {
-        const stages = lesson.LessonTemplate?.stages || [];
+    const stages = lesson.stages || [];
     if (!stages || stages.length === 0) {
         return 'planned';
     }
-    const completedCount = stages.filter(s => s.isCompleted).length;
+    const completedCount = stages.filter((s: any) => s.isCompleted).length;
     if (completedCount === 0) {
         return 'planned';
     }
-    if (completedCount === lesson.stages.length) {
+    if (completedCount === stages.length) {
         return 'completed';
     }
     return 'in-progress';
@@ -66,8 +66,7 @@ const calculateWeeklyTrends = (scheduledLessons: ScheduledLesson[], allSections:
     const today = new Date();
 
     for (let i = numWeeks - 1; i >= 0; i--) { // Iterate backwards from the most recent week
-        const weekStartDate = startOfWeek(subDays(today, i * 7), { weekStartsOn: 0 }); // Assuming week starts on Sunday
-        const weekEndDate = endOfWeek(subDays(today, i * 7), { weekStartsOn: 0 });
+    const weekEndDate = endOfWeek(subDays(today, i * 7), { weekStartsOn: 0 });
         const weekLabel = `الأسبوع ${numWeeks - i}`; // e.g., الأسبوع 1, الأسبوع 2
 
         const weekData: WeeklyTrendData = { weekLabel };
@@ -83,9 +82,9 @@ const calculateWeeklyTrends = (scheduledLessons: ScheduledLesson[], allSections:
             // Lessons completed up to the end of this week
             const completedLessonsUpToWeek = sectionLessons.filter(l => {
                 const lessonStatus = getScheduledLessonStatus(l);
-                if (lessonStatus === 'completed' && l.LessonTemplate.stages) {
-                    const completedStage = l.LessonTemplate?.stages?.find(s => s.isCompleted);
-                    const completionDate = completedStage ? completedStage.completionDate : undefined;
+                if (lessonStatus === 'completed' && l.stages) {
+                    const completedStage = (l.stages || []).find((s: any) => s.isCompleted);
+                    const completionDate = completedStage ? (completedStage as any).completionDate : undefined;
                     return completionDate && isBefore(new Date(completionDate), addWeeks(weekEndDate, 1));
                 }
                 return false;
@@ -119,7 +118,7 @@ export const processDashboardData = (scheduledLessons: ScheduledLesson[], sectio
             performanceData.push({
                 sectionId: section.id,
                 sectionName: section.name,
-                sectionColor: section.color || '#8884d8',
+                sectionColor: (section as any).color || '#8884d8',
                 overallProgress: 0,
                 status: 'on-track', // Or some other default
                 completedLessons: 0,
@@ -144,8 +143,8 @@ export const processDashboardData = (scheduledLessons: ScheduledLesson[], sectio
         const sevenDaysAgo = subDays(today, 7);
         const lessonsCompletedLast7Days = relevantLessons.filter(l => {
             const status = getScheduledLessonStatus(l);
-            const completedStage = l.LessonTemplate?.stages?.find(s => s.isCompleted);
-            const completionDate = completedStage ? completedStage.completionDate : undefined;
+            const completedStage = (l.stages || []).find((s: any) => s.isCompleted);
+            const completionDate = completedStage ? (completedStage as any).completionDate : undefined;
             return status === 'completed' && completionDate && isAfter(new Date(completionDate), sevenDaysAgo);
         }).length;
         const weeklyTrend = totalLessons > 0 ? Math.round((lessonsCompletedLast7Days / totalLessons) * 100) : 0;
@@ -153,12 +152,12 @@ export const processDashboardData = (scheduledLessons: ScheduledLesson[], sectio
         // Check for alerts (e.g., planned lessons with a date in the past)
         const alerts = relevantLessons
             .filter(l => getScheduledLessonStatus(l) === 'planned' && differenceInDays(today, new Date(l.date)) > 3)
-            .map(l => `تأخر في "${l.LessonTemplate.title}"`);
+            .map(l => `تأخر في "${l.customTitle || l.subject || l.id}"`);
 
         performanceData.push({
             sectionId: section.id,
             sectionName: section.name,
-            sectionColor: section.color || '#8884d8',
+            sectionColor: (section as any).color || '#8884d8',
             overallProgress,
             status: getPerformanceStatus(overallProgress),
             completedLessons,

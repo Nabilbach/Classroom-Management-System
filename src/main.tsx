@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
+import './tajawal-font.css'; // خط Tajawal المُطبق بقوة
 import { GradeProvider } from './contexts/GradeContext';
 import { AttendanceProvider } from './contexts/AttendanceContext';
 import { SectionProvider } from './contexts/SectionsContext';

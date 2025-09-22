@@ -3,7 +3,7 @@ import { createTheme } from '@mui/material/styles';
 const muiTheme = createTheme({
   direction: 'rtl',
   typography: {
-    fontFamily: '"Tajawal", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Tajawal", "Cairo", "Roboto", "Helvetica", "Arial", sans-serif',
   },
   palette: {
     primary: {

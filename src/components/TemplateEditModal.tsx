@@ -3,8 +3,8 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Typography, IconButton, Box, MenuItem, Select, InputLabel, FormControl, Stack, Paper, Grid, DialogContentText
 } from '@mui/material';
 import { Delete as DeleteIcon, Add as AddIcon, Warning as WarningIcon } from '@mui/icons-material';
-import { LessonTemplate, LessonStage } from '../services/api/curriculumService';
-import { useCurriculum } from '../contexts/CurriculumContext';
+import { LessonTemplate, updateLessonTemplate, addLessonTemplate, deleteLessonTemplate } from '../services/api/lessonTemplateService';
+import type { LessonStage } from '../types/lessonLogTypes';
 
 interface TemplateEditModalProps {
   isOpen: boolean;
@@ -13,7 +13,6 @@ interface TemplateEditModalProps {
 }
 
 const TemplateEditModal: React.FC<TemplateEditModalProps> = ({ isOpen, onClose, template }) => {
-  const { addTemplate, updateLessonTemplate, deleteLessonTemplate } = useCurriculum();
   const [editedTemplate, setEditedTemplate] = useState<LessonTemplate | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
@@ -55,7 +54,16 @@ const TemplateEditModal: React.FC<TemplateEditModalProps> = ({ isOpen, onClose, 
   const handleAddStage = () => {
     setEditedTemplate(prev => {
       if (!prev) return null;
-      return { ...prev, stages: [...prev.stages, { id: Date.now().toString(), title: '', isCompleted: false }] };
+      return { 
+        ...prev, 
+        stages: [...prev.stages, { 
+          id: Date.now().toString(), 
+          title: '', 
+          isCompleted: false,
+          isCore: true, // المراحل في القالب تكون رئيسية افتراضياً
+          templateStageId: Date.now().toString() // معرف فريد للمرحلة في القالب
+        }] 
+      };
     });
   };
 
@@ -74,7 +82,7 @@ const TemplateEditModal: React.FC<TemplateEditModalProps> = ({ isOpen, onClose, 
           await updateLessonTemplate(editedTemplate.id, editedTemplate);
         } else {
           const { id, ...templateToAdd } = editedTemplate;
-          await addTemplate(templateToAdd as Omit<LessonTemplate, 'id'>);
+          await addLessonTemplate(templateToAdd as Omit<LessonTemplate, 'id'>);
         }
         onClose();
       } catch (error) {
@@ -86,7 +94,7 @@ const TemplateEditModal: React.FC<TemplateEditModalProps> = ({ isOpen, onClose, 
   const handleDelete = async () => {
     if (editedTemplate?.id) {
       try {
-        await deleteLessonTemplate(editedTemplate.id);
+  await deleteLessonTemplate(editedTemplate.id);
         setDeleteConfirmOpen(false);
         onClose();
       } catch (error) {
@@ -180,10 +188,33 @@ const TemplateEditModal: React.FC<TemplateEditModalProps> = ({ isOpen, onClose, 
             </Paper>
 
             <Paper elevation={2} sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>مراحل الدرس</Typography>
+              <Typography variant="h6" gutterBottom>المراحل الرئيسية للدرس</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                هذه المراحل ستُنسخ إلى جميع الحصص المجدولة من هذا القالب وتُعتبر أساسية لاكتمال الدرس
+              </Typography>
               <Stack spacing={2}>
                 {editedTemplate.stages.map((stage, index) => (
-                  <Paper key={stage.id} variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Paper key={stage.id} variant="outlined" sx={{ 
+                    p: 2, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 2,
+                    bgcolor: 'primary.50',
+                    borderColor: 'primary.200'
+                  }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="caption" sx={{
+                        bgcolor: 'primary.main',
+                        color: 'white',
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: '4px',
+                        fontWeight: 'bold',
+                        fontSize: '0.7rem'
+                      }}>
+                        رئيسية
+                      </Typography>
+                    </Box>
                     <TextField
                       label={`المرحلة ${index + 1}`}
                       value={stage.title}
@@ -192,15 +223,15 @@ const TemplateEditModal: React.FC<TemplateEditModalProps> = ({ isOpen, onClose, 
                       variant="standard"
                     />
                     <FormControl sx={{ minWidth: 120 }}>
-                      <InputLabel>الحالة</InputLabel>
+                      <InputLabel>الحالة الافتراضية</InputLabel>
                       <Select
                         value={stage.isCompleted ? 'true' : 'false'}
-                        label="الحالة"
+                        label="الحالة الافتراضية"
                         onChange={(e) => handleStageChange(index, 'isCompleted', e.target.value === 'true')}
                         variant="standard"
                       >
-                        <MenuItem value="true">مكتملة</MenuItem>
                         <MenuItem value="false">غير مكتملة</MenuItem>
+                        <MenuItem value="true">مكتملة مسبقاً</MenuItem>
                       </Select>
                     </FormControl>
                     <IconButton onClick={() => handleRemoveStage(index)} color="error">
@@ -209,8 +240,8 @@ const TemplateEditModal: React.FC<TemplateEditModalProps> = ({ isOpen, onClose, 
                   </Paper>
                 ))}
               </Stack>
-              <Button onClick={handleAddStage} startIcon={<AddIcon />} variant="text" sx={{ mt: 2 }}>
-                إضافة مرحلة
+              <Button onClick={handleAddStage} startIcon={<AddIcon />} variant="outlined" sx={{ mt: 2 }}>
+                إضافة مرحلة رئيسية
               </Button>
             </Paper>
           </Stack>

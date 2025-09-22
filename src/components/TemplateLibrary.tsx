@@ -1,17 +1,19 @@
-import React, { useState, useMemo } from 'react';
-import { useCurriculum } from '../contexts/CurriculumContext';
-import { LessonTemplate } from '../services/api/curriculumService';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { LessonTemplate, fetchLessonTemplates, addLessonTemplate, deleteLessonTemplate, deleteTemplatesByCourse } from '../services/api/lessonTemplateService';
 import { Box, Paper, Typography, TextField, InputAdornment, Accordion, AccordionSummary, AccordionDetails, List, ListItem, ListItemText, FormControl, InputLabel, Select, MenuItem, IconButton, Button } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ClearIcon from '@mui/icons-material/Clear';
 import DeleteIcon from '@mui/icons-material/Delete';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import * as XLSX from 'xlsx';
 
 import TemplateEditModal from './TemplateEditModal';
 
 const TemplateItem = ({ template, onDoubleClick, onDelete }: { template: LessonTemplate, onDoubleClick: (template: LessonTemplate) => void, onDelete: (templateId: string) => void }) => {
   const handleDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.setData('application/json', JSON.stringify({ templateId: template.id, type: 'template' }));
+    // Include full template payload to avoid lookups elsewhere
+    e.dataTransfer.setData('application/json', JSON.stringify({ type: 'template', template }));
   };
 
   return (
@@ -53,7 +55,23 @@ const TemplateItem = ({ template, onDoubleClick, onDelete }: { template: LessonT
 type TemplateTree = { [subject: string]: { [level: string]: { [week: string]: LessonTemplate[] } } };
 
 const TemplateLibrary = () => {
-  const { templates, isLoading, removeTemplate, removeTemplatesByCourse, addTemplate, refetchTemplates } = useCurriculum();
+  const [templates, setTemplates] = useState<LessonTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const load = async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchLessonTemplates();
+      setTemplates(data || []);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
   const [searchTerm, setSearchTerm] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({ 'subject-Islamic Education': true });
@@ -73,7 +91,8 @@ const TemplateLibrary = () => {
   const handleDeleteTemplate = async (templateId: string) => {
     if (window.confirm('هل أنت متأكد من حذف هذا القالب؟')) {
       try {
-        await removeTemplate(templateId);
+        await deleteLessonTemplate(templateId);
+        await load();
       } catch (error) {
         console.error('Failed to delete template:', error);
         alert('فشل في حذف القالب');
@@ -84,11 +103,74 @@ const TemplateLibrary = () => {
   const handleDeleteByCourse = async (courseName: string) => {
     if (window.confirm(`هل أنت متأكد من حذف جميع القوالب للمقرر "${courseName}"؟ لا يمكن التراجع عن هذا الإجراء.`)) {
       try {
-        await removeTemplatesByCourse(courseName);
+        await deleteTemplatesByCourse(courseName);
+        await load();
       } catch (error) {
         console.error(`Failed to delete templates for course ${courseName}:`, error);
         alert(`فشل في حذف قوالب المقرر "${courseName}".`);
       }
+    }
+  };
+
+  const handleImportClick = () => fileInputRef.current?.click();
+
+  const parseRowToTemplate = (row: any): Omit<LessonTemplate, 'id'> | null => {
+    // Support Arabic/English headers
+    const get = (keys: string[]) => keys.map(k => row[k]).find(v => v !== undefined && v !== null && v !== '');
+    const title = get(['العنوان', 'عنوان الدرس', 'title', 'lessonTitle']);
+    const courseName = get(['المادة', 'المقرر', 'course', 'subject', 'courseName']) || 'التربية الإسلامية';
+    const level = get(['المستوى', 'level']) || '';
+    const weekNumberRaw = get(['الأسبوع', 'week', 'weekNumber']);
+    const estimatedSessionsRaw = get(['عدد الحصص', 'estimatedSessions', 'sessions']);
+    const description = get(['الوصف', 'description', 'details']) || '';
+    const stagesRaw = get(['المراحل', 'stages', 'الأهداف', 'objectives']);
+    if (!title) return null;
+
+    const estimatedSessions = Number(estimatedSessionsRaw) > 0 ? Number(estimatedSessionsRaw) : 1;
+    const weekNumber = weekNumberRaw ? Number(weekNumberRaw) : undefined;
+
+    const stages = typeof stagesRaw === 'string'
+      ? stagesRaw
+          .split(/\r?\n|،|,|;/)
+          .map((s: string) => s.trim())
+          .filter(Boolean)
+          .map((s: string, i: number) => ({ id: `st-${i}-${Date.now()}`, title: s, isCompleted: false }))
+      : [];
+
+    return {
+      title: String(title),
+      description: String(description),
+      estimatedSessions,
+      stages,
+      courseName: String(courseName),
+      level: String(level),
+      weekNumber,
+      scheduledSections: [],
+    };
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data, { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      const parsed = rows.map(parseRowToTemplate).filter((t): t is Omit<LessonTemplate, 'id'> => t !== null);
+      let added = 0;
+      for (const tpl of parsed) {
+        await addLessonTemplate(tpl);
+        added++;
+      }
+      await load();
+      alert(`تم استيراد ${added} قالب بنجاح.`);
+    } catch (err) {
+      console.error('فشل استيراد ملف إكسيل:', err);
+      alert('فشل في قراءة ملف الإكسيل. تأكد من الصيغة والعناوين.');
+    } finally {
+      // reset input to allow re-upload same file
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -156,6 +238,12 @@ const TemplateLibrary = () => {
         <Typography variant="caption" sx={{ display: 'block', mb: 1 }}>
           مجموع القوالب: {templates.length}
         </Typography>
+        <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleFileChange} style={{ display: 'none' }} />
+        <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+          <Button size="small" variant="outlined" startIcon={<UploadFileIcon />} onClick={handleImportClick}>
+            استيراد من Excel
+          </Button>
+        </Box>
 
         <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <TextField

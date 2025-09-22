@@ -32,11 +32,19 @@ const ScheduledLesson = sequelize.define('ScheduledLesson', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
+  subject: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   stages: {
     type: DataTypes.JSON,
     allowNull: true,
   },
   estimatedSessions: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  manualSessionNumber: {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
@@ -56,6 +64,11 @@ const ScheduledLesson = sequelize.define('ScheduledLesson', {
   notes: {
     type: DataTypes.TEXT,
     allowNull: true,
+  },
+  progress: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0,
   }
 }, {
   timestamps: true

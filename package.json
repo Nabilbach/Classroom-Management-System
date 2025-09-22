@@ -18,9 +18,12 @@
     "@material-tailwind/react": "2.1.4",
     "@mui/icons-material": "^5.18.0",
     "@mui/material": "^5.18.0",
+    "@mui/x-date-pickers": "^7.22.2",
     "@types/react-datepicker": "^6.2.0",
     "apexcharts": "3.44.0",
     "date-fns": "^4.1.0",
+    "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.525.0",
     "notistack": "^3.0.2",
     "prop-types": "15.8.1",
@@ -35,6 +38,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/luxon": "^3.7.1",
     "@types/react": "18.2.31",
     "@types/react-dom": "18.2.14",
     "@vitejs/plugin-react": "4.1.0",

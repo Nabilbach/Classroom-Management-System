@@ -19,6 +19,7 @@ function Sidebar() {
     { path: '/section-management', icon: FaThLarge, label: 'إدارة الأقسام' },
     { path: '/schedule', icon: FaCalendarAlt, label: 'الجدول الزمني' },
     { path: '/learning-progress', icon: FaChartBar, label: 'إدارة التعلم' },
+    { path: '/textbook', icon: FaChartLine, label: 'دفتر النصوص' },
     { path: '/statistics-and-reports', icon: FaChartLine, label: 'الإحصائيات والتقارير' },
     { path: '/settings', icon: FaCog, label: 'الإعدادات' },
   ];
@@ -39,7 +40,7 @@ function Sidebar() {
         flexDirection: 'column',
         boxShadow: '-4px 0 20px rgba(0,0,0,0.3)',
         direction: 'rtl',
-        fontFamily: 'Cairo, Arial, sans-serif',
+        fontFamily: 'Tajawal, Cairo, Arial, sans-serif',
         overflowY: 'auto',
         overflowX: 'hidden',
         zIndex: 1000,
@@ -89,7 +90,7 @@ function Sidebar() {
               color: 'white',
               textAlign: 'right',
               fontSize: '1.1rem',
-              fontFamily: 'Cairo, Arial, sans-serif',
+              fontFamily: 'Tajawal, Cairo, Arial, sans-serif',
               flex: 1,
             }}
           >
@@ -176,7 +177,7 @@ function Sidebar() {
                     {!collapsed && (  
                       <Typography
                         sx={{
-                          fontFamily: 'Cairo, Arial, sans-serif',
+                          fontFamily: 'Tajawal, Cairo, Arial, sans-serif',
                           fontSize: '0.95rem',
                           fontWeight: active ? 'bold' : 'normal',
                           textShadow: active ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
@@ -212,7 +213,7 @@ function Sidebar() {
             variant="caption" 
             sx={{ 
               color: 'rgba(255,255,255,0.7)',
-              fontFamily: 'Cairo, Arial, sans-serif'
+              fontFamily: 'Tajawal, Cairo, Arial, sans-serif'
             }}
           >
             الإصدار 1.0.0

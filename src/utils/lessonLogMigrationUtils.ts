@@ -1,20 +1,15 @@
-import { LessonLog, AdaptedLesson, LessonStatus } from '../types/lessonLogTypes';
-import { ScheduledLesson } from '../services/api/curriculumService';
-import { DateTime } from 'luxon';
+import { AdaptedLesson, LessonStatus, ScheduledLesson } from '../types/lessonLogTypes';
 
 const calculateInitialStatus = (lesson: { date: string }): LessonStatus => {
-  if (!lesson || !lesson.date) {
-    return 'planned';
-  }
-  const lessonDate = DateTime.fromISO(lesson.date);
-  const now = DateTime.now();
+  if (!lesson || !lesson.date) return 'planned';
+  const lessonDate = new Date(lesson.date);
+  const now = new Date();
 
-  if (lessonDate.startOf('day') > now.startOf('day')) {
-    return 'planned';
-  }
-  if (lessonDate.hasSame(now, 'day')) {
-    return 'in-progress';
-  }
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const l = startOfDay(lessonDate).getTime();
+  const n = startOfDay(now).getTime();
+  if (l > n) return 'planned';
+  if (l === n) return 'in-progress';
   return 'completed';
 };
 
@@ -39,22 +34,47 @@ export const migrateLessonToAdapted = (scheduledLesson: ScheduledLesson): Adapte
   const status: LessonStatus = firstSectionId ? scheduledLesson.completionStatus[firstSectionId] : calculateInitialStatus(scheduledLesson);
   const progress = calculateInitialProgress(status);
 
-  return {
-    id: scheduledLesson.id, // Use string ID directly
+  // Parse notes from the stored text format back to array format
+  const parseNotesFromText = (notesText?: string): Array<{ text: string; timestamp: string }> => {
+    if (!notesText) return [];
+    
+    console.log('🔍 [Migration] Parsing notes from text:', notesText);
+    
+    // Split by lines and parse each line that matches the format [timestamp] text
+    const parsedNotes = notesText.split('\n')
+      .filter(line => line.trim())
+      .map(line => {
+        const match = line.match(/^\[(.+?)\] (.+)$/);
+        if (match) {
+          return {
+            timestamp: new Date(match[1]).toISOString(),
+            text: match[2]
+          };
+        }
+        // Fallback for notes without timestamp format
+        return {
+          timestamp: new Date().toISOString(),
+          text: line.trim()
+        };
+      });
+    
+    console.log('✅ [Migration] Parsed notes:', parsedNotes);
+    return parsedNotes;
+  };
+
+  const adapted: AdaptedLesson = {
+    id: scheduledLesson.id,
     date: scheduledLesson.date,
-    subject: scheduledLesson.LessonTemplate?.courseName || 'N/A', // Get subject from template
-    section: scheduledLesson.assignedSections.join(', '), // Join assigned sections for display
-    lessonTitle: scheduledLesson.customTitle || scheduledLesson.LessonTemplate?.title || 'Untitled Lesson',
+    subject: scheduledLesson.subject || 'N/A',
+    lessonTitle: scheduledLesson.customTitle || 'Untitled Lesson',
     stages: scheduledLesson.stages || [],
-    activitiesAndTools: '', // Not directly available in ScheduledLesson
-    teacherNotes: scheduledLesson.customDescription || '', // Using customDescription as notes
-    attachments: [], // Not directly available in ScheduledLesson
     status,
     progress,
-    executionNotes: scheduledLesson.customDescription || '',
-    lastUpdated: new Date(),
-    updatedBy: 'system',
-    estimatedSessions: scheduledLesson.estimatedSessions || 0, // Get estimatedSessions
-    lessonGroupId: scheduledLesson.lessonGroupId, // Transfer lessonGroupId
+    estimatedSessions: scheduledLesson.estimatedSessions || 0,
+    manualSessionNumber: scheduledLesson.manualSessionNumber,
+    lessonGroupId: scheduledLesson.lessonGroupId,
+    notes: parseNotesFromText(scheduledLesson.notes), // Add notes parsing
   };
+
+  return adapted;
 };

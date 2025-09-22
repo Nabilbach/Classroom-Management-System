@@ -45,19 +45,19 @@ const AbsentStudentsModal: React.FC<AbsentStudentsModalProps> = ({ isOpen, onClo
 
   return (
     <Dialog open={isOpen} onClose={onClose} maxWidth="md" fullWidth dir="rtl">
-      <DialogTitle>
+      <DialogTitle sx={{ fontWeight: 'bold' }}>
         قائمة الغائبين ({absentStudents.length}) - {sectionName} - {new Date().toLocaleDateString('ar-EG')}
       </DialogTitle>
       <DialogContent dividers>
         <div id="printable-absent-list">
-          <Typography variant="h6" align="center" gutterBottom>
+          <Typography variant="h6" align="center" gutterBottom sx={{ fontWeight: 'bold' }}>
             قائمة الغائبين لقسم {sectionName} - تاريخ: {new Date().toLocaleDateString('ar-EG')}
           </Typography>
           <table style={{ width: '100%', textAlign: 'right', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={{ padding: '8px', border: '1px solid #ddd', backgroundColor: '#f2f2f2' }}>رقم الطالب في القسم</th>
-                <th style={{ padding: '8px', border: '1px solid #ddd', backgroundColor: '#f2f2f2' }}>الاسم الكامل</th>
+                <th style={{ padding: '8px', border: '1px solid #ddd', backgroundColor: '#f2f2f2', fontWeight: 'bold' }}>رقم الطالب في القسم</th>
+                <th style={{ padding: '8px', border: '1px solid #ddd', backgroundColor: '#f2f2f2', fontWeight: 'bold' }}>الاسم الكامل</th>
               </tr>
             </thead>
             <tbody>
@@ -123,6 +123,109 @@ function StudentManagement() {
 
   // Absence History Modal State
   const [showAbsenceHistoryModal, setShowAbsenceHistoryModal] = useState(false);
+
+  // --- Schedule Alert State ---
+  interface AdminScheduleEntry {
+    id: string;
+    day: string; // Arabic weekday like "الإثنين"
+    startTime: string; // HH:MM
+    duration: number; // hours
+    sectionId?: string | null;
+    subject?: string | null;
+  }
+  const [adminSchedule, setAdminSchedule] = useState<AdminScheduleEntry[]>([]);
+  const [nowTick, setNowTick] = useState<number>(Date.now());
+
+  // Fetch admin schedule once
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const resp = await fetch('http://localhost:3000/api/admin-schedule');
+        if (!resp.ok) throw new Error('failed');
+        const data = await resp.json();
+        setAdminSchedule(Array.isArray(data) ? data : (data.value || []));
+      } catch (e) {
+        console.warn('Failed to load admin schedule', e);
+        setAdminSchedule([]);
+      }
+    };
+    load();
+  }, []);
+
+  // Tick every 30s to refresh countdowns
+  useEffect(() => {
+    const t = setInterval(() => setNowTick(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, []);
+
+  const weekdayArabic = useMemo(() => {
+    const daysAr = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+    const d = new Date(nowTick);
+    return daysAr[d.getDay()];
+  }, [nowTick]);
+
+  const parseHM = (hm: string): { h: number; m: number; total: number } | null => {
+    if (!hm) return null;
+    const [hh, mm] = hm.split(':').map((v) => parseInt(v, 10));
+    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+    return { h: hh, m: mm, total: hh * 60 + mm };
+  };
+
+  const pad2 = (n: number) => String(n).padStart(2, '0');
+  const addMinutes = (startTotal: number, mins: number) => {
+    let t = startTotal + mins;
+    t = ((t % (24 * 60)) + (24 * 60)) % (24 * 60);
+    const h = Math.floor(t / 60), m = t % 60;
+    return { total: t, label: `${pad2(h)}:${pad2(m)}` };
+  };
+  const niceRemaining = (mins: number) => {
+    if (mins <= 0) return 'انتهت';
+    if (mins < 60) return `${mins} دقيقة`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m ? `${h} ساعة و ${m} دقيقة` : `${h} ساعة`;
+  };
+
+  const todayScheduleSorted = useMemo(() => {
+    const today = adminSchedule.filter(e => e.day === weekdayArabic && e.sectionId);
+    return today
+      .map(e => ({ ...e, start: parseHM(e.startTime)?.total ?? 0, end: addMinutes(parseHM(e.startTime)?.total ?? 0, Math.round((e.duration || 1) * 60)).total }))
+      .sort((a, b) => a.start - b.start);
+  }, [adminSchedule, weekdayArabic]);
+
+  const scheduleBanner = useMemo(() => {
+    if (!todayScheduleSorted.length) {
+      return { mode: 'none' as 'none' | 'active' | 'idle', text: 'لا توجد حصص متبقية اليوم', color: '#9e9e9e' };
+    }
+    const now = new Date(nowTick);
+    const minutesNow = now.getHours() * 60 + now.getMinutes();
+    const active = todayScheduleSorted.find(e => minutesNow >= e.start && minutesNow < e.end);
+    const next = todayScheduleSorted.find(e => e.start > minutesNow);
+
+    if (active) {
+      const rem = active.end - minutesNow;
+      const secName = sections.find(s => String(s.id) === String(active.sectionId))?.name || String(active.sectionId);
+      const nextName = next ? (sections.find(s => String(s.id) === String(next.sectionId))?.name || String(next.sectionId)) : '—';
+      return {
+        mode: 'active' as const,
+        text: `أنت الآن في حصة مع قسم: ${secName} · بقي على إنتهاء الحصة: ${niceRemaining(rem)} · القسم التالي: ${nextName}`,
+        color: '#ef4444', // red-500
+      };
+    }
+
+    if (!next) {
+      return { mode: 'none' as const, text: 'لا توجد حصص متبقية اليوم', color: '#9e9e9e' };
+    }
+
+    const secName = sections.find(s => String(s.id) === String(next.sectionId))?.name || String(next.sectionId);
+    const startLabel = `${pad2(Math.floor(next.start / 60))}:${pad2(next.start % 60)}`;
+    const endLabel = `${pad2(Math.floor(next.end / 60))}:${pad2(next.end % 60)}`;
+    return {
+      mode: 'idle' as const,
+      text: `الحصة القادمة: ${secName} · ${startLabel}-${endLabel}`,
+      color: '#3b82f6', // blue-500
+    };
+  }, [todayScheduleSorted, nowTick, sections]);
 
   useEffect(() => {
     if (sections.length > 0 && !currentSection) {
@@ -395,7 +498,7 @@ function StudentManagement() {
   <div dir="rtl" style={{ paddingTop: 0, background: '#f8f9fa' }}>
   {/* Sticky action bar */}
       <div className="flex flex-wrap justify-between items-center mb-2 sticky top-0 z-20 bg-white shadow-sm py-1 px-2" style={{ borderBottom: '1px solid #eee', marginRight: 0 }}>
-        <Typography variant="h4" color="blue-gray">إدارة الطلاب</Typography>
+        <Typography variant="h4" color="blue-gray" sx={{ fontWeight: 'bold' }}>إدارة الطلاب</Typography>
         <div className="flex flex-wrap gap-2 overflow-x-auto" style={{ maxWidth: '100%' }}>
           <Button onClick={() => setIsFilterDrawerOpen(true)} variant="outlined" color="primary">الفلاتر</Button>
           {!isAttendanceMode ? (
@@ -412,7 +515,7 @@ function StudentManagement() {
               <Button onClick={() => setIsExcelUploadModalOpen(true)} variant="outlined" color="primary">
                 رفع Excel
               </Button>
-              <Button onClick={handleDeleteAllStudents} color="error" variant="outlined">
+              <Button onClick={handleDeleteAllStudents} color="error" variant="outlined" sx={{ fontWeight: 'bold' }}>
                 حذف جميع الطلاب
               </Button>
             </>
@@ -444,29 +547,46 @@ function StudentManagement() {
 
       {/* Statistic Cards */}
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 mt-2">
-                <Card className="bg-blue-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">متوسط الدرجات</Typography><ChartBarIcon className="h-5 w-5 text-blue-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold">{averageScore.toFixed(1)}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">من 20 نقطة</Typography></CardContent></Card>
-                <Card className="bg-green-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">المتفوقون</Typography><UserGroupIcon className="h-5 w-5 text-green-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold">{topStudents}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">18+ نقطة</Typography></CardContent></Card>
-                <Card className="bg-yellow-50 p-4 border border-yellow-200"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">يحتاج متابعة</Typography><ExclamationCircleIcon className="h-5 w-5 text-yellow-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold">{needsAttention}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">أقل من 10 نقاط</Typography></CardContent></Card>
-                <Card className="bg-indigo-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">تقييمات هذا الأسبوع</Typography><CalendarDaysIcon className="h-5 w-5 text-indigo-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold">{weeklyAssessments}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">طالب تم تقييمه</Typography></CardContent></Card>
+                <Card className="bg-blue-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">متوسط الدرجات</Typography><ChartBarIcon className="h-5 w-5 text-blue-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{averageScore.toFixed(1)}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">من 20 نقطة</Typography></CardContent></Card>
+                <Card className="bg-green-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">المتفوقون</Typography><UserGroupIcon className="h-5 w-5 text-green-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{topStudents}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">18+ نقطة</Typography></CardContent></Card>
+                <Card className="bg-yellow-50 p-4 border border-yellow-200"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">يحتاج متابعة</Typography><ExclamationCircleIcon className="h-5 w-5 text-yellow-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{needsAttention}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">أقل من 10 نقاط</Typography></CardContent></Card>
+                <Card className="bg-indigo-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">تقييمات هذا الأسبوع</Typography><CalendarDaysIcon className="h-5 w-5 text-indigo-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{weeklyAssessments}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">طالب تم تقييمه</Typography></CardContent></Card>
       </div>
 
   {/* Sticky section chips bar */}
   <div className="flex gap-2 mb-4 overflow-x-auto pb-2 sticky top-[56px] z-10 bg-white border-b border-gray-100 chips-scrollbar w-full" style={{ minHeight: '48px' }}>
-        <Button variant={!currentSection ? "contained" : "outlined"} onClick={() => setCurrentSection(null)} className="flex-shrink-0">
+        <Button variant={!currentSection ? "contained" : "outlined"} onClick={() => setCurrentSection(null)} className="flex-shrink-0" sx={{ fontWeight: 'bold' }}>
           جميع التلاميذ
         </Button>
         {sections.map((section) => (
-          <Button key={section.id} variant={currentSection?.id === section.id ? "contained" : "outlined"} onClick={() => setCurrentSection(section)} className="flex-shrink-0">
+          <Button key={section.id} variant={currentSection?.id === section.id ? "contained" : "outlined"} onClick={() => setCurrentSection(section)} className="flex-shrink-0" sx={{ fontWeight: 'bold' }}>
             {section.name}
           </Button>
         ))}
+      </div>
+
+      {/* Schedule Alert Banner under tabs */}
+      <div className="w-full mb-3 px-2">
+        <div className="flex items-center gap-3 rounded-md border border-gray-200 bg-white px-3 py-2 shadow-sm" dir="rtl">
+          <div className="relative h-3 w-3">
+            {scheduleBanner.mode === 'active' ? (
+              <>
+                <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full opacity-75" style={{ backgroundColor: scheduleBanner.color }}></span>
+                <span className="relative inline-flex rounded-full h-3 w-3" style={{ backgroundColor: scheduleBanner.color }}></span>
+              </>
+            ) : (
+              <span className="relative inline-flex rounded-full h-3 w-3" style={{ backgroundColor: scheduleBanner.color }}></span>
+            )}
+          </div>
+          <Typography variant="body1" sx={{ fontWeight: 600 }}>{scheduleBanner.text}</Typography>
+        </div>
       </div>
 
       <div className="min-h-[500px] w-full overflow-fix">
         {sections.length > 0 ? (
           <Card className="p-4 w-full responsive-container">
             <div className="flex justify-between items-center mb-4">
-              <Typography variant="h5" color="blue-gray">
+              <Typography variant="h5" color="blue-gray" sx={{ fontWeight: 'bold' }}>
                 {currentSection ? `طلاب قسم ${currentSection.name}` : 'جميع التلاميذ'} ({finalFilteredStudents.length} طالب)
               </Typography>
             </div>
@@ -474,8 +594,8 @@ function StudentManagement() {
             {/* Filter controls moved to FilterDrawer */}
 
             <div className="flex justify-end gap-2 mb-4">
-              <Button variant={viewMode === 'table' ? "contained" : "outlined"} onClick={() => setViewMode('table')} size="small">عرض الجدول</Button>
-              <Button variant={viewMode === 'card' ? "contained" : "outlined"} onClick={() => setViewMode('card')} size="small">عرض البطاقات</Button>
+              <Button variant={viewMode === 'table' ? "contained" : "outlined"} onClick={() => setViewMode('table')} size="small" sx={{ fontWeight: 'bold' }}>عرض الجدول</Button>
+              <Button variant={viewMode === 'card' ? "contained" : "outlined"} onClick={() => setViewMode('card')} size="small" sx={{ fontWeight: 'bold' }}>عرض البطاقات</Button>
             </div>
 
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -551,10 +671,10 @@ function StudentManagement() {
       </Dialog>
 
       <Dialog open={isConfirmModalOpen} onClose={handleConfirmModalClose} maxWidth="xs" fullWidth>
-        <DialogTitle>تأكيد الإجراء</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 'bold' }}>تأكيد الإجراء</DialogTitle>
         <DialogContent dividers><Typography>{confirmModalMessage}</Typography></DialogContent>
         <DialogActions>
-          <Button variant="text" color="error" onClick={handleConfirmAction} sx={{ ml: 2 }}>تأكيد</Button>
+          <Button variant="text" color="error" onClick={handleConfirmAction} sx={{ ml: 2, fontWeight: 'bold' }}>تأكيد</Button>
           <Button variant="text" color="inherit" onClick={handleConfirmModalClose}>إلغاء</Button>
         </DialogActions>
       </Dialog>

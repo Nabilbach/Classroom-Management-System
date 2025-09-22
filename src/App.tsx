@@ -15,7 +15,8 @@ import Schedule from './pages/Schedule';
 import StatisticsAndReports from './pages/StatisticsAndReports';
 import Settings from './pages/Settings';
 import AssessmentSettings from './pages/AssessmentSettings';
-import SectionProgress from './pages/SectionProgress'; // New import
+import SectionProgress from './pages/SectionProgress';
+import TextbookPage from './pages/TextbookPageSimple';
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
                 <Route path="/section-management" element={<SectionManagement />} />
                 <Route path="/learning-management" element={<LessonLog />} />
                 <Route path="/schedule" element={<Schedule />} />
+                <Route path="/textbook" element={<TextbookPage />} />
                 <Route path="/statistics-and-reports" element={<StatisticsAndReports />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/assessment-settings" element={<AssessmentSettings />} />

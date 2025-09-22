@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { fetchLessons, createLesson, updateLesson, deleteLesson as deleteLessonAPI } from '../services/api/curriculumService';
 
 /**
@@ -86,9 +86,9 @@ export const CurriculumProvider = ({ children }: CurriculumProviderProps) => {
       setIsLoading(true);
       try {
         const data = await fetchLessons();
-        const transformedData = data.map(lesson => ({
+        const transformedData = data.map((lesson: any) => ({
           ...lesson,
-          stages: lesson.stages ? lesson.stages.map(stage => {
+          stages: lesson.stages ? lesson.stages.map((stage: any) => {
             if (typeof stage === 'object' && stage !== null && 'id' in stage && 'title' in stage && 'isCompleted' in stage) {
               return stage; // Already in LessonStage format
             } else if (typeof stage === 'object' && stage !== null && 'title' in stage) {
@@ -115,7 +115,7 @@ export const CurriculumProvider = ({ children }: CurriculumProviderProps) => {
    * @param {Omit<Lesson, 'id'>} lesson - The lesson data to add.
    * @description Adds a new lesson to the curriculum via API and updates the state.
    */
-  const addLesson = async (lesson: Omit<Lesson, 'id'>) => {
+  const addLesson = async (lesson: Omit<Lesson, 'id'>): Promise<Lesson> => {
     setIsLoading(true);
     try {
       const newLesson = await createLesson(lesson);
@@ -124,8 +124,10 @@ export const CurriculumProvider = ({ children }: CurriculumProviderProps) => {
       }
       setLessons((prevLessons) => [...prevLessons, newLesson]);
       console.log("Lesson added successfully:", newLesson);
+      return newLesson;
     } catch (error) {
       console.error("Failed to add lesson:", error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -137,7 +139,7 @@ export const CurriculumProvider = ({ children }: CurriculumProviderProps) => {
    * @param {Partial<Lesson>} updatedData - The updated lesson data.
    * @description Edits an existing lesson via API and updates the state.
    */
-  const editLesson = async (id: string, updatedData: Partial<Lesson>) => {
+  const editLesson = async (id: string, updatedData: Partial<Lesson>): Promise<Lesson> => {
     setIsLoading(true);
     try {
       const updatedLesson = await updateLesson(id, updatedData);
@@ -147,8 +149,10 @@ export const CurriculumProvider = ({ children }: CurriculumProviderProps) => {
         )
       );
       console.log("Lesson updated successfully:", updatedLesson);
+      return updatedLesson;
     } catch (error) {
       console.error("Failed to edit lesson:", error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -179,7 +183,7 @@ export const CurriculumProvider = ({ children }: CurriculumProviderProps) => {
    */
   const reorderLessons = async (orderedLessonIds: string[]) => {
     // Optimistic update
-    const originalLessons = [...lessons];
+  // const originalLessons = [...lessons];
     setLessons(prevLessons => {
       const lessonMap = new Map(prevLessons.map(lesson => [lesson.id, lesson]));
       return orderedLessonIds.map(id => lessonMap.get(id)).filter((lesson): lesson is Lesson => lesson !== undefined);

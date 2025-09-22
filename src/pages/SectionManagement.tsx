@@ -23,7 +23,7 @@ const StatCard: React.FC<StatCardProps> = ({ icon, title, value, color }) => (
         </div>
         <div>
           <Typography variant="small" className="text-blue-gray-500 font-semibold">{title}</Typography>
-          <Typography variant="h4" color="blue-gray">{value}</Typography>
+          <Typography variant="h4" color="blue-gray" sx={{ fontWeight: 'bold' }}>{value}</Typography>
         </div>
       </div>
     </CardContent>
@@ -290,7 +290,7 @@ function SectionManagement() {
   return (
   <div dir="rtl" className="pl-4 pr-0 font-cairo w-full min-w-0">
       <div className="flex justify-between items-center mb-6">
-        <Typography variant="h4" color="blue-gray">إدارة الأقسام</Typography>
+        <Typography variant="h4" color="blue-gray" sx={{ fontWeight: 'bold' }}>إدارة الأقسام</Typography>
         <div className="flex gap-3">
           <Button 
             onClick={handleAddModalOpen} 
@@ -345,15 +345,15 @@ function SectionManagement() {
               <Card key={section.id} className="shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 rounded-xl border border-gray-200 text-right overflow-hidden">
                 <div className="h-2 bg-blue-600" />
                 <CardContent className="p-5">
-                  <Typography variant="h5" color="blue-gray" className="mb-3 font-bold text-gray-800 truncate">{section.name}</Typography>
+                  <Typography variant="h5" color="blue-gray" className="mb-3 font-bold text-gray-800 truncate" sx={{ fontWeight: 'bold' }}>{section.name}</Typography>
                   <div className="space-y-2 text-sm text-gray-600 mb-4">
-                    <div className="flex justify-between"><span>المستوى:</span><span className="font-semibold text-gray-800">{section.educationalLevel}</span></div>
-                    <div className="flex justify-between"><span>التخصص:</span><span className="font-semibold text-gray-800">{section.specialization}</span></div>
-                    <div className="flex justify-between"><span>الأستاذ:</span><span className="font-semibold text-gray-800">{section.teacherName}</span></div>
+                    <div className="flex justify-between"><span>المستوى:</span><span className="font-semibold text-gray-800" style={{ fontWeight: 'bold' }}>{section.educationalLevel}</span></div>
+                    <div className="flex justify-between"><span>التخصص:</span><span className="font-semibold text-gray-800" style={{ fontWeight: 'bold' }}>{section.specialization}</span></div>
+                    <div className="flex justify-between"><span>الأستاذ:</span><span className="font-semibold text-gray-800" style={{ fontWeight: 'bold' }}>{section.teacherName}</span></div>
                   </div>
                   <div className="text-center border-t border-b py-2 my-3">
                     <Typography color="blue-gray" className="text-xs font-semibold">عدد التلاميذ</Typography>
-                    <Typography color="primary" variant="h4" className="font-bold">{students.filter(st => st.sectionId === section.id).length}</Typography>
+                    <Typography color="primary" variant="h4" className="font-bold" sx={{ fontWeight: 'bold' }}>{students.filter(st => st.sectionId === section.id).length}</Typography>
                   </div>
                   <div className="flex justify-center flex-wrap gap-2 mt-4">
                     <Button size="small" variant="outlined" color="primary" className="flex items-center gap-2" onClick={() => handleViewDetailsClick(section)}><FaEye /> تفاصيل</Button>
@@ -368,7 +368,7 @@ function SectionManagement() {
         </div>
         <div className="lg:col-span-1">
           <div className="bg-white p-6 rounded-xl shadow-lg h-full">
-            <Typography variant="h5" className="mb-5 text-center text-gray-800 font-semibold">توزيع التلاميذ على الأقسام</Typography>
+            <Typography variant="h5" className="mb-5 text-center text-gray-800 font-semibold" sx={{ fontWeight: 'bold' }}>توزيع التلاميذ على الأقسام</Typography>
             <div className="space-y-3">
               {filteredSections.length > 0 ? (
                 filteredSections.map((section) => {
@@ -377,11 +377,11 @@ function SectionManagement() {
                   const width = maxStudents > 0 ? (studentCount / maxStudents) * 100 : 0;
                   return (
                     <div key={section.id} className="flex items-center gap-3">
-                      <div className="w-24 text-sm font-medium text-gray-700 truncate">{section.name}</div>
+                      <div className="w-24 text-sm font-medium text-gray-700 truncate" style={{ fontWeight: 'bold' }}>{section.name}</div>
                       <div className="flex-1 bg-gray-200 rounded-full h-2">
                         <div className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-500 ease-out" style={{ width: `${width}%` }}></div>
                       </div>
-                      <div className="w-8 text-sm text-gray-600 font-bold">{studentCount}</div>
+                      <div className="w-8 text-sm text-gray-600 font-bold" style={{ fontWeight: 'bold' }}>{studentCount}</div>
                     </div>
                   );
                 })
@@ -393,23 +393,23 @@ function SectionManagement() {
         </div>
       </div>
 
-      <Dialog open={isAddModalOpen} onClose={handleAddModalOpen} maxWidth="xs" fullWidth><DialogTitle sx={{ justifyContent: 'flex-end' }}>إضافة قسم</DialogTitle><DialogContent dividers><SectionForm onClose={handleAddModalOpen} addSection={addSection} /></DialogContent></Dialog>
+      <Dialog open={isAddModalOpen} onClose={handleAddModalOpen} maxWidth="xs" fullWidth><DialogTitle sx={{ justifyContent: 'flex-end', fontWeight: 'bold' }}>إضافة قسم</DialogTitle><DialogContent dividers><SectionForm onClose={handleAddModalOpen} addSection={addSection} /></DialogContent></Dialog>
       <Dialog open={isEditModalOpen} onClose={handleEditModalOpen} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ justifyContent: 'flex-end' }}>تعديل القسم</DialogTitle>
+        <DialogTitle sx={{ justifyContent: 'flex-end', fontWeight: 'bold' }}>تعديل القسم</DialogTitle>
         {selectedSection && <DialogContent dividers><SectionForm onClose={handleEditModalOpen} initialData={selectedSection} updateSection={(id, data) => editSection(id, data).finally(handleEditModalOpen)} /></DialogContent>}
       </Dialog>
       <Dialog open={isDetailModalOpen} onClose={handleDetailModalOpen} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ justifyContent: 'flex-end' }}>تفاصيل: {selectedSection?.name}</DialogTitle>
+        <DialogTitle sx={{ justifyContent: 'flex-end', fontWeight: 'bold' }}>تفاصيل: {selectedSection?.name}</DialogTitle>
         <DialogContent dividers className="p-4 text-right space-y-2 max-h-[60vh] overflow-y-auto">
-          {selectedSection && <><Typography><strong>المستوى:</strong> {selectedSection.educationalLevel}</Typography><Typography><strong>التخصص:</strong> {selectedSection.specialization}</Typography><Typography><strong>القاعة:</strong> {selectedSection.roomNumber}</Typography><Typography><strong>الأستاذ:</strong> {selectedSection.teacherName}</Typography>{selectedSection.courseName && <Typography><strong>المقرر:</strong> {selectedSection.courseName}</Typography>}<hr className="my-2" /><Typography className="font-bold">التلاميذ:</Typography><div className="max-h-60 overflow-y-auto pr-2">{students.filter(st => st.sectionId === selectedSection.id).length > 0 ? <ul className="list-disc pr-5">{(students.filter(st => st.sectionId === selectedSection.id).map(student => <li key={student.id}>{student.firstName} {student.lastName}</li>))}</ul> : <Typography>لا يوجد تلاميذ.</Typography>}</div></>}
+          {selectedSection && <><Typography><strong style={{ fontWeight: 'bold' }}>المستوى:</strong> {selectedSection.educationalLevel}</Typography><Typography><strong style={{ fontWeight: 'bold' }}>التخصص:</strong> {selectedSection.specialization}</Typography><Typography><strong style={{ fontWeight: 'bold' }}>القاعة:</strong> {selectedSection.roomNumber}</Typography><Typography><strong style={{ fontWeight: 'bold' }}>الأستاذ:</strong> {selectedSection.teacherName}</Typography>{selectedSection.courseName && <Typography><strong style={{ fontWeight: 'bold' }}>المقرر:</strong> {selectedSection.courseName}</Typography>}<hr className="my-2" /><Typography className="font-bold" style={{ fontWeight: 'bold' }}>التلاميذ:</Typography><div className="max-h-60 overflow-y-auto pr-2">{students.filter(st => st.sectionId === selectedSection.id).length > 0 ? <ul className="list-disc pr-5">{(students.filter(st => st.sectionId === selectedSection.id).map(student => <li key={student.id}>{student.firstName} {student.lastName}</li>))}</ul> : <Typography>لا يوجد تلاميذ.</Typography>}</div></>}
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'flex-start' }}><Button variant="text" color="error" onClick={handleDetailModalOpen}>إغلاق</Button></DialogActions>
       </Dialog>
-      <Dialog open={isDeleteStudentsModalOpen} onClose={handleDeleteStudentsModalOpen} maxWidth="xs" fullWidth><DialogTitle sx={{ justifyContent: 'flex-end' }}>تأكيد</DialogTitle><DialogContent dividers><Typography>هل أنت متأكد من حذف جميع تلاميذ هذا القسم؟</Typography></DialogContent><DialogActions sx={{ justifyContent: 'flex-start' }}><Button variant="text" color="error" onClick={handleDeleteStudentsForSection} sx={{ ml: 2 }}>نعم</Button><Button variant="text" color="inherit" onClick={handleDeleteStudentsModalOpen}>إلغاء</Button></DialogActions></Dialog>
+      <Dialog open={isDeleteStudentsModalOpen} onClose={handleDeleteStudentsModalOpen} maxWidth="xs" fullWidth><DialogTitle sx={{ justifyContent: 'flex-end', fontWeight: 'bold' }}>تأكيد</DialogTitle><DialogContent dividers><Typography>هل أنت متأكد من حذف جميع تلاميذ هذا القسم؟</Typography></DialogContent><DialogActions sx={{ justifyContent: 'flex-start' }}><Button variant="text" color="error" onClick={handleDeleteStudentsForSection} sx={{ ml: 2, fontWeight: 'bold' }}>نعم</Button><Button variant="text" color="inherit" onClick={handleDeleteStudentsModalOpen}>إلغاء</Button></DialogActions></Dialog>
 
       {/* Custom Confirmation Modal for deleting all sections */}
       <Dialog open={isConfirmModalOpen} onClose={handleConfirmModalClose} maxWidth="xs" fullWidth>
-        <DialogTitle>تأكيد الإجراء</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 'bold' }}>تأكيد الإجراء</DialogTitle>
         <DialogContent dividers>
           <Typography>{confirmModalMessage}</Typography>
         </DialogContent>
@@ -418,7 +418,7 @@ function SectionManagement() {
             variant="text"
             color="error"
             onClick={handleConfirmAction}
-            sx={{ ml: 2 }}
+            sx={{ ml: 2, fontWeight: 'bold' }}
           >
             تأكيد
           </Button>
@@ -445,19 +445,19 @@ function SectionManagement() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                <Typography variant="subtitle2" className="text-blue-800 font-semibold mb-2">
+                <Typography variant="subtitle2" className="text-blue-800 font-semibold mb-2" sx={{ fontWeight: 'bold' }}>
                   الأعمدة المطلوبة:
                 </Typography>
                 <div className="space-y-1 text-sm">
-                  <div className="bg-white p-2 rounded border">1. اسم القسم</div>
-                  <div className="bg-white p-2 rounded border">2. المستوى التعليمي</div>
-                  <div className="bg-white p-2 rounded border">3. التخصص</div>
-                  <div className="bg-white p-2 rounded border">4. اسم الأستاذ</div>
+                  <div className="bg-white p-2 rounded border" style={{ fontWeight: 'bold' }}>1. اسم القسم</div>
+                  <div className="bg-white p-2 rounded border" style={{ fontWeight: 'bold' }}>2. المستوى التعليمي</div>
+                  <div className="bg-white p-2 rounded border" style={{ fontWeight: 'bold' }}>3. التخصص</div>
+                  <div className="bg-white p-2 rounded border" style={{ fontWeight: 'bold' }}>4. اسم الأستاذ</div>
                 </div>
               </div>
               
               <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                <Typography variant="subtitle2" className="text-green-800 font-semibold mb-2">
+                <Typography variant="subtitle2" className="text-green-800 font-semibold mb-2" sx={{ fontWeight: 'bold' }}>
                   الأعمدة الاختيارية:
                 </Typography>
                 <div className="space-y-1 text-sm">

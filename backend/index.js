@@ -9,11 +9,21 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ charset: 'utf-8' }));
+app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
+
+// Set default charset for responses
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  next();
+});
 
 // Routes
 const attendanceRoutes = require('./routes/attendance');
 app.use('/api/attendance', attendanceRoutes);
+// Scheduled lessons API
+const scheduledLessonsRoutes = require('./routes/scheduledLessons');
+app.use('/api/scheduled-lessons', scheduledLessonsRoutes);
 
 // Helper function to get the current score for a student
 const getCurrentScore = async (studentId) => {
@@ -424,6 +434,10 @@ app.patch('/api/students/reorder', async (req, res) => {
 const adminScheduleRoutes = require('./routes/adminSchedule');
 app.use('/api/admin-schedule', adminScheduleRoutes);
 
+// Routes for Textbook Entries
+const textbookRoutes = require('./routes/textbook');
+app.use('/api/textbook', textbookRoutes);
+
 // Routes for Student Assessments
 app.post('/api/students/:studentId/assessment', async (req, res) => {
   try {
@@ -548,11 +562,17 @@ const ensureAttendanceIndexes = async () => {
 
 // Start the server
 preMigrateCleanup()
-  .then(() => db.sequelize.sync())
+  // Use sync to create tables if they don't exist
+  .then(() => db.sequelize.sync({ force: false })) // Don't force recreate, just sync
   .then(() => ensureAttendanceIndexes())
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Backend server running on http://localhost:${PORT}`);
+      
+      // Keep alive mechanism
+      setInterval(() => {
+        console.log('Server is alive at', new Date().toISOString());
+      }, 30000);
     });
   })
   .catch(err => {

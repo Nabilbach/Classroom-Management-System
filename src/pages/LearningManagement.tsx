@@ -30,25 +30,28 @@ function LessonLog() {
   return (
     <div dir="rtl">
       <div className="flex justify-between items-center mb-4">
-        <Typography variant="h4" color="blue-gray">
+        <Typography variant="h4" color="blue-gray" sx={{ fontWeight: 'bold' }}>
           Learning Management
         </Typography>
         <div className="flex gap-2">
           <Button
             variant={activeView === 'calendar' ? "filled" : "outlined"}
             onClick={() => setActiveView('calendar')}
+            sx={{ fontWeight: 'bold' }}
           >
             تقويم ذكي
           </Button>
           <Button
             variant={activeView === 'log' ? "filled" : "outlined"}
             onClick={() => setActiveView('log')}
+            sx={{ fontWeight: 'bold' }}
           >
             سجل الدروس
           </Button>
           <Button
             variant={activeView === 'curriculum' ? "filled" : "outlined"}
             onClick={() => setActiveView('curriculum')}
+            sx={{ fontWeight: 'bold' }}
           >
             البرنامج الدراسي
           </Button>
@@ -60,7 +63,7 @@ function LessonLog() {
       ) : activeView === 'log' ? (
         <>
           <Card className="p-4 mb-6">
-            <Typography variant="h6" color="blue-gray" className="mb-4">
+            <Typography variant="h6" color="blue-gray" className="mb-4" sx={{ fontWeight: 'bold' }}>
               إضافة درس جديد
             </Typography>
             <form onSubmit={handleSubmit}>
@@ -100,13 +103,13 @@ function LessonLog() {
                   className="w-full"
                 />
               </div>
-              <Button type="submit" fullWidth disabled={isLoading}>
+              <Button type="submit" fullWidth disabled={isLoading} sx={{ fontWeight: 'bold' }}>
                 {isLoading ? 'جاري الإضافة...' : 'إضافة درس'}
               </Button>
             </form>
           </Card>
 
-          <Typography variant="h5" color="blue-gray" className="mb-4">
+          <Typography variant="h5" color="blue-gray" className="mb-4" sx={{ fontWeight: 'bold' }}>
             الدروس المسجلة
           </Typography>
           {isLoading && <p>جاري تحميل الدروس...</p>}
@@ -114,18 +117,18 @@ function LessonLog() {
             {lessonLogs.map((lesson) => (
               <Card key={lesson.id} className="p-4 flex flex-col">
                 <CardBody className="flex-grow">
-                  <Typography variant="h6" color="blue-gray" className="mb-2">
+                  <Typography variant="h6" color="blue-gray" className="mb-2" sx={{ fontWeight: 'bold' }}>
                     الموضوع: {lesson.topic}
                   </Typography>
                   <Typography variant="paragraph" color="blue-gray">
-                    التاريخ: {lesson.date}
+                    <strong style={{ fontWeight: 'bold' }}>التاريخ:</strong> {lesson.date}
                   </Typography>
                   <Typography variant="paragraph" color="blue-gray">
-                    الأهداف: {lesson.objectives}
+                    <strong style={{ fontWeight: 'bold' }}>الأهداف:</strong> {lesson.objectives}
                   </Typography>
                   {lesson.notes && (
                     <Typography variant="paragraph" color="blue-gray">
-                      ملاحظات: {lesson.notes}
+                      <strong style={{ fontWeight: 'bold' }}>ملاحظات:</strong> {lesson.notes}
                     </Typography>
                   )}
                 </CardBody>

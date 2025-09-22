@@ -1,4 +1,4 @@
-import type { LessonStage } from '../curriculum/types/curriculumTypes';
+import type { LessonStage } from '../../../types/lessonLogTypes';
 
 export interface ScheduledLesson {
   id: string;
@@ -22,7 +22,7 @@ export interface AdaptedLesson {
   id: string;
   lessonTitle: string;
   subject?: string;
-  status: 'planned' | 'in-progress' | 'completed';
+  status: 'not-planned' | 'planned' | 'in-progress' | 'completed';
   stages: LessonStage[];
   progress: number;
   estimatedSessions: number;

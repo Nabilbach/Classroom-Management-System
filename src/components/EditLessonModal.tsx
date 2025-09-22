@@ -1,35 +1,31 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Modal, Box, Typography, Button, TextField, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Checkbox, IconButton, Stack, List, ListItem, ListItemText, Divider } from '@mui/material';
+import { Modal, Box, Typography, Button, TextField, Checkbox, IconButton, Stack, List, ListItem, ListItemText } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import { useSections } from '../contexts/SectionsContext';
+import { AdaptedLesson, LessonStage } from '../types/lessonLogTypes';
 import { Delete as DeleteIcon, AddComment as AddCommentIcon } from '@mui/icons-material';
 import { DateTime } from 'luxon';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import MenuIcon from '@mui/icons-material/Menu';
 
-// Define LessonStage interface
-interface LessonStage {
-  id: string;
-  title: string;
-  isCompleted: boolean;
-  completionDate?: string;
-}
-
-// Define Note interface
-interface Note {
-  id: string;
-  text: string;
-  timestamp: string;
-}
-
-// Update AdaptedLesson interface
-interface AdaptedLesson {
-  id: string;
-  lessonTitle: string;
-  status: 'planned' | 'in-progress' | 'completed';
-  stages?: LessonStage[]; // Re-add stages
-  assignedSections?: string[];
-  section?: string; // Add the correct property
-  notes?: string;
-}
+// Local UI note type that tolerates missing id and adds one for rendering
+type UINote = { id?: string; text: string; timestamp: string };
 
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -43,9 +39,6 @@ interface EditLessonModalProps {
   onClose: () => void;
   lesson: AdaptedLesson | null;
   onSave: (updatedLesson: AdaptedLesson) => void;
-  sections: Section[];
-  lessonTemplates: LessonTemplate[];
-  scheduledLessons: AdaptedLesson[]; // Added prop for scheduled lessons
 }
 
 const modalStyle = {
@@ -63,22 +56,108 @@ const modalStyle = {
   overflowY: 'auto',
 };
 
-const EditLessonModal: React.FC<EditLessonModalProps> = ({ lesson, onClose, onSave, scheduledLessons }) => {
+const SortableStageItem: React.FC<SortableStageItemProps> = ({
+  stage,
+  index,
+  onCompletionToggle,
+  onTitleChange,
+  onRemove,
+  onKeyDown,
+  isLast,
+  newStageInputRef,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: stage.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const isCore = stage.isCore;
+
+  return (
+    <Box
+      ref={setNodeRef}
+      style={style}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        p: 1,
+        bgcolor: isCore ? 'primary.50' : 'grey.50',
+        borderRadius: 1,
+        border: '1px solid',
+        borderColor: isCore ? 'primary.200' : 'grey.200',
+        mb: 1,
+      }}
+    >
+      <IconButton {...attributes} {...listeners} size="small" sx={{ cursor: 'grab' }}>
+        <MenuIcon />
+      </IconButton>
+      <Typography
+        variant="caption"
+        sx={{
+          bgcolor: isCore ? 'primary.main' : 'secondary.main',
+          color: 'white',
+          px: 1,
+          py: 0.5,
+          borderRadius: '4px',
+          fontWeight: 'bold',
+          fontSize: '0.7rem',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {isCore ? 'رئيسية' : 'إضافية'}
+      </Typography>
+      <Checkbox
+        checked={stage.isCompleted}
+        onChange={() => onCompletionToggle(index)}
+        color={isCore ? 'primary' : 'secondary'}
+      />
+      <TextField
+        fullWidth
+        variant="standard"
+        value={stage.title}
+        onChange={(e) => onTitleChange(index, e.target.value)}
+        placeholder={isCore ? 'عنوان المرحلة الرئيسية' : 'عنوان المرحلة الإضافية'}
+        disabled={!!stage.templateStageId && isCore}
+        onKeyDown={(e) => onKeyDown(e, index)}
+        inputRef={isLast ? newStageInputRef : null}
+      />
+      {stage.completionDate && (
+        <Typography variant="caption" color="text.secondary" sx={{ minWidth: '70px' }}>
+          {stage.completionDate}
+        </Typography>
+      )}
+      {!stage.templateStageId && (
+        <IconButton onClick={() => onRemove(index)} color="error" size="small">
+          <DeleteIcon fontSize="small" />
+        </IconButton>
+      )}
+    </Box>
+  );
+};
+
+const EditLessonModal: React.FC<EditLessonModalProps> = ({ lesson, onClose, onSave }) => {
   const { enqueueSnackbar } = useSnackbar();
   const { sections } = useSections();
 
   const sectionName = useMemo(() => {
-    if (!lesson || !lesson.section) {
-      return '';
-    }
-    const sectionId = lesson.section;
-    const section = sections.find(s => s.id === sectionId);
-    return section ? section.name : '';
+    if (!lesson) return '';
+    // Try to infer the section by scanning sections that might reference this lesson id in lessonProgress
+    const found = sections.find(s => (s as any).lessonProgress && (s as any).lessonProgress[lesson.id]);
+    return found ? found.name : '';
   }, [lesson, sections]);
 
   const ensureStageIds = (stages: LessonStage[] | undefined): LessonStage[] => {
     if (!stages || stages.length === 0) {
-      return [{ id: Date.now().toString(), title: '', isCompleted: false }];
+      return []; // Return empty array instead of creating a default stage
     }
     return stages.map(stage => ({
       ...stage,
@@ -87,20 +166,29 @@ const EditLessonModal: React.FC<EditLessonModalProps> = ({ lesson, onClose, onSa
   };
 
   const [editedLessonTitle, setEditedLessonTitle] = useState('');
-  const [currentStatus, setCurrentStatus] = useState<AdaptedLesson['status']>('planned');
+  const [currentStatus, setCurrentStatus] = useState<AdaptedLesson['status']>('not-planned');
   const [manualSessionNumber, setManualSessionNumber] = useState<number | undefined>(undefined);
-  const [lessonNotes, setLessonNotes] = useState<Note[]>([]);
+  const [lessonNotes, setLessonNotes] = useState<UINote[]>([]);
   const [newNote, setNewNote] = useState('');
 
   const [lessonStages, setLessonStages] = useState<LessonStage[]>([]);
   const newStageInputRef = useRef<HTMLInputElement>(null);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   useEffect(() => {
     if (lesson) {
       setEditedLessonTitle(lesson.lessonTitle || '');
-      setCurrentStatus(lesson.status || 'planned');
       setManualSessionNumber(lesson.manualSessionNumber);
-      setLessonNotes(lesson.notes || []);
+      setCurrentStatus(lesson.status || 'not-planned'); // Set initial status from lesson
+      // Map incoming notes to UI notes with ids
+      const mappedNotes: UINote[] = (lesson.notes || []).map((n, idx) => ({ id: n.timestamp || `${idx}`, text: n.text, timestamp: n.timestamp }));
+      setLessonNotes(mappedNotes);
       setLessonStages(ensureStageIds(lesson.stages));
     }
   }, [lesson]);
@@ -115,6 +203,31 @@ const EditLessonModal: React.FC<EditLessonModalProps> = ({ lesson, onClose, onSa
     const completedStages = validStages.filter(stage => stage.isCompleted).length;
     return Math.round((completedStages / validStages.length) * 100);
   }, [lessonStages]);
+
+  // Compute status automatically from stages
+  useEffect(() => {
+    const validStages = lessonStages.filter(s => s.title.trim() !== '');
+    if (validStages.length === 0) {
+      setCurrentStatus('not-planned'); // Changed to 'not-planned' when no stages
+    } else {
+      const completed = validStages.filter(s => s.isCompleted).length;
+      if (completed === 0) setCurrentStatus('planned');
+      else if (completed === validStages.length) setCurrentStatus('completed');
+      else setCurrentStatus('in-progress');
+    }
+  }, [lessonStages]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setLessonStages((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over!.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
 
   const handleAddNote = () => {
     if (newNote.trim()) {
@@ -135,7 +248,8 @@ const EditLessonModal: React.FC<EditLessonModalProps> = ({ lesson, onClose, onSa
       lessonTitle: editedLessonTitle,
       status: currentStatus,
       stages: lessonStages,
-      notes: lessonNotes,
+  // Map UI notes back to domain notes shape
+  notes: lessonNotes.map(n => ({ text: n.text, timestamp: n.timestamp })),
       manualSessionNumber: manualSessionNumber,
     };
 
@@ -165,7 +279,7 @@ const EditLessonModal: React.FC<EditLessonModalProps> = ({ lesson, onClose, onSa
     setLessonStages(newStages);
   };
 
-  const handleKeyDownOnStage = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+  const handleKeyDownOnStage = (e: React.KeyboardEvent, index: number) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       const currentStageTitle = (e.target as HTMLInputElement).value;
@@ -227,54 +341,91 @@ const EditLessonModal: React.FC<EditLessonModalProps> = ({ lesson, onClose, onSa
           inputProps={{ min: 1 }}
         />
 
-        <FormControl component="fieldset" fullWidth sx={{ mb: 3 }}>
-          <FormLabel component="legend" sx={{ textAlign: 'right' }}>الحالة</FormLabel>
-          <RadioGroup
-            row
-            value={currentStatus}
-            onChange={(event) => setCurrentStatus(event.target.value as AdaptedLesson['status'])}
-            sx={{ justifyContent: 'flex-end' }}
+        <Box sx={{ mb: 3 }}>
+          <Typography 
+            variant="subtitle2" 
+            sx={{ 
+              color: currentStatus === 'not-planned' ? 'grey.500' : 'text.primary',
+              fontWeight: currentStatus === 'not-planned' ? 'normal' : 'medium'
+            }}
           >
-            <FormControlLabel value="planned" control={<Radio />} label="مخطط" />
-            <FormControlLabel value="in-progress" control={<Radio />} label="جاري التنفيذ" />
-            <FormControlLabel value="completed" control={<Radio />} label="مكتمل" />
-          </RadioGroup>
-        </FormControl>
+            الحالة: {
+              currentStatus === 'not-planned' ? 'غير مخطط' : 
+              currentStatus === 'planned' ? 'مخطط' : 
+              currentStatus === 'in-progress' ? 'قيد التنفيذ' : 
+              'مكتمل'
+            }
+          </Typography>
+        </Box>
 
         <Box sx={{ mb: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>
             التقدم: {calculatedProgress}%
           </Typography>
+          <Box sx={{ width: '100%', bgcolor: 'grey.300', borderRadius: '9999px', height: '6px', mb: 2 }}>
+            <Box sx={{ bgcolor: 'primary.main', height: '100%', borderRadius: 'inherit', width: `${calculatedProgress}%`, transition: 'width 0.3s ease-in-out' }} />
+          </Box>
           <Typography variant="h6" sx={{ mb: 2 }}>
             مراحل الدرس
           </Typography>
-          <Stack spacing={2}>
-            {lessonStages.map((stage, index) => (
-              <Box key={stage.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Checkbox
-                  checked={stage.isCompleted}
-                  onChange={() => handleStageCompletion(index)}
-                />
-                <TextField
-                  fullWidth
-                  variant="standard"
-                  value={stage.title}
-                  onChange={(e) => handleStageTitleChange(index, e.target.value)}
-                  placeholder="عنوان المرحلة"
-                  onKeyDown={(e) => handleKeyDownOnStage(e, index)}
-                  inputRef={index === lessonStages.length - 1 ? newStageInputRef : null}
-                />
-                {stage.completionDate && (
-                  <Typography variant="caption" color="text.secondary" sx={{ minWidth: '70px' }}>
-                    {stage.completionDate}
-                  </Typography>
-                )}
-                <IconButton onClick={() => handleRemoveStage(index)} color="error">
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-            ))}
-          </Stack>
+          
+          {lessonStages.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                لا توجد مراحل للدرس بعد
+              </Typography>
+              <Button 
+                variant="outlined" 
+                onClick={() => setLessonStages([{ id: Date.now().toString(), title: '', isCompleted: false, isCore: false }])}
+              >
+                إضافة المرحلة الأولى
+              </Button>
+            </Box>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={lessonStages}
+                strategy={verticalListSortingStrategy}
+              >
+                {lessonStages.map((stage, index) => (
+                  <SortableStageItem
+                    key={stage.id}
+                    stage={stage}
+                    index={index}
+                    onCompletionToggle={handleStageCompletion}
+                    onTitleChange={handleStageTitleChange}
+                    onRemove={handleRemoveStage}
+                    onKeyDown={handleKeyDownOnStage}
+                    isLast={index === lessonStages.length - 1}
+                    newStageInputRef={newStageInputRef}
+                  />
+                ))}
+              </SortableContext>
+              <Button
+                variant="outlined"
+                color="secondary"
+                startIcon={<AddCommentIcon />}
+                onClick={() =>
+                  setLessonStages((prev) => [
+                    ...prev,
+                    {
+                      id: Date.now().toString(),
+                      title: '',
+                      isCompleted: false,
+                      isCore: false,
+                    },
+                  ])
+                }
+                sx={{ mt: 2 }}
+              >
+                إضافة مرحلة إضافية
+              </Button>
+            </DndContext>
+          )}
         </Box>
 
         <Box sx={{ mb: 3 }}>

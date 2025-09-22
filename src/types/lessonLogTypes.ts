@@ -1,4 +1,15 @@
-import { LessonStage } from '../services/api/curriculumService';
+/ New status system
+export type LessonStatus = 'planned' | 'in-progress' | 'completed';
+
+// Stage inside a lesson/template
+export interface LessonStage {
+  id: string;
+  title: string;
+  isCompleted: boolean;
+  completionDate?: string;
+  isCore?: boolean; // المراحل الرئيسية من القالب
+  templateStageId?: string; // ربط بالمرحلة في القالب الأصلي
+}
 
 export interface Attachment {
   name: string;
@@ -7,49 +18,30 @@ export interface Attachment {
   category: string;
 }
 
-// Unified LessonLog interface
+// Unified LessonLog interface (generic log record)
 export interface LessonLog {
   id: string;
   date: string;
-  subject: string; // Mapped from context or default
-  section: string; // Mapped from context or default
-  lessonTitle: string; // Mapped from form's 'topic'
-  stages: LessonStage[]; // Mapped from form's 'objectives'
-  activitiesAndTools: string; // Default or optional
-  notes: string; // Mapped from form's 'notes'
-  attachments: Attachment[]; // Default or optional
-  studentNotes?: { studentId: string; note: string }[]; // Default or optional
+  subject: string; // e.g., courseName
+  section: string; // section id or label
+  lessonTitle: string;
+  stages: LessonStage[];
+  activitiesAndTools: string;
+  teacherNotes?: string;
+  attachments: Attachment[];
+  studentNotes?: { studentId: string; note: string }[];
 }
 
 // Type for data collected directly from the form
 export interface LessonLogFormData {
   date: string;
   topic: string; // Maps to lessonTitle
-  objectives: string; // Maps to lessonStages
+  objectives: string; // Maps to stages (parsed)
   notes: string; // Maps to teacherNotes
 }
 
 // Type for adding a new lesson log (API payload)
 export type NewLessonLog = Omit<LessonLog, 'id'>;
 
-// New status system
-export type LessonStatus = 'planned' | 'in-progress' | 'completed';
-
-// Adapted lesson with enhanced tracking
-export interface AdaptedLesson extends LessonLog {
-  status: LessonStatus;
-  progress: number; // 0-100 percentage
-  executionNotes?: string;
-  lastUpdated: Date;
-  updatedBy: string;
-  estimatedSessions: number;
-  lessonGroupId?: string; // Added for grouping related lessons
-  manualSessionNumber?: number; // Added for manual override
-}
-
-// Color mapping for UI
-export const statusColors: Record<LessonStatus, string> = {
-  'planned': 'bg-blue-100 border-blue-300 text-blue-800',
-  'in-progress': 'bg-yellow-100 border-yellow-300 text-yellow-800',
-  'completed': 'bg-green-100 border-green-300 text-green-800'
-};
+// Re-export ScheduledLesson and AdaptedLesson from the schedule types to keep imports stable
+export type { ScheduledLesson, AdaptedLesson } from '../features/schedule/types/scheduledLessonTypes';

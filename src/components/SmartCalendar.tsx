@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Calendar, dateFnsLocalizer, Event as CalendarEvent, Components, DateCellWrapperProps } from 'react-big-calendar';
 import { format } from 'date-fns/format';
 import { parse } from 'date-fns/parse';
@@ -10,7 +10,8 @@ import { useCurriculum } from '../contexts/CurriculumContext';
 import { useSections } from '../contexts/SectionsContext';
 import { Lesson } from '../contexts/CurriculumContext';
 import LessonModal from './LessonModal';
-import { Select, Option, Spinner } from '@material-tailwind/react';
+import { CircularProgress } from '@mui/material';
+import { fetchAdminSchedule, AdminScheduleEntry } from '../services/api/adminScheduleService';
 
 const locales = {
   'en-US': enUS,
@@ -54,26 +55,62 @@ const getStatusClassName = (status: 'planned' | 'in-progress' | 'completed') => 
   }
 };
 
-const CustomDateCellWrapper: React.FC<DateCellWrapperProps> = ({ children, value }) => {
-  const { lessons } = useCurriculum();
-  const dailyStats = useMemo(() => {
-    const lessonsForDay = lessons.filter(lesson => new Date(lesson.date).toDateString() === value.toDateString());
-    if (lessonsForDay.length === 0) {
-      return { total: 0, completed: 0, percentage: 0 };
+interface CustomDateCellWrapperProps {
+  children: React.ReactNode;
+  value: Date;
+  adminSchedule: AdminScheduleEntry[];
+  sections: any[];
+}
+
+const CustomDateCellWrapper: React.FC<CustomDateCellWrapperProps> = ({ children, value, adminSchedule, sections }) => {
+  // تحديد الأقسام التي تدرس في هذا اليوم
+  const sectionsForThisDay = useMemo(() => {
+    const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const dayName = dayNames[value.getDay()];
+    
+    // البحث عن جميع الأقسام التي تدرس في هذا اليوم
+    const sectionsScheduled = adminSchedule
+      .filter(entry => entry.day === dayName)
+      .map(entry => entry.sectionId)
+      .filter((id, index, self) => self.indexOf(id) === index); // إزالة التكرار
+
+    return sectionsScheduled;
+  }, [value, adminSchedule]);
+
+  // تحديد لون الخلفية بناءً على عدد الأقسام
+  const backgroundColor = useMemo(() => {
+    if (sectionsForThisDay.length === 0) return undefined;
+    
+    // ألوان مختلفة للأقسام
+    const sectionColors = [
+      '#3b82f6', // أزرق
+      '#10b981', // أخضر
+      '#f59e0b', // أصفر
+      '#ef4444', // أحمر
+      '#8b5cf6', // بنفسجي
+      '#06b6d4', // سماوي
+      '#f97316', // برتقالي
+      '#84cc16', // أخضر فاتح
+    ];
+    
+    // إذا كان هناك أكثر من قسم واحد، استخدم لون مختلط
+    if (sectionsForThisDay.length > 1) {
+      return '#9ca3af'; // رمادي للأيام المختلطة
     }
-    const completedCount = lessonsForDay.filter(l => getOverallLessonStatus(l) === 'completed').length;
-    const percentage = (completedCount / lessonsForDay.length) * 100;
-    return { total: lessonsForDay.length, completed: completedCount, percentage };
-  }, [lessons, value]);
+    
+    // إذا كان قسم واحد فقط، استخدم لونه المحدد
+    const sectionIndex = sections.findIndex(s => s.id === sectionsForThisDay[0]);
+    return sectionIndex >= 0 ? sectionColors[sectionIndex % sectionColors.length] : '#3b82f6';
+  }, [sectionsForThisDay, sections]);
 
   return (
-    <div className="relative h-full w-full">
+    <div 
+      className="relative h-full w-full" 
+      style={{
+        backgroundColor: backgroundColor,
+      }}
+    >
       {children}
-      {dailyStats.total > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gray-300 rounded-full overflow-hidden mx-1">
-          <div className="h-full bg-green-500 transition-all duration-300" style={{ width: `${dailyStats.percentage}%` }}></div>
-        </div>
-      )}
     </div>
   );
 };
@@ -81,20 +118,28 @@ const CustomDateCellWrapper: React.FC<DateCellWrapperProps> = ({ children, value
 const SmartCalendar = () => {
   const { lessons, isLoading } = useCurriculum();
   const { sections } = useSections();
-  const [selectedSection, setSelectedSection] = useState<string>('all');
+  const [adminSchedule, setAdminSchedule] = useState<AdminScheduleEntry[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'view' | 'add' | 'edit'>('add');
   const [selectedLesson, setSelectedLesson] = useState<Lesson | undefined>(undefined);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
-  const filteredEvents: CustomEvent[] = useMemo(() => {
-    const filteredLessons = lessons.filter(lesson => {
-      if (selectedSection === 'all') return true;
-      return lesson.assignedSections && lesson.assignedSections.includes(selectedSection);
-    });
+  // تحميل الجدول الزمني
+  useEffect(() => {
+    const loadAdminSchedule = async () => {
+      try {
+        const schedule = await fetchAdminSchedule();
+        setAdminSchedule(schedule);
+      } catch (error) {
+        console.error('Error loading admin schedule:', error);
+      }
+    };
+    loadAdminSchedule();
+  }, []);
 
-    return filteredLessons.map((lesson) => {
+  const filteredEvents: CustomEvent[] = useMemo(() => {
+    return lessons.map((lesson) => {
       const lessonDate = lesson.date && !isNaN(new Date(lesson.date).getTime()) ? new Date(lesson.date) : new Date();
       return {
         title: lesson.title,
@@ -104,7 +149,7 @@ const SmartCalendar = () => {
         resource: lesson,
       };
     });
-  }, [lessons, selectedSection]);
+  }, [lessons]);
 
   const handleSelectEvent = (event: CustomEvent) => {
     setSelectedLesson(event.resource);
@@ -132,23 +177,21 @@ const SmartCalendar = () => {
   };
 
   const components: Components<CustomEvent, object> = {
-    dateCellWrapper: CustomDateCellWrapper,
+    dateCellWrapper: (props: DateCellWrapperProps) => (
+      <CustomDateCellWrapper 
+        {...props} 
+        adminSchedule={adminSchedule}
+        sections={sections}
+      />
+    ),
   };
 
   return (
     <div className="bg-white p-4 rounded-lg shadow">
-        <div className="mb-4 w-72">
-            <Select label="عرض حسب القسم" value={selectedSection} onChange={(val: string) => setSelectedSection(val || 'all')}>
-                <Option value="all">عرض الكل</Option>
-                {sections.map(section => (
-                    <Option key={section.id} value={section.id}>{section.name}</Option>
-                ))}
-            </Select>
-        </div>
         <div className="relative h-[75vh]">
             {isLoading && (
                 <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
-                    <Spinner className="h-12 w-12" />
+                    <CircularProgress />
                 </div>
             )}
             <Calendar

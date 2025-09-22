@@ -1,15 +1,16 @@
 import { Box, Paper, Typography, IconButton } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, isWithinInterval, getDay } from 'date-fns';
-import ar from 'date-fns/locale/ar';
-import enUS from 'date-fns/locale/en-US';
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, isWithinInterval, getDay, isSameWeek } from 'date-fns';
+import { ar } from 'date-fns/locale';
 import { useSnackbar } from 'notistack'; // Import useSnackbar
-import { useCurriculum } from '../contexts/CurriculumContext';
+// Scheduled lessons mutations are performed via the API service directly
+import { addScheduledLesson as addScheduledLessonAPI, updateScheduledLesson as updateScheduledLessonAPI, deleteScheduledLesson as deleteScheduledLessonAPI } from '../services/api/scheduledLessonService';
+import { fetchAdminSchedule, AdminScheduleEntry } from '../services/api/adminScheduleService';
 import { useSections } from '../contexts/SectionsContext';
 import { AdaptedLesson, ScheduledLesson } from '../types/lessonLogTypes';
 import { migrateLessonToAdapted } from '../utils/lessonLogMigrationUtils';
 import EditLessonModal from './EditLessonModal';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 
 import dayjs from 'dayjs'; // Import dayjs
 
@@ -22,9 +23,9 @@ interface LessonStage {
 }
 
 // Helper function to calculate lesson status
-const calculateLessonStatus = (stages: LessonStage[] | undefined): AdaptedLesson['status'] => {
-  if (!stages || stages.length === 0) {
-    return 'planned';
+const calculateLessonStatus = (stages: LessonStage[] | undefined): 'not-planned' | 'planned' | 'in-progress' | 'completed' => {
+  if (!stages || stages.length === 0 || stages.every(stage => !stage.title.trim())) {
+    return 'not-planned';
   }
 
   const completedStages = stages.filter(stage => stage.isCompleted).length;
@@ -37,11 +38,11 @@ const calculateLessonStatus = (stages: LessonStage[] | undefined): AdaptedLesson
     return 'in-progress';
   }
 };
-
 const LessonCard = ({ lesson, onDoubleClick, onDelete, allScheduledLessons }: { lesson: AdaptedLesson, onDoubleClick: (lesson: AdaptedLesson) => void, onDelete: (lessonId: string) => void, allScheduledLessons: AdaptedLesson[] }) => {
   const displayStatus = useMemo(() => calculateLessonStatus(lesson.stages), [lesson.stages]);
 
   const statusColorMap: { [key: string]: string } = {
+    'not-planned': '#E0E0E0', // Gray for not planned
     planned: '#90CAF9',
     'in-progress': '#FFD54F',
     completed: '#A5D6A7',
@@ -72,6 +73,7 @@ const LessonCard = ({ lesson, onDoubleClick, onDelete, allScheduledLessons }: { 
   }, [lesson, allScheduledLessons]);
 
   const statusTextMap: { [key: string]: string } = {
+    'not-planned': 'غير مخطط',
     planned: 'مخطط',
     'in-progress': 'جاري التنفيذ',
     completed: 'مكتمل',
@@ -157,20 +159,56 @@ const LessonCard = ({ lesson, onDoubleClick, onDelete, allScheduledLessons }: { 
 interface CalendarGridProps {
   currentWeekStart: Date;
   scheduledLessons: ScheduledLesson[];
+  onRefresh?: () => void | Promise<void>; // notify parent to reload after mutations
 }
 
-const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduledLessons }) => {
-  const { templates, addScheduledLesson, editScheduledLesson, removeScheduledLesson } = useCurriculum();
+const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduledLessons, onRefresh }) => {
   const { sections, isLoading } = useSections();
   const { enqueueSnackbar } = useSnackbar(); // Use useSnackbar hook
   const [editingLesson, setEditingLesson] = useState<AdaptedLesson | null>(null);
-  const [isDropping, setIsDropping] = useState<string | null>(null);
+  // const [isDropping, setIsDropping] = useState<string | null>(null);
   const [dragOverCell, setDragOverCell] = useState<string | null>(null); // For drag-over visual feedback
+  const [adminSchedule, setAdminSchedule] = useState<AdminScheduleEntry[]>([]);
+
+  // تحميل الجدول الزمني
+  useEffect(() => {
+    const loadAdminSchedule = async () => {
+      try {
+        const schedule = await fetchAdminSchedule();
+        setAdminSchedule(schedule);
+      } catch (error) {
+        console.error('Error loading admin schedule:', error);
+      }
+    };
+    loadAdminSchedule();
+  }, []);
+
+  // ألوان مختلفة للأقسام
+  const sectionColors = useMemo(() => {
+    const colors = [
+      '#3b82f6', // أزرق
+      '#10b981', // أخضر
+      '#f59e0b', // أصفر
+      '#ef4444', // أحمر
+      '#8b5cf6', // بنفسجي
+      '#06b6d4', // سماوي
+      '#f97316', // برتقالي
+      '#84cc16', // أخضر فاتح
+    ];
+    
+    const colorMap: { [sectionId: string]: string } = {};
+    sections.forEach((section, index) => {
+      colorMap[section.id] = colors[index % colors.length];
+    });
+    return colorMap;
+  }, [sections]);
 
   const handleDeleteLesson = async (lessonId: string) => {
     if (window.confirm('هل أنت متأكد من حذف هذه الحصة؟')) {
       try {
-        await removeScheduledLesson(lessonId);
+        await deleteScheduledLessonAPI(lessonId);
+        enqueueSnackbar('تم حذف الحصة بنجاح.', { variant: 'success' });
+        await onRefresh?.();
       } catch (error) {
         console.error('Failed to delete lesson:', error);
         alert('فشل في حذف الدرس');
@@ -187,45 +225,118 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
 
   const handleDrop = async (e: React.DragEvent, date: string, sectionId: string) => {
     setDragOverCell(null); // Reset visual feedback on drop
-    const dragData = JSON.parse(e.dataTransfer.getData('application/json'));
+    const payload = e.dataTransfer.getData('application/json');
+    if (!payload) return;
+    const dragData = JSON.parse(payload);
 
     if (dragData.type === 'template') {
-      const template = templates.find(t => t.id === dragData.templateId);
-      if (template) {
-        const newLesson: Omit<ScheduledLesson, 'id' | 'LessonTemplate'> = {
-          templateId: template.id,
-          date: date,
-          startTime: '08:00',
-          assignedSections: [sectionId],
-          completionStatus: { [sectionId]: 'planned' },
-          customTitle: template.title,
-          customDescription: template.description,
-          stages: template.stages,
-          estimatedSessions: template.estimatedSessions,
-        };
-        await addScheduledLesson(newLesson);
-        setIsDropping(`${sectionId}-${date}`);
-        setTimeout(() => setIsDropping(null), 1000);
+      const template = dragData.template;
+      if (!template) return;
+      
+      // نسخ المراحل الرئيسية من القالب وتحويلها لمراحل الحصة
+      const stagesFromTemplate = (template.stages || []).map((stage: any) => ({
+        ...stage,
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, // معرف جديد للحصة
+        isCore: true, // تعليم أنها مرحلة رئيسية
+        templateStageId: stage.id, // ربط بالمرحلة في القالب
+        isCompleted: false // إعادة تعيين حالة الاكتمال
+      }));
+
+      // توليد معرف مجموعة للدرس (lessonGroupId)
+      const lessonGroupId = `lesson-${template.id}-${Date.now()}`;
+
+      const newLesson: Omit<ScheduledLesson, 'id' | 'LessonTemplate'> = {
+        templateId: template.id,
+        lessonGroupId: lessonGroupId,
+        date: date,
+        startTime: '08:00',
+        assignedSections: [sectionId],
+        completionStatus: { [sectionId]: 'planned' },
+        customTitle: template.title,
+        customDescription: template.description,
+        stages: stagesFromTemplate,
+        estimatedSessions: template.estimatedSessions || 1,
+        progress: 0,
+        subject: template.courseName,
+      };
+      try {
+        await addScheduledLessonAPI(newLesson);
+        enqueueSnackbar('تمت إضافة الحصة من القالب.', { variant: 'success' });
+        await onRefresh?.();
+      } catch (err) {
+        console.error('Failed to add scheduled lesson from template:', err);
+        enqueueSnackbar('فشل في إضافة الحصة من القالب.', { variant: 'error' });
       }
     } else if (dragData.type === 'lesson') {
       const lessonIdToFind = String(dragData.lessonId);
       const originalLesson = scheduledLessons.find(sl => String(sl.id) === lessonIdToFind);
 
       if (originalLesson) {
-        // Create a copy of the original lesson to modify
-        const updatedLesson = { ...originalLesson };
+        const sameWeek = isSameWeek(new Date(date), new Date(originalLesson.date), { weekStartsOn: 1 });
+        if (sameWeek) {
+          // Clone into a new scheduled lesson within same week
+          const groupId = originalLesson.lessonGroupId || originalLesson.templateId || String(originalLesson.id);
+          const targetDate = new Date(date);
+          const lessonsInSameGroupSameWeek = (scheduledLessons || [])
+            .filter(sl => (sl.lessonGroupId || sl.templateId || String(sl.id)) === groupId)
+            .filter(sl => isSameWeek(new Date(sl.date), targetDate, { weekStartsOn: 1 }));
 
-        // Update the date and assigned sections
-        updatedLesson.date = date;
-        // Ensure assignedSections is an array and includes the new sectionId
-        updatedLesson.assignedSections = [sectionId]; // Assuming a lesson can only be assigned to one section in a cell
-        updatedLesson.completionStatus = { [sectionId]: originalLesson.completionStatus?.[sectionId] || 'planned' }; // Maintain existing status or default to planned
+          const existingNumbers = lessonsInSameGroupSameWeek
+            .map(sl => (typeof sl.manualSessionNumber === 'number' ? sl.manualSessionNumber : undefined))
+            .filter((n): n is number => typeof n === 'number');
+          const nextNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 2;
 
-        // Call editScheduledLesson to update the existing lesson
-        await editScheduledLesson(originalLesson.id, updatedLesson);
-        enqueueSnackbar('تم نقل الحصة بنجاح.', { variant: 'success' });
-        setIsDropping(`${sectionId}-${date}`);
-        setTimeout(() => setIsDropping(null), 1000);
+          // نسخ جميع المراحل (الرئيسية والإضافية) مع إعادة تعيين حالة الاكتمال للمراحل الرئيسية
+          const clonedStages = originalLesson.stages.map(stage => ({
+            ...stage,
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, // معرف جديد
+            isCompleted: stage.isCore ? false : stage.isCompleted, // إعادة تعيين المراحل الرئيسية فقط
+            completionDate: stage.isCore ? undefined : stage.completionDate
+          }));
+
+          const clone: Omit<ScheduledLesson, 'id' | 'LessonTemplate'> = {
+            templateId: originalLesson.templateId,
+            lessonGroupId: originalLesson.lessonGroupId || groupId, // الحفاظ على معرف المجموعة
+            date,
+            startTime: originalLesson.startTime || '08:00',
+            assignedSections: [sectionId],
+            completionStatus: { [sectionId]: originalLesson.completionStatus?.[sectionId] || 'planned' },
+            customTitle: originalLesson.customTitle,
+            customDescription: originalLesson.customDescription,
+            stages: clonedStages, // استخدام المراحل المنسوخة
+            estimatedSessions: originalLesson.estimatedSessions,
+            manualSessionNumber: nextNumber,
+            notes: originalLesson.notes,
+            subject: originalLesson.subject,
+            progress: 0, // إعادة تعيين التقدم
+          };
+          try {
+            await addScheduledLessonAPI(clone);
+            enqueueSnackbar('تم إنشاء حصة جديدة لهذا الدرس داخل نفس الأسبوع.', { variant: 'success' });
+            await onRefresh?.();
+          } catch (err) {
+            console.error('Failed to clone scheduled lesson:', err);
+            enqueueSnackbar('فشل في استنساخ الحصة.', { variant: 'error' });
+          }
+          // setIsDropping(`${sectionId}-${date}`);
+          // setTimeout(() => setIsDropping(null), 1000);
+        } else {
+          // Move across weeks
+          const updatedLesson = { ...originalLesson };
+          updatedLesson.date = date;
+          updatedLesson.assignedSections = [sectionId];
+          updatedLesson.completionStatus = { [sectionId]: originalLesson.completionStatus?.[sectionId] || 'planned' };
+          try {
+            await updateScheduledLessonAPI(String(originalLesson.id), updatedLesson);
+            enqueueSnackbar('تم نقل الحصة بنجاح.', { variant: 'success' });
+            await onRefresh?.();
+          } catch (err) {
+            console.error('Failed to move scheduled lesson:', err);
+            enqueueSnackbar('فشل في نقل الحصة.', { variant: 'error' });
+          }
+          // setIsDropping(`${sectionId}-${date}`);
+          // setTimeout(() => setIsDropping(null), 1000);
+        }
       }
     }
   };
@@ -240,7 +351,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
     setDragOverCell(null);
   };
 
-  const handleSaveLesson = (lesson: AdaptedLesson) => {
+  const handleSaveLesson = async (lesson: AdaptedLesson) => {
     const originalScheduledLesson = scheduledLessons.find(sl => sl.id === lesson.id.toString());
     if (!originalScheduledLesson) {
         console.error("Could not find original scheduled lesson to update");
@@ -248,7 +359,9 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
     }
     const completionStatus: { [sectionId: string]: 'planned' | 'in-progress' | 'completed' } = {};
     originalScheduledLesson.assignedSections.forEach(sectionId => {
-        completionStatus[sectionId] = lesson.status;
+        // Map 'not-planned' to 'planned' for the API
+        const statusForAPI = lesson.status === 'not-planned' ? 'planned' : lesson.status;
+        completionStatus[sectionId] = statusForAPI;
     });
     const updatedData: Partial<ScheduledLesson> = {
       customTitle: lesson.lessonTitle,
@@ -259,7 +372,18 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
       completionStatus: completionStatus,
       manualSessionNumber: lesson.manualSessionNumber
     };
-    editScheduledLesson(lesson.id.toString(), updatedData);
+    
+    console.log('💾 [CalendarGrid] Saving lesson with notes:', lesson.notes);
+    console.log('💾 [CalendarGrid] Converted notes for API:', updatedData.notes);
+    
+    try {
+      await updateScheduledLessonAPI(lesson.id.toString(), updatedData);
+      enqueueSnackbar('تم حفظ الحصة بنجاح.', { variant: 'success' });
+      await onRefresh?.();
+    } catch (err) {
+      console.error('Failed to update scheduled lesson:', err);
+      enqueueSnackbar('فشل في حفظ تغييرات الحصة.', { variant: 'error' });
+    }
     setEditingLesson(null);
   };
 
@@ -307,35 +431,31 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
                       {section.name}
                   </Paper>
                   {weekDays.map(dayDate => {
-                      const dayNameArabic = format(dayDate, 'EEEE', { locale: ar });
-                      const normalizedDay = normalizeArabic(dayNameArabic);
-                      const dayNameEnglish = dayMapping[normalizedDay as keyof typeof dayMapping];
-                      const isScheduledDay = section.scheduledDays?.includes(dayNameEnglish as any);
+                      // تحديد ما إذا كان هذا القسم يدرس في هذا اليوم
+                      const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+                      const dayName = dayNames[dayDate.getDay()];
+                      
+                      // البحث في الجدول الزمني
+                      const isScheduledDay = adminSchedule.some(entry => 
+                        entry.sectionId === section.id && entry.day === dayName
+                      );
                       
                       let backgroundColor = 'transparent';
                       if (isScheduledDay) {
-                        const color = section.color || '#808080';
-                        if (typeof color === 'string' && color.startsWith('#') && color.length === 7) {
-                          const r = parseInt(color.slice(1, 3), 16);
-                          const g = parseInt(color.slice(3, 5), 16);
-                          const b = parseInt(color.slice(5, 7), 16);
-                          if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
-                            backgroundColor = `rgba(${r}, ${g}, ${b}, 0.15)`;
-                          } else {
-                            backgroundColor = 'rgba(128, 128, 128, 0.1)';
-                          }
-                        } else {
-                          backgroundColor = 'rgba(128, 128, 128, 0.1)';
-                        }
+                        const color = sectionColors[section.id] || '#808080';
+                        const r = parseInt(color.slice(1, 3), 16);
+                        const g = parseInt(color.slice(3, 5), 16);
+                        const b = parseInt(color.slice(5, 7), 16);
+                        backgroundColor = `rgba(${r}, ${g}, ${b}, 0.4)`; // شفافية 40%
                       }
 
                       const dateString = format(dayDate, 'yyyy-MM-dd');
                       const cellId = `${dateString}-${section.id}`;
                       const isDraggedOver = dragOverCell === cellId;
-                      const cellLessons = filteredScheduledLessons
+                      const cellLessons: AdaptedLesson[] = filteredScheduledLessons
                         .filter(lesson => lesson && lesson.assignedSections && lesson.assignedSections.includes(section.id) && lesson.date === dateString)
                         .map(lesson => migrateLessonToAdapted(lesson as any))
-                        .filter(Boolean);
+                        .filter((l): l is AdaptedLesson => Boolean(l));
 
                       return (
                           <Paper
@@ -346,15 +466,18 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
                               sx={{
                                   minHeight: '120px',
                                   p: 1,
-                                  backgroundColor,
-                                  transition: 'background-color 0.3s ease-in-out',
+                                  backgroundColor: isDraggedOver 
+                                    ? (isScheduledDay ? backgroundColor.replace('0.5)', '0.8)') : 'rgba(0, 123, 255, 0.2)')
+                                    : backgroundColor,
+                                  transition: 'background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
                                   border: '1px solid #eee',
-                                  outline: isDraggedOver ? '2px dashed #007bff' : 'none',
+                                  outline: isDraggedOver ? '3px dashed #007bff' : 'none',
                                   outlineOffset: '-2px',
+                                  boxShadow: isDraggedOver ? '0 4px 12px rgba(0, 123, 255, 0.3)' : 'none',
                               }}
                           >
-                              {cellLessons.map(lesson => (
-                                  <LessonCard key={lesson.id} lesson={lesson} onDoubleClick={setEditingLesson} onDelete={handleDeleteLesson} allScheduledLessons={scheduledLessons || []} />
+                {cellLessons.map(lesson => (
+                  <LessonCard key={lesson.id} lesson={lesson} onDoubleClick={setEditingLesson} onDelete={handleDeleteLesson} allScheduledLessons={cellLessons} />
                               ))}
                           </Paper>
                       );
@@ -369,7 +492,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
           open={!!editingLesson}
           onClose={() => setEditingLesson(null)}
           onSave={handleSaveLesson}
-          scheduledLessons={scheduledLessons}
         />
       )}
     </Box>
