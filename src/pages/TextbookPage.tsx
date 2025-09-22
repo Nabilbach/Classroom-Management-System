@@ -316,8 +316,8 @@ const TextbookPage: React.FC<TextbookPageProps> = () => {
             <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography color=\"textSecondary\" gutterBottom>عدد الأقسام</Typography>
-                  <Typography variant=\"h5\">{stats.sectionsStats.length}</Typography>
+                  <Typography color="textSecondary" gutterBottom>عدد الأقسام</Typography>
+                  <Typography variant="h5">{stats.sectionsStats.length}</Typography>
                 </CardContent>
               </Card>
             </Grid>
