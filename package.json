@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:backend": "cd backend && node index.dev.js",
+    "dev:frontend": "vite --port 5174",
+    "prod:backend": "cd backend && node index.js", 
+    "prod:frontend": "vite --port 5173",
     "build": "vite build",
     "preview": "vite preview"
   },
