@@ -331,9 +331,44 @@ function SectionManagement() {
 
   <Card className="mb-8 p-4 shadow-lg w-full min-w-0">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-          <div className="md:col-span-2"><TextField label="ابحث..." InputProps={{ endAdornment: <FaSearch /> }} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} fullWidth /></div>
-          <Select label="المستوى" value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as string)} fullWidth><MenuItem value="all">الكل</MenuItem><MenuItem value="الابتدائي">الابتدائي</MenuItem><MenuItem value="المتوسط">المتوسط</MenuItem><MenuItem value="الثانوي">الثانوي</MenuItem></Select>
-          <div className="flex gap-2"><Select label="التخصص" value={specialtyFilter} onChange={(e) => setSpecialtyFilter(e.target.value as string)} fullWidth><MenuItem value="all">الكل</MenuItem><MenuItem value="علوم">علوم</MenuItem><MenuItem value="رياضيات">رياضيات</MenuItem><MenuItem value="آداب">آداب</MenuItem><MenuItem value="لغات">لغات</MenuItem></Select><IconButton onClick={resetFilters} variant="outlined" color="primary"><FaUndo /></IconButton></div>
+          <div className="md:col-span-2">
+            <TextField 
+              label="ابحث..." 
+              InputProps={{ endAdornment: <FaSearch /> }} 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+              fullWidth 
+            />
+          </div>
+          <Select 
+            label="المستوى" 
+            value={levelFilter} 
+            onChange={(e) => setLevelFilter(e.target.value as string)} 
+            fullWidth
+          >
+            <MenuItem value="all">جميع المستويات</MenuItem>
+            <MenuItem value="جذع مشترك">جذع مشترك</MenuItem>
+            <MenuItem value="أولى بكالوريا">أولى بكالوريا</MenuItem>
+            <MenuItem value="ثانية بكالوريا">ثانية بكالوريا</MenuItem>
+          </Select>
+          <div className="flex gap-2">
+            <Select 
+              label="التخصص" 
+              value={specialtyFilter} 
+              onChange={(e) => setSpecialtyFilter(e.target.value as string)} 
+              fullWidth
+            >
+              <MenuItem value="all">جميع التخصصات</MenuItem>
+              <MenuItem value="آداب وعلوم إنسانية">آداب وعلوم إنسانية</MenuItem>
+              <MenuItem value="علوم تجريبية">علوم تجريبية</MenuItem>
+              <MenuItem value="علوم تجريبية (فرنسية)">علوم تجريبية (فرنسية)</MenuItem>
+              <MenuItem value="علوم فيزيائية">علوم فيزيائية</MenuItem>
+              <MenuItem value="علوم الحياة والأرض">علوم الحياة والأرض</MenuItem>
+            </Select>
+            <IconButton onClick={resetFilters} variant="outlined" color="primary">
+              <FaUndo />
+            </IconButton>
+          </div>
         </div>
       </Card>
 

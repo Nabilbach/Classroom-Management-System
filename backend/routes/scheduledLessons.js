@@ -166,10 +166,40 @@ router.get('/', async (req, res) => {
 // GET textbook data from scheduled lessons
 router.get('/textbook', async (req, res) => {
   try {
-    const { sectionId, dateFrom, dateTo } = req.query;
+    const { sectionId, level, dateFrom, dateTo } = req.query;
 
-    const where = {};
-    if (sectionId && sectionId !== 'all') where.sectionId = sectionId;
+    let where = {};
+    
+    // Filter by section
+    if (sectionId && sectionId !== 'all') {
+      where.sectionId = sectionId;
+    }
+    
+    // Filter by educational level
+    if (level && level !== 'all') {
+      // Get sections that match the educational level
+      const sectionsForLevel = await Section.findAll({
+        where: { educationalLevel: level },
+        attributes: ['id']
+      });
+      const sectionIds = sectionsForLevel.map(s => s.id);
+      
+      if (sectionIds.length > 0) {
+        if (where.sectionId) {
+          // If section is already filtered, ensure it's in the level filter
+          if (!sectionIds.includes(where.sectionId)) {
+            return res.json([]); // No results if section doesn't match level
+          }
+        } else {
+          // Apply level filter
+          where.sectionId = { [Op.in]: sectionIds };
+        }
+      } else {
+        return res.json([]); // No sections for this level
+      }
+    }
+
+    // Date range filter
     if (dateFrom || dateTo) {
       where.date = {};
       if (dateFrom) where.date[Op.gte] = dateFrom;

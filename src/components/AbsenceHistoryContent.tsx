@@ -134,14 +134,70 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: `سجل-الحضور-والغياب-${selectedSection?.name ?? 'قسم'}-${selectedDate}`,
-    pageStyle: `@page { size: auto; margin: 12mm; }
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .no-print { display: none !important; }
-      .print-container { width: 100%; }
-      table { border-collapse: collapse; width: 100%; }
-      th, td { border: 1px solid #000; padding: 6px; font-size: 12px; }
-      thead th { background: #eee !important; }
-      h1, h2, h3 { margin: 0 0 8px 0; }
+    pageStyle: `
+      @page { 
+        size: A4; 
+        margin: 15mm 10mm; 
+      }
+      @media print {
+        body { 
+          -webkit-print-color-adjust: exact; 
+          print-color-adjust: exact; 
+          font-family: 'Arial', sans-serif;
+          direction: rtl;
+          text-align: right;
+        }
+        .no-print { display: none !important; }
+        .print-container { 
+          width: 100%; 
+          max-width: none;
+          margin: 0;
+          padding: 0;
+        }
+        table { 
+          border-collapse: collapse; 
+          width: 100%; 
+          margin-bottom: 20px;
+          page-break-inside: avoid;
+        }
+        th, td { 
+          border: 1px solid #000; 
+          padding: 8px 4px; 
+          font-size: 11px;
+          text-align: center;
+          vertical-align: middle;
+        }
+        thead th { 
+          background: #f0f0f0 !important; 
+          font-weight: bold;
+          page-break-inside: avoid;
+          page-break-after: avoid;
+        }
+        tbody tr {
+          page-break-inside: avoid;
+        }
+        h1, h2, h3, h4, h5, h6 { 
+          margin: 0 0 10px 0; 
+          page-break-after: avoid;
+        }
+        .section-title {
+          font-size: 14px;
+          font-weight: bold;
+          margin: 15px 0 8px 0;
+          page-break-after: avoid;
+        }
+        .header-title {
+          font-size: 18px;
+          font-weight: bold;
+          text-align: center;
+          margin-bottom: 5px;
+        }
+        .header-subtitle {
+          font-size: 14px;
+          text-align: center;
+          margin-bottom: 20px;
+        }
+      }
     `,
   } as any);
 
@@ -220,9 +276,9 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
           <Tab label={`الغائبون (${absentSorted.length})`} />
         </Tabs>
         {/* Table Content */}
-        <Box sx={{ flex: 1, overflow: 'auto', mb: 2 }}>
+        <Box sx={{ flex: 1, overflow: 'auto', mb: 2, maxHeight: 'calc(100vh - 320px)' }}>
           {activeTab === 0 && (
-            <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2 }}>
+            <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2, maxHeight: '100%', overflow: 'auto' }}>
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
@@ -277,7 +333,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
             </TableContainer>
           )}
           {activeTab === 1 && (
-            <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2 }}>
+            <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2, maxHeight: '100%', overflow: 'auto' }}>
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
@@ -335,69 +391,87 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
       </CardContent>
 
       {/* Hidden print-only content: includes both tables without actions */}
-      <Box ref={printRef} className="print-container" sx={{ display: 'none', p: 3, '@media print': { display: 'block' } }}>
-        <Typography variant="h5" align="center" fontWeight="bold" sx={{ mb: 1 }}>سجل الحضور والغياب</Typography>
-        <Typography variant="subtitle1" align="center" sx={{ mb: 3 }}>
+      <Box 
+        ref={printRef} 
+        className="print-container" 
+        sx={{ 
+          display: 'none', 
+          p: 2,
+          direction: 'rtl',
+          '@media print': { 
+            display: 'block',
+            p: 0,
+            m: 0,
+            width: '100%'
+          } 
+        }}
+      >
+        <div className="header-title">سجل الحضور والغياب</div>
+        <div className="header-subtitle">
           {selectedSection?.name || 'قسم غير محدد'} - {selectedDate}
-        </Typography>
+        </div>
 
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ mb: 1 }}>الحاضرون ({presentSorted.length})</Typography>
-          <table>
+        <div style={{ marginBottom: '25px' }}>
+          <div className="section-title">الحاضرون ({presentSorted.length})</div>
+          <table style={{ width: '100%', marginBottom: '15px' }}>
             <thead>
               <tr>
-                <th style={{ width: '10%' }}>ر.ت</th>
-                <th style={{ width: '55%' }}>الاسم الكامل</th>
-                <th style={{ width: '20%' }}>عدد الغيابات</th>
-                <th style={{ width: '15%' }}>الحالة</th>
+                <th style={{ width: '8%' }}>ر.ت</th>
+                <th style={{ width: '50%' }}>الاسم الكامل</th>
+                <th style={{ width: '22%' }}>عدد الغيابات</th>
+                <th style={{ width: '20%' }}>الحالة</th>
               </tr>
             </thead>
             <tbody>
               {presentSorted.map((r, idx) => (
                 <tr key={`p-${r.id}`}>
-                  <td align="center">{r.student?.classOrder ?? (idx + 1)}</td>
-                  <td>{`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}</td>
-                  <td align="center">{r.absences ?? 0}</td>
-                  <td align="center">حاضر</td>
+                  <td>{r.student?.classOrder ?? (idx + 1)}</td>
+                  <td style={{ textAlign: 'right', paddingRight: '8px' }}>
+                    {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
+                  </td>
+                  <td>{r.absences ?? 0}</td>
+                  <td>حاضر</td>
                 </tr>
               ))}
               {presentSorted.length === 0 && (
                 <tr>
-                  <td colSpan={4} align="center">لا يوجد طلاب حاضرون</td>
+                  <td colSpan={4}>لا يوجد طلاب حاضرون</td>
                 </tr>
               )}
             </tbody>
           </table>
-        </Box>
+        </div>
 
-        <Box>
-          <Typography variant="h6" sx={{ mb: 1 }}>الغائبون ({absentSorted.length})</Typography>
-          <table>
+        <div>
+          <div className="section-title">الغائبون ({absentSorted.length})</div>
+          <table style={{ width: '100%' }}>
             <thead>
               <tr>
-                <th style={{ width: '10%' }}>ر.ت</th>
-                <th style={{ width: '55%' }}>الاسم الكامل</th>
-                <th style={{ width: '20%' }}>عدد الغيابات</th>
-                <th style={{ width: '15%' }}>الحالة</th>
+                <th style={{ width: '8%' }}>ر.ت</th>
+                <th style={{ width: '50%' }}>الاسم الكامل</th>
+                <th style={{ width: '22%' }}>عدد الغيابات</th>
+                <th style={{ width: '20%' }}>الحالة</th>
               </tr>
             </thead>
             <tbody>
               {absentSorted.map((r, idx) => (
                 <tr key={`a-${r.id}`}>
-                  <td align="center">{r.student?.classOrder ?? (idx + 1)}</td>
-                  <td>{`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}</td>
-                  <td align="center">{r.absences ?? 0}</td>
-                  <td align="center">غائب</td>
+                  <td>{r.student?.classOrder ?? (idx + 1)}</td>
+                  <td style={{ textAlign: 'right', paddingRight: '8px' }}>
+                    {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
+                  </td>
+                  <td>{r.absences ?? 0}</td>
+                  <td>غائب</td>
                 </tr>
               ))}
               {absentSorted.length === 0 && (
                 <tr>
-                  <td colSpan={4} align="center">لا يوجد طلاب غائبون</td>
+                  <td colSpan={4}>لا يوجد طلاب غائبون</td>
                 </tr>
               )}
             </tbody>
           </table>
-        </Box>
+        </div>
       </Box>
 
       {/* Sticky Action Bar */}
