@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الأمان التفاعلية المباشرة - Live Security Dashboard</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            padding: 20px;
+            height: calc(100vh - 200px);
+        }
+
+        .network-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stats-panel, .alerts-panel, .logs-panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .alert-item, .log-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid;
+        }
+
+        .alert-high { border-left-color: #ef4444; }
+        .alert-medium { border-left-color: #fbbf24; }
+        .alert-low { border-left-color: #4ade80; }
+
+        .timestamp {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(45deg, #4ade80, #22c55e);
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+            transition: all 0.3s ease;
+            animation: rotate 2s infinite linear;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .legend {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        #networkGraph {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛡️ لوحة الأمان التفاعلية المباشرة</h1>
+        <p>آخر تحديث: ٢٥‏/٩‏/٢٠٢٥، ٦:٥٨:٢٣ م</p>
+        
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" style="background-color: #fbbf24;"></div>
+                <span>حالة النظام: WARNING</span>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot" style="background-color: #4ade80;"></div>
+                <span>النقاط: 70/100</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="network-container">
+            <div id="networkGraph"></div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #4ade80;"></div>
+                    <span>آمن ومحمي</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #3b82f6;"></div>
+                    <span>نشط وتحت المراقبة</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #fbbf24;"></div>
+                    <span>يحتاج انتباه</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #ef4444;"></div>
+                    <span>خطر - يحتاج إجراء فوري</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="stats-panel">
+                <div class="panel-title">📊 الإحصائيات المباشرة</div>
+                <div class="stat-item">
+                    <span>النسخ الاحتياطية:</span>
+                    <span class="stat-value">5</span>
+                </div>
+                <div class="stat-item">
+                    <span>النسخ الحديثة:</span>
+                    <span class="stat-value" style="color: #4ade80;">5</span>
+                </div>
+                <div class="stat-item">
+                    <span>السكريبتات المحمية:</span>
+                    <span class="stat-value" style="color: #4ade80;">1</span>
+                </div>
+                <div class="stat-item">
+                    <span>السكريبتات المعرضة:</span>
+                    <span class="stat-value" style="color: #ef4444;">2</span>
+                </div>
+                <div class="stat-item">
+                    <span>الإنذارات الحديثة:</span>
+                    <span class="stat-value" style="color: #4ade80;">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>الخدمات النشطة:</span>
+                    <span class="stat-value" style="color: #3b82f6;">3</span>
+                </div>
+            </div>
+
+            <div class="alerts-panel">
+                <div class="panel-title">🚨 الإنذارات الحديثة</div>
+                <div style="text-align: center; color: #4ade80;">✅ لا توجد إنذارات حديثة</div>
+            </div>
+
+            <div class="logs-panel">
+                <div class="panel-title">📝 آخر الأحداث</div>
+                
+                        <div class="log-item">
+                            <div><strong>SECURITY</strong></div>
+                            <div>الأحداث: 1</div>
+                            <div class="timestamp">٢٥‏/٩‏/٢٠٢٥، ٦:١٦:٣٨ م</div>
+                        </div>
+                    
+                        <div class="log-item">
+                            <div><strong>BACKUP</strong></div>
+                            <div>الأحداث: 2</div>
+                            <div class="timestamp">٢٥‏/٩‏/٢٠٢٥، ٥:٥٣:٢٤ م</div>
+                        </div>
+                    
+                        <div class="log-item">
+                            <div><strong>RECOVERY</strong></div>
+                            <div>الأحداث: 1</div>
+                            <div class="timestamp">٢٥‏/٩‏/٢٠٢٥، ٦:١٦:٣٣ م</div>
+                        </div>
+                    
+            </div>
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="refreshData()" title="تحديث البيانات">
+        🔄
+    </button>
+
+    <script>
+        // بيانات المخطط
+        const nodes = new vis.DataSet([{"id":"system_core","label":"نظام إدارة الفصول","color":"#3b82f6","size":30,"x":0,"y":0,"physics":false},{"id":"db_main","label":"classroom.db","color":"#8b5cf6","size":25,"x":180,"y":0,"physics":false},{"id":"db_main_students","label":"students","color":"#06b6d4","size":15,"x":249.2820323027551,"y":-39.99999999999999,"physics":false},{"id":"db_main_teachers","label":"teachers","color":"#06b6d4","size":15,"x":257.27406610312545,"y":-20.70552360820166,"physics":false},{"id":"db_main_sections","label":"sections","color":"#06b6d4","size":15,"x":260,"y":0,"physics":false},{"id":"db_main_subjects","label":"subjects","color":"#06b6d4","size":15,"x":257.27406610312545,"y":20.70552360820166,"physics":false},{"id":"db_main_schedule","label":"schedule","color":"#06b6d4","size":15,"x":249.2820323027551,"y":39.99999999999999,"physics":false},{"id":"db_dev","label":"classroom_dev.db","color":"#8b5cf6","size":25,"x":-89.99999999999996,"y":155.88457268119896,"physics":false},{"id":"db_dev_students","label":"students","color":"#06b6d4","size":15,"x":-89.99999999999996,"y":235.88457268119896,"physics":false},{"id":"db_dev_teachers","label":"teachers","color":"#06b6d4","size":15,"x":-110.70552360820162,"y":233.1586387843244,"physics":false},{"id":"db_dev_sections","label":"sections","color":"#06b6d4","size":15,"x":-129.99999999999994,"y":225.16660498395407,"physics":false},{"id":"db_dev_subjects","label":"subjects","color":"#06b6d4","size":15,"x":-146.56854249492375,"y":212.45311517612276,"physics":false},{"id":"db_dev_schedule","label":"schedule","color":"#06b6d4","size":15,"x":-159.28203230275506,"y":195.88457268119896,"physics":false},{"id":"db_test","label":"classroom_test.db","color":"#8b5cf6","size":25,"x":-90.00000000000009,"y":-155.88457268119893,"physics":false},{"id":"db_test_students","label":"students","color":"#06b6d4","size":15,"x":-159.28203230275517,"y":-195.88457268119893,"physics":false},{"id":"db_test_teachers","label":"teachers","color":"#06b6d4","size":15,"x":-146.56854249492392,"y":-212.45311517612274,"physics":false},{"id":"db_test_sections","label":"sections","color":"#06b6d4","size":15,"x":-130.0000000000001,"y":-225.16660498395402,"physics":false},{"id":"db_test_subjects","label":"subjects","color":"#06b6d4","size":15,"x":-110.70552360820173,"y":-233.1586387843244,"physics":false},{"id":"db_test_schedule","label":"schedule","color":"#06b6d4","size":15,"x":-90.0000000000001,"y":-235.88457268119893,"physics":false},{"id":"backup_0","label":"نسخة احتياطية 1","color":"#4ade80","size":20,"x":1.9594348786357652e-14,"y":-320,"physics":false},{"id":"backup_1","label":"نسخة احتياطية 2","color":"#4ade80","size":20,"x":160.00000000000003,"y":-277.12812921102034,"physics":false},{"id":"backup_2","label":"نسخة احتياطية 3","color":"#4ade80","size":20,"x":277.1281292110204,"y":-159.99999999999997,"physics":false},{"id":"script_reset_db.js","label":"reset_db.js","color":"#fbbf24","size":22,"x":1.9594348786357652e-14,"y":320,"physics":false},{"id":"script_manual_migration.js","label":"manual_migration.js","color":"#fbbf24","size":22,"x":-159.99999999999994,"y":277.1281292110204,"physics":false},{"id":"monitor","label":"المراقبة الأمنية","color":"#3b82f6","size":20,"x":-120,"y":300,"physics":false},{"id":"backup_service","label":"خدمة النسخ","color":"#4ade80","size":20,"x":120,"y":300,"physics":false}]);
+        const edges = new vis.DataSet([{"from":"system_core","to":"db_main","color":"#fbbf24","width":2,"arrows":"to"},{"from":"db_main","to":"db_main_students","color":"#fbbf24","width":2,"arrows":"to"},{"from":"db_main","to":"db_main_teachers","color":"#fbbf24","width":2,"arrows":"to"},{"from":"db_main","to":"db_main_sections","color":"#fbbf24","width":2,"arrows":"to"},{"from":"db_main","to":"db_main_subjects","color":"#fbbf24","width":2,"arrows":"to"},{"from":"db_main","to":"db_main_schedule","color":"#fbbf24","width":2,"arrows":"to"},{"from":"system_core","to":"db_dev","color":"#fbbf24","width":2,"arrows":"to"},{"from":"db_dev","to":"db_dev_students","color":"#fbbf24","width":2,"arrows":"to"},{"from":"db_dev","to":"db_dev_teachers","color":"#fbbf24","width":2,"arrows":"to"},{"from":"db_dev","to":"db_dev_sections","color":"#fbbf24","width":2,"arrows":"to"},{"from":"db_dev","to":"db_dev_subjects","color":"#fbbf24","width":2,"arrows":"to"},{"from":"db_dev","to":"db_dev_schedule","color":"#fbbf24","width":2,"arrows":"to"},{"from":"system_core","to":"db_test","color":"#fbbf24","width":2,"arrows":"to"},{"from":"db_test","to":"db_test_students","color":"#fbbf24","width":2,"arrows":"to"},{"from":"db_test","to":"db_test_teachers","color":"#fbbf24","width":2,"arrows":"to"},{"from":"db_test","to":"db_test_sections","color":"#fbbf24","width":2,"arrows":"to"},{"from":"db_test","to":"db_test_subjects","color":"#fbbf24","width":2,"arrows":"to"},{"from":"db_test","to":"db_test_schedule","color":"#fbbf24","width":2,"arrows":"to"},{"from":"system_core","to":"backup_0","color":"#fbbf24","width":2,"arrows":"to"},{"from":"system_core","to":"backup_1","color":"#fbbf24","width":2,"arrows":"to"},{"from":"system_core","to":"backup_2","color":"#fbbf24","width":2,"arrows":"to"},{"from":"system_core","to":"backup_3","color":"#fbbf24","width":2,"arrows":"to"},{"from":"system_core","to":"backup_4","color":"#fbbf24","width":2,"arrows":"to"},{"from":"system_core","to":"script_reset_db.js","color":"#4ade80","width":2,"arrows":"to"},{"from":"system_core","to":"script_manual_migration.js","color":"#fbbf24","width":2,"arrows":"to"},{"from":"system_core","to":"script_repair_student_sections.js","color":"#fbbf24","width":2,"arrows":"to"},{"from":"system_core","to":"script_restore_schedule.js","color":"#fbbf24","width":2,"arrows":"to"},{"from":"system_core","to":"script_fix_schedule_days.js","color":"#fbbf24","width":2,"arrows":"to"},{"from":"system_core","to":"security_monitor","color":"#4ade80","width":2,"arrows":"to"},{"from":"system_core","to":"backup_service","color":"#4ade80","width":2,"arrows":"to"},{"from":"security_monitor","to":"script_reset_db.js","color":"#3b82f6","width":2,"arrows":"to"},{"from":"security_monitor","to":"script_manual_migration.js","color":"#3b82f6","width":2,"arrows":"to"},{"from":"security_monitor","to":"script_repair_student_sections.js","color":"#3b82f6","width":2,"arrows":"to"},{"from":"security_monitor","to":"script_restore_schedule.js","color":"#3b82f6","width":2,"arrows":"to"},{"from":"security_monitor","to":"script_fix_schedule_days.js","color":"#3b82f6","width":2,"arrows":"to"},{"from":"table_db_main_students","to":"table_db_main_sections","color":"#fbbf24","width":2,"arrows":"to"},{"from":"table_db_main_schedule","to":"table_db_main_teachers","color":"#fbbf24","width":2,"arrows":"to"},{"from":"table_db_main_schedule","to":"table_db_main_subjects","color":"#fbbf24","width":2,"arrows":"to"},{"from":"table_db_main_attendance","to":"table_db_main_students","color":"#fbbf24","width":2,"arrows":"to"},{"from":"table_db_dev_students","to":"table_db_dev_sections","color":"#fbbf24","width":2,"arrows":"to"},{"from":"table_db_dev_schedule","to":"table_db_dev_teachers","color":"#fbbf24","width":2,"arrows":"to"},{"from":"table_db_dev_schedule","to":"table_db_dev_subjects","color":"#fbbf24","width":2,"arrows":"to"},{"from":"table_db_dev_attendance","to":"table_db_dev_students","color":"#fbbf24","width":2,"arrows":"to"},{"from":"table_db_test_students","to":"table_db_test_sections","color":"#fbbf24","width":2,"arrows":"to"},{"from":"table_db_test_schedule","to":"table_db_test_teachers","color":"#fbbf24","width":2,"arrows":"to"},{"from":"table_db_test_schedule","to":"table_db_test_subjects","color":"#fbbf24","width":2,"arrows":"to"}]);
+
+        // إعدادات المخطط
+        const options = {
+            nodes: {
+                shape: 'dot',
+                font: {
+                    size: 14,
+                    color: 'white',
+                    face: 'Arial',
+                    strokeWidth: 1,
+                    strokeColor: 'black'
+                },
+                borderWidth: 3,
+                borderColor: 'white',
+                shadow: {
+                    enabled: true,
+                    color: 'rgba(0,0,0,0.5)',
+                    size: 15,
+                    x: 3,
+                    y: 3
+                }
+            },
+            edges: {
+                font: {
+                    size: 10,
+                    color: 'white'
+                },
+                shadow: {
+                    enabled: true,
+                    color: 'rgba(0,0,0,0.3)'
+                },
+                smooth: {
+                    enabled: false
+                },
+                arrows: {
+                    to: {
+                        enabled: true,
+                        scaleFactor: 1.2
+                    }
+                }
+            },
+            physics: {
+                enabled: false
+            },
+            interaction: {
+                hover: true,
+                tooltipDelay: 200,
+                hideEdgesOnDrag: false,
+                dragNodes: true,
+                dragView: true,
+                zoomView: true
+            },
+            layout: {
+                improvedLayout: false
+            }
+        };
+
+        // إنشاء المخطط
+        const container = document.getElementById('networkGraph');
+        const network = new vis.Network(container, { nodes, edges }, options);
+
+        // إضافة tooltip للعقد
+        network.on('hoverNode', function(params) {
+            const nodeId = params.node;
+            const node = nodes.get(nodeId);
+            
+            if (node && node.details) {
+                // يمكن إضافة tooltip مخصص هنا
+                container.title = node.details;
+            }
+        });
+
+        // تحديث البيانات
+        function refreshData() {
+            // في التطبيق الحقيقي، يمكن جلب البيانات الجديدة من API
+            location.reload();
+        }
+
+        // تحديث تلقائي كل دقيقتين
+        setInterval(refreshData, 120000);
+
+        // تأثيرات بصرية
+        network.on('stabilizationIterationsDone', function() {
+            network.setOptions({ physics: false });
+        });
+
+        // رسائل التفاعل
+        network.on('click', function(params) {
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                const node = nodes.get(nodeId);
+                
+                if (node) {
+                    alert('تفاصيل العقدة:\n' + node.details);
+                }
+            }
+        });
+
+        console.log('🛡️ تم تحميل لوحة الأمان التفاعلية المباشرة بنجاح');
+        console.log('📊 البيانات المحملة:', {"totalBackups":5,"freshBackups":5,"protectedScripts":1,"vulnerableScripts":2,"recentAlerts":0,"activeServices":3,"overallScore":70});
+    </script>
+</body>
+</html>

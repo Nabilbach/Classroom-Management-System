@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مخطط اختبار الشجرة المتفرعة</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%);
+            color: white;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            height: 80vh;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        #networkGraph {
+            width: 100%;
+            height: calc(100% - 60px);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <strong>العقد المتوقعة:</strong><br>
+        • النظام الأساسي: 1<br>
+        • قواعد البيانات: 3<br>
+        • الجداول: 12<br>
+        <strong>المجموع: 16 عقدة</strong>
+    </div>
+
+    <div class="container">
+        <h1>🌲 اختبار الشجرة المتفرعة</h1>
+        <div id="networkGraph"></div>
+    </div>
+
+    <script>
+        console.log('🚀 بدء تحميل المخطط...');
+        
+        // البيانات
+        const nodes = new vis.DataSet([
+  {
+    "id": "system",
+    "label": "نظام إدارة الفصول",
+    "color": "#3b82f6",
+    "size": 30,
+    "x": 0,
+    "y": 0,
+    "physics": false
+  },
+  {
+    "id": "db_main",
+    "label": "classroom.db",
+    "color": "#8b5cf6",
+    "size": 25,
+    "x": 150,
+    "y": 0,
+    "physics": false
+  },
+  {
+    "id": "db_main_students",
+    "label": "students",
+    "color": "#06b6d4",
+    "size": 15,
+    "x": 219.2820323027551,
+    "y": -39.99999999999999,
+    "physics": false
+  },
+  {
+    "id": "db_main_teachers",
+    "label": "teachers",
+    "color": "#06b6d4",
+    "size": 15,
+    "x": 228.78462024097664,
+    "y": -13.891854213354426,
+    "physics": false
+  },
+  {
+    "id": "db_main_sections",
+    "label": "sections",
+    "color": "#06b6d4",
+    "size": 15,
+    "x": 228.78462024097664,
+    "y": 13.891854213354426,
+    "physics": false
+  },
+  {
+    "id": "db_main_subjects",
+    "label": "subjects",
+    "color": "#06b6d4",
+    "size": 15,
+    "x": 219.2820323027551,
+    "y": 39.99999999999999,
+    "physics": false
+  },
+  {
+    "id": "db_dev",
+    "label": "classroom_dev.db",
+    "color": "#8b5cf6",
+    "size": 25,
+    "x": -74.99999999999997,
+    "y": 129.9038105676658,
+    "physics": false
+  },
+  {
+    "id": "db_dev_students",
+    "label": "students",
+    "color": "#06b6d4",
+    "size": 15,
+    "x": -74.99999999999997,
+    "y": 209.9038105676658,
+    "physics": false
+  },
+  {
+    "id": "db_dev_teachers",
+    "label": "teachers",
+    "color": "#06b6d4",
+    "size": 15,
+    "x": -102.36161146605346,
+    "y": 205.07922023053848,
+    "physics": false
+  },
+  {
+    "id": "db_dev_sections",
+    "label": "sections",
+    "color": "#06b6d4",
+    "size": 15,
+    "x": -126.42300877492312,
+    "y": 191.18736601718405,
+    "physics": false
+  },
+  {
+    "id": "db_dev_subjects",
+    "label": "subjects",
+    "color": "#06b6d4",
+    "size": 15,
+    "x": -144.28203230275506,
+    "y": 169.9038105676658,
+    "physics": false
+  },
+  {
+    "id": "db_test",
+    "label": "classroom_test.db",
+    "color": "#8b5cf6",
+    "size": 25,
+    "x": -75.00000000000007,
+    "y": -129.90381056766577,
+    "physics": false
+  },
+  {
+    "id": "db_test_students",
+    "label": "students",
+    "color": "#06b6d4",
+    "size": 15,
+    "x": -144.28203230275517,
+    "y": -169.90381056766577,
+    "physics": false
+  },
+  {
+    "id": "db_test_teachers",
+    "label": "teachers",
+    "color": "#06b6d4",
+    "size": 15,
+    "x": -126.42300877492323,
+    "y": -191.187366017184,
+    "physics": false
+  },
+  {
+    "id": "db_test_sections",
+    "label": "sections",
+    "color": "#06b6d4",
+    "size": 15,
+    "x": -102.36161146605362,
+    "y": -205.07922023053843,
+    "physics": false
+  },
+  {
+    "id": "db_test_subjects",
+    "label": "subjects",
+    "color": "#06b6d4",
+    "size": 15,
+    "x": -75.00000000000009,
+    "y": -209.90381056766577,
+    "physics": false
+  }
+]);
+        const edges = new vis.DataSet([
+  {
+    "from": "system",
+    "to": "db_main",
+    "color": "#3b82f6",
+    "width": 3
+  },
+  {
+    "from": "db_main",
+    "to": "db_main_students",
+    "color": "#6b7280",
+    "width": 1
+  },
+  {
+    "from": "db_main",
+    "to": "db_main_teachers",
+    "color": "#6b7280",
+    "width": 1
+  },
+  {
+    "from": "db_main",
+    "to": "db_main_sections",
+    "color": "#6b7280",
+    "width": 1
+  },
+  {
+    "from": "db_main",
+    "to": "db_main_subjects",
+    "color": "#6b7280",
+    "width": 1
+  },
+  {
+    "from": "system",
+    "to": "db_dev",
+    "color": "#3b82f6",
+    "width": 3
+  },
+  {
+    "from": "db_dev",
+    "to": "db_dev_students",
+    "color": "#6b7280",
+    "width": 1
+  },
+  {
+    "from": "db_dev",
+    "to": "db_dev_teachers",
+    "color": "#6b7280",
+    "width": 1
+  },
+  {
+    "from": "db_dev",
+    "to": "db_dev_sections",
+    "color": "#6b7280",
+    "width": 1
+  },
+  {
+    "from": "db_dev",
+    "to": "db_dev_subjects",
+    "color": "#6b7280",
+    "width": 1
+  },
+  {
+    "from": "system",
+    "to": "db_test",
+    "color": "#3b82f6",
+    "width": 3
+  },
+  {
+    "from": "db_test",
+    "to": "db_test_students",
+    "color": "#6b7280",
+    "width": 1
+  },
+  {
+    "from": "db_test",
+    "to": "db_test_teachers",
+    "color": "#6b7280",
+    "width": 1
+  },
+  {
+    "from": "db_test",
+    "to": "db_test_sections",
+    "color": "#6b7280",
+    "width": 1
+  },
+  {
+    "from": "db_test",
+    "to": "db_test_subjects",
+    "color": "#6b7280",
+    "width": 1
+  }
+]);
+
+        console.log('📊 عدد العقد:', nodes.length);
+        console.log('🔗 عدد الاتصالات:', edges.length);
+
+        // إعدادات المخطط
+        const options = {
+            nodes: {
+                shape: 'dot',
+                font: {
+                    size: 12,
+                    color: 'white',
+                    face: 'Arial'
+                },
+                borderWidth: 2,
+                borderColor: 'white',
+                shadow: {
+                    enabled: true,
+                    color: 'rgba(0,0,0,0.3)',
+                    size: 5,
+                    x: 2,
+                    y: 2
+                }
+            },
+            edges: {
+                color: {
+                    color: '#ffffff',
+                    highlight: '#ffff00'
+                },
+                width: 2,
+                smooth: {
+                    enabled: false
+                }
+            },
+            physics: {
+                enabled: false
+            },
+            interaction: {
+                dragNodes: true,
+                dragView: true,
+                zoomView: true,
+                hover: true
+            }
+        };
+
+        // إنشاء المخطط
+        const container = document.getElementById('networkGraph');
+        const network = new vis.Network(container, { nodes, edges }, options);
+
+        // أحداث
+        network.on('click', function(params) {
+            console.log('تم النقر على:', params);
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                const node = nodes.get(nodeId);
+                alert('العقدة: ' + node.label + '\nالمعرف: ' + node.id);
+            }
+        });
+
+        network.on('afterDrawing', function() {
+            console.log('✅ تم رسم المخطط بنجاح!');
+        });
+
+        // تحقق من التحميل
+        setTimeout(() => {
+            const allNodes = nodes.get();
+            const allEdges = edges.get();
+            console.log('🎯 العقد المحملة:', allNodes.length);
+            console.log('🔗 الاتصالات المحملة:', allEdges.length);
+            
+            if (allNodes.length === 0) {
+                document.getElementById('networkGraph').innerHTML = 
+                    '<div style="padding: 50px; text-align: center; color: red; font-size: 18px;">' +
+                    '❌ لا توجد بيانات للعرض!<br>تحقق من وحدة التحكم للأخطاء.' +
+                    '</div>';
+            }
+        }, 1000);
+
+        console.log('🎉 تم تحميل المخطط الاختباري!');
+    </script>
+</body>
+</html>

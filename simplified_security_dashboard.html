@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ المخطط الأمني المبسط - نظام إدارة الفصول</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .container {
+            padding: 20px;
+            height: calc(100vh - 140px);
+        }
+        
+        #networkGraph {
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .legend {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            min-width: 200px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .controls {
+            position: fixed;
+            top: 140px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 15px;
+            color: white;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            cursor: pointer;
+        }
+
+        .control-btn:active {
+            transform: translateY(0px);
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .alerts-btn {
+            background: rgba(239, 68, 68, 0.3) !important;
+            border-color: #ef4444 !important;
+            font-weight: bold;
+        }
+
+        .alerts-btn:hover {
+            background: rgba(239, 68, 68, 0.5) !important;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .alerts-panel {
+            overflow-y: auto;
+            z-index: 1000;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            min-width: 300px;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-left: 4px solid;
+        }
+
+        .alert-critical { border-left-color: #ef4444; }
+        .alert-high { border-left-color: #f97316; }
+        .alert-medium { border-left-color: #eab308; }
+        .alert-low { border-left-color: #06b6d4; }
+        .alert-info { border-left-color: #22c55e; }
+
+        .security-score {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .score-critical { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        .score-warning { background: rgba(249, 115, 22, 0.2); color: #fdba74; }
+        .score-good { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+
+        .toggle-alerts {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1001;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛡️ المخطط الأمني التفاعلي</h1>
+        <p>نظام إدارة الفصول الدراسية - عرض الشجرة المتفرعة</p>
+        <div class="stats">
+            <div class="stat-item">📊 العقد: <strong>17</strong></div>
+            <div class="stat-item">🔗 الاتصالات: <strong>16</strong></div>
+            <div class="stat-item">🗄️ قواعد البيانات: <strong>3</strong></div>
+            <div class="stat-item">📋 الجداول: <strong>15</strong></div>
+            <div class="stat-item">💾 النسخ الاحتياطية: <strong>4</strong></div>
+            <div class="stat-item">🛡️ مستوى الأمان: <strong>85%</strong></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="control-btn" onclick="resetView()">🎯 إعادة التموضع</button>
+        <button class="control-btn" onclick="fitNetwork()">📐 ملء الشاشة</button>
+        <button class="control-btn" onclick="exportImage()">📸 تصدير صورة</button>
+        <button class="control-btn alerts-btn" id="alertsToggleBtn" onclick="toggleAlerts()">🚨 الإشعارات الأمنية</button>
+    </div>
+
+    
+            <div class="alerts-panel" id="alertsPanel" style="display: none; opacity: 0; visibility: hidden;">
+                <h4 style="margin-bottom: 15px; text-align: center;">🛡️ الحالة الأمنية</h4>
+                
+                <div class="security-score score-good">
+                    🎯 مستوى الأمان: 85%
+                </div>
+                
+                <h5 style="margin-bottom: 10px;">🚨 الإنذارات الحالية (1):</h5>
+                
+                
+                
+                <div style="text-align: center; margin-top: 15px; font-size: 0.8em; opacity: 0.7;">
+                    آخر تحديث: 25‏/9‏/2025، 10:00:59 م
+                </div>
+            </div>
+        
+
+    <div class="container">
+        <div id="networkGraph"></div>
+    </div>
+
+    <div class="legend">
+        <h4 style="margin-bottom: 10px;">🎨 دليل الألوان</h4>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #3b82f6;"></div>
+            <span>النظام الأساسي</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #8b5cf6;"></div>
+            <span>قواعد البيانات</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #06b6d4;"></div>
+            <span>الجداول</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #22c55e;"></div>
+            <span>النسخ الاحتياطية</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #f59e0b;"></div>
+            <span>السكريپتات الخطرة</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #10b981;"></div>
+            <span>خدمات النظام</span>
+        </div>
+    </div>
+
+    <script>
+        console.log('🚀 بدء تحميل المخطط الأمني المبسط...');
+        
+        // البيانات
+        const nodes = new vis.DataSet([
+  {
+    "id": "system",
+    "label": "🏫 نظام إدارة الفصول\n🛡️ 85%",
+    "color": {
+      "background": "#3b82f6",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#2563eb",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 40,
+    "x": 0,
+    "y": -200,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 16,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "النظام الأساسي<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "students",
+    "label": "👥 شؤون التلاميذ\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 30,
+    "x": -200,
+    "y": -100,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 14,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "👥 شؤون التلاميذ<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "students_registration",
+    "label": "📝 التسجيل\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 25,
+    "x": -93.93398282201787,
+    "y": 6.066017177982118,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 12,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "📝 التسجيل<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "students_info",
+    "label": "📋 المعلومات\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 25,
+    "x": -200,
+    "y": 50,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 12,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "📋 المعلومات<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "students_grades",
+    "label": "📊 الدرجات\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 25,
+    "x": -306.06601717798213,
+    "y": 6.066017177982133,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 12,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "📊 الدرجات<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "teachers",
+    "label": "👨‍🏫 شؤون الأساتذة\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 30,
+    "x": 200,
+    "y": -100,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 14,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "👨‍🏫 شؤون الأساتذة<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "teachers_assignments",
+    "label": "📚 المهام\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 25,
+    "x": 306.06601717798213,
+    "y": 6.066017177982118,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 12,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "📚 المهام<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "teachers_schedule",
+    "label": "🗓️ الجدول\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 25,
+    "x": 200,
+    "y": 50,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 12,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "🗓️ الجدول<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "teachers_reports",
+    "label": "📑 التقارير\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 25,
+    "x": 93.93398282201788,
+    "y": 6.066017177982133,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 12,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "📑 التقارير<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "schedule",
+    "label": "📅 الجدولة\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 30,
+    "x": -200,
+    "y": 100,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 14,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "📅 الجدولة<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "schedule_classes",
+    "label": "🏫 الفصول\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 25,
+    "x": -93.93398282201787,
+    "y": 206.06601717798213,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 12,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "🏫 الفصول<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "schedule_exams",
+    "label": "📝 الامتحانات\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 25,
+    "x": -200,
+    "y": 250,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 12,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "📝 الامتحانات<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "schedule_events",
+    "label": "🎯 الأحداث\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 25,
+    "x": -306.06601717798213,
+    "y": 206.06601717798213,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 12,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "🎯 الأحداث<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "attendance",
+    "label": "📊 الحضور\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 30,
+    "x": 200,
+    "y": 100,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 14,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "📊 الحضور<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "attendance_tracking",
+    "label": "👀 التتبع\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 25,
+    "x": 306.06601717798213,
+    "y": 206.06601717798213,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 12,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "👀 التتبع<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "attendance_reports",
+    "label": "📊 التقارير\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 25,
+    "x": 200,
+    "y": 250,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 12,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "📊 التقارير<br/>✅ لا توجد إنذارات أمنية"
+  },
+  {
+    "id": "attendance_alerts",
+    "label": "🔔 التنبيهات\n✅",
+    "color": {
+      "background": "#22c55e",
+      "border": "#1e3a8a",
+      "highlight": {
+        "background": "#16a34a",
+        "border": "#1e3a8a"
+      }
+    },
+    "size": 25,
+    "x": 93.93398282201788,
+    "y": 206.06601717798213,
+    "physics": false,
+    "fixed": true,
+    "font": {
+      "size": 12,
+      "color": "white",
+      "multi": true,
+      "bold": true,
+      "strokeWidth": 2,
+      "strokeColor": "#000000"
+    },
+    "title": "🔔 التنبيهات<br/>✅ لا توجد إنذارات أمنية"
+  }
+]);
+        const edges = new vis.DataSet([
+  {
+    "from": "system",
+    "to": "students",
+    "width": 3,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  },
+  {
+    "from": "students",
+    "to": "students_registration",
+    "width": 2,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  },
+  {
+    "from": "students",
+    "to": "students_info",
+    "width": 2,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  },
+  {
+    "from": "students",
+    "to": "students_grades",
+    "width": 2,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  },
+  {
+    "from": "system",
+    "to": "teachers",
+    "width": 3,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  },
+  {
+    "from": "teachers",
+    "to": "teachers_assignments",
+    "width": 2,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  },
+  {
+    "from": "teachers",
+    "to": "teachers_schedule",
+    "width": 2,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  },
+  {
+    "from": "teachers",
+    "to": "teachers_reports",
+    "width": 2,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  },
+  {
+    "from": "system",
+    "to": "schedule",
+    "width": 3,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  },
+  {
+    "from": "schedule",
+    "to": "schedule_classes",
+    "width": 2,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  },
+  {
+    "from": "schedule",
+    "to": "schedule_exams",
+    "width": 2,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  },
+  {
+    "from": "schedule",
+    "to": "schedule_events",
+    "width": 2,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  },
+  {
+    "from": "system",
+    "to": "attendance",
+    "width": 3,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  },
+  {
+    "from": "attendance",
+    "to": "attendance_tracking",
+    "width": 2,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  },
+  {
+    "from": "attendance",
+    "to": "attendance_reports",
+    "width": 2,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  },
+  {
+    "from": "attendance",
+    "to": "attendance_alerts",
+    "width": 2,
+    "color": {
+      "color": "#3b82f6",
+      "highlight": "#2563eb"
+    },
+    "smooth": {
+      "type": "curvedCW",
+      "roundness": 0.2
+    }
+  }
+]);
+
+        console.log('📊 تم تحميل', nodes.length, 'عقدة و', edges.length, 'اتصال');
+
+        // إعدادات المخطط
+        const options = {
+            nodes: {
+                shape: 'dot',
+                font: {
+                    size: 14,
+                    color: 'white',
+                    face: 'Arial',
+                    strokeWidth: 2,
+                    strokeColor: 'black'
+                },
+                borderWidth: 3,
+                borderColor: 'white',
+                shadow: {
+                    enabled: true,
+                    color: 'rgba(0,0,0,0.5)',
+                    size: 8,
+                    x: 3,
+                    y: 3
+                }
+            },
+            edges: {
+                color: {
+                    color: '#ffffff',
+                    highlight: '#ffff00'
+                },
+                font: {
+                    size: 10,
+                    color: 'white'
+                },
+                shadow: {
+                    enabled: true,
+                    color: 'rgba(0,0,0,0.3)'
+                },
+                smooth: {
+                    enabled: false
+                }
+            },
+            physics: {
+                enabled: false
+            },
+            interaction: {
+                dragNodes: true,
+                dragView: true,
+                zoomView: true,
+                hover: true,
+                selectConnectedEdges: true
+            }
+        };
+
+        // إنشاء المخطط
+        const container = document.getElementById('networkGraph');
+        const network = new vis.Network(container, { nodes, edges }, options);
+
+        // الأحداث
+        network.on('click', function(params) {
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                const node = nodes.get(nodeId);
+                
+                // إظهار معلومات العقدة
+                let info = 'معلومات العقدة:\n';
+                info += '🏷️ الاسم: ' + node.label + '\n';
+                info += '🆔 المعرف: ' + node.id + '\n';
+                info += '📍 الموقع: (' + Math.round(node.x) + ', ' + Math.round(node.y) + ')';
+                
+                alert(info);
+            }
+        });
+
+        network.on('hoverNode', function(params) {
+            container.style.cursor = 'pointer';
+        });
+
+        network.on('blurNode', function(params) {
+            container.style.cursor = 'default';
+        });
+
+        // دوال التحكم
+        function resetView() {
+            network.fit();
+            console.log('🎯 تم إعادة تموضع المخطط');
+        }
+
+        function fitNetwork() {
+            network.fit({
+                animation: {
+                    duration: 1000,
+                    easingFunction: 'easeInOutQuad'
+                }
+            });
+            console.log('📐 تم ملء الشاشة');
+        }
+
+        function exportImage() {
+            // محاولة تصدير صورة (يتطلب مكتبة إضافية)
+            alert('ميزة تصدير الصورة ستكون متاحة في التحديث القادم! 📸');
+        }
+
+        function toggleAlerts() {
+            console.log('🎯 محاولة تبديل لوحة الإشعارات...');
+            const panel = document.getElementById('alertsPanel');
+            const button = document.getElementById('alertsToggleBtn');
+            
+            if (!panel) {
+                console.error('❌ لم يتم العثور على لوحة الإشعارات!');
+                alert('خطأ: لم يتم العثور على لوحة الإشعارات! (Element ID: alertsPanel)');
+                return;
+            }
+            
+            console.log('📊 حالة اللوحة الحالية:', panel.style.display);
+            
+            if (panel.style.display === 'none' || panel.style.display === '') {
+                panel.style.display = 'block';
+                panel.style.opacity = '1';
+                panel.style.visibility = 'visible';
+                if (button) {
+                    button.style.backgroundColor = 'rgba(34, 197, 94, 0.4)';
+                    button.setAttribute('aria-pressed', 'true');
+                }
+                console.log('✅ تم إظهار لوحة الإشعارات الأمنية');
+            } else {
+                panel.style.display = 'none';
+                panel.style.opacity = '0';
+                panel.style.visibility = 'hidden';
+                if (button) {
+                    button.style.backgroundColor = '';
+                    button.setAttribute('aria-pressed', 'false');
+                }
+                console.log('✅ تم إخفاء لوحة الإشعارات الأمنية');
+            }
+        }
+
+        // إضافة اختبار للتأكد من وجود العناصر
+        function testElements() {
+            console.log('🧪 اختبار وجود العناصر...');
+            const panel = document.getElementById('alertsPanel');
+            const button = document.getElementById('alertsToggleBtn');
+            
+            console.log('🔍 لوحة الإشعارات:', panel ? '✅ موجودة' : '❌ غير موجودة');
+            console.log('🔍 زر الإشعارات:', button ? '✅ موجود' : '❌ غير موجود');
+            
+            if (panel) {
+                console.log('📊 معلومات اللوحة:');
+                console.log('  - Display:', panel.style.display);
+                console.log('  - Visibility:', panel.style.visibility);
+                console.log('  - Opacity:', panel.style.opacity);
+            }
+        }
+
+        // إضافة مستمعات الأحداث للأزرار
+        function setupEventListeners() {
+            console.log('🔧 إعداد مستمعات الأحداث...');
+            
+            // زر الإشعارات
+            const alertButton = document.getElementById('alertsToggleBtn');
+            if (alertButton) {
+                console.log('✅ تم العثور على زر الإشعارات');
+                
+                // إزالة onclick القديم
+                alertButton.removeAttribute('onclick');
+                
+                // إضافة مستمع حدث جديد
+                alertButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔘 تم النقر على زر الإشعارات');
+                    toggleAlerts();
+                });
+                
+                // إضافة تأثير بصري عند النقر
+                alertButton.addEventListener('mousedown', function() {
+                    this.style.transform = 'scale(0.95)';
+                });
+                
+                alertButton.addEventListener('mouseup', function() {
+                    this.style.transform = 'scale(1)';
+                });
+                
+                console.log('✅ تم تسجيل مستمع الأحداث لزر الإشعارات');
+            } else {
+                console.error('❌ لم يتم العثور على زر الإشعارات');
+            }
+
+            // إضافة أزرار إضافية للتحكم
+            const alertsPanel = document.getElementById('alertsPanel');
+            if (alertsPanel) {
+                alertsPanel.style.transition = 'all 0.3s ease';
+                console.log('✅ تم إعداد انتقالات لوحة الإشعارات');
+            }
+            
+            // اختبار العناصر
+            testElements();
+        }
+
+        // تحميل أولي
+        network.on('afterDrawing', function() {
+            console.log('✅ تم رسم المخطط بنجاح!');
+            
+            // إعداد مستمعات الأحداث بعد تحميل الصفحة
+            setTimeout(() => {
+                setupEventListeners();
+            }, 500);
+        });
+
+        // إعادة تموضع تلقائي بعد التحميل
+        setTimeout(() => {
+            resetView();
+            console.log('🎉 المخطط الأمني المبسط جاهز!');
+            
+            // التأكد من أن أزرار التحكم تعمل
+            console.log('🔧 فحص أزرار التحكم...');
+            const alertsBtn = document.getElementById('alertsToggleBtn');
+            if (alertsBtn) {
+                console.log('✅ زر الإشعارات جاهز للاستخدام');
+            } else {
+                console.error('❌ تعذر العثور على زر الإشعارات عبر المعرّف');
+            }
+        }, 500);
+
+        console.log('🛡️ تم تحميل المخطط الأمني بنجاح');
+    </script>
+</body>
+</html>

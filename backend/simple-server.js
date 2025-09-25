@@ -1,11 +1,16 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 const PORT = 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from the project root
+const projectRoot = path.join(__dirname, '..');
+app.use(express.static(projectRoot));
 
 // Simple test endpoint
 app.get('/api/test', (req, res) => {
