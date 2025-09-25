@@ -1,0 +1,586 @@
+{
+  "timestamp": "2025-09-24T23:06:10.571Z",
+  "backup_found": true,
+  "findings": {
+    "scheduleEvents": {
+      "AdminScheduleEntries": {
+        "current": [
+          {
+            "id": "175844803561426267",
+            "day": "الجمعة",
+            "startTime": "12:00",
+            "duration": 1,
+            "sectionId": "1758447797354",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "1",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.615 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.907 +00:00"
+          },
+          {
+            "id": "175844803560324425",
+            "day": "الجمعة",
+            "startTime": "11:00",
+            "duration": 1,
+            "sectionId": "1758447797455",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "1",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.603 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.892 +00:00"
+          },
+          {
+            "id": "175844803558978869",
+            "day": "الجمعة",
+            "startTime": "10:00",
+            "duration": 1,
+            "sectionId": "1758447797076",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "1",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.589 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.879 +00:00"
+          },
+          {
+            "id": "175844803557553403",
+            "day": "الجمعة",
+            "startTime": "09:00",
+            "duration": 1,
+            "sectionId": "1758447797388",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "1",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.575 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.867 +00:00"
+          },
+          {
+            "id": "175844803556402185",
+            "day": "الخميس",
+            "startTime": "12:00",
+            "duration": 1,
+            "sectionId": "1758447797419",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "8",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.564 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.852 +00:00"
+          },
+          {
+            "id": "175844803555350879",
+            "day": "الخميس",
+            "startTime": "11:00",
+            "duration": 1,
+            "sectionId": "1758447797485",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "8",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.553 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.836 +00:00"
+          },
+          {
+            "id": "175844803553955504",
+            "day": "الخميس",
+            "startTime": "10:00",
+            "duration": 1,
+            "sectionId": "1758447797026",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "8",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.540 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.820 +00:00"
+          },
+          {
+            "id": "175844803552292030",
+            "day": "الأربعاء",
+            "startTime": "12:00",
+            "duration": 1,
+            "sectionId": "1758447797388",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "11",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.522 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.808 +00:00"
+          },
+          {
+            "id": "175844803550303615",
+            "day": "الأربعاء",
+            "startTime": "11:00",
+            "duration": 1,
+            "sectionId": "1758447797520",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "11",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.504 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.796 +00:00"
+          },
+          {
+            "id": "175844803547714858",
+            "day": "الأربعاء",
+            "startTime": "10:00",
+            "duration": 1,
+            "sectionId": "1758447797548",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "11",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.477 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.778 +00:00"
+          },
+          {
+            "id": "175844803546117617",
+            "day": "الثلاثاء",
+            "startTime": "18:00",
+            "duration": 1,
+            "sectionId": "1758447797026",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "12",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.461 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.762 +00:00"
+          },
+          {
+            "id": "175844803544250053",
+            "day": "الثلاثاء",
+            "startTime": "17:00",
+            "duration": 1,
+            "sectionId": "1758447797354",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "12",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.443 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.746 +00:00"
+          },
+          {
+            "id": "175844803542655594",
+            "day": "الثلاثاء",
+            "startTime": "16:00",
+            "duration": 1,
+            "sectionId": "1758447797076",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "12",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.426 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.732 +00:00"
+          },
+          {
+            "id": "175844803541015942",
+            "day": "الثلاثاء",
+            "startTime": "15:00",
+            "duration": 1,
+            "sectionId": "1758447797485",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "12",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.411 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.715 +00:00"
+          },
+          {
+            "id": "175844803539220744",
+            "day": "الإثنين",
+            "startTime": "18:00",
+            "duration": 1,
+            "sectionId": "1758447797520",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "8",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.393 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.698 +00:00"
+          },
+          {
+            "id": "175844803537628676",
+            "day": "الإثنين",
+            "startTime": "17:00",
+            "duration": 1,
+            "sectionId": "1758447797419",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "8",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.377 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.683 +00:00"
+          },
+          {
+            "id": "175844803536141287",
+            "day": "الإثنين",
+            "startTime": "16:00",
+            "duration": 1,
+            "sectionId": "1758447797548",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "8",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.361 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.668 +00:00"
+          },
+          {
+            "id": "175844803533293688",
+            "day": "الإثنين",
+            "startTime": "15:00",
+            "duration": 1,
+            "sectionId": "1758447797455",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "8",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.334 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.643 +00:00"
+          }
+        ],
+        "backup": [
+          {
+            "id": "175844803561426267",
+            "day": "الجمعة",
+            "startTime": "12:00",
+            "duration": 1,
+            "sectionId": "1758447797354",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "1",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.615 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.907 +00:00"
+          },
+          {
+            "id": "175844803560324425",
+            "day": "الجمعة",
+            "startTime": "11:00",
+            "duration": 1,
+            "sectionId": "1758447797455",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "1",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.603 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.892 +00:00"
+          },
+          {
+            "id": "175844803558978869",
+            "day": "الجمعة",
+            "startTime": "10:00",
+            "duration": 1,
+            "sectionId": "1758447797076",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "1",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.589 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.879 +00:00"
+          },
+          {
+            "id": "175844803557553403",
+            "day": "الجمعة",
+            "startTime": "09:00",
+            "duration": 1,
+            "sectionId": "1758447797388",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "1",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.575 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.867 +00:00"
+          },
+          {
+            "id": "175844803556402185",
+            "day": "الخميس",
+            "startTime": "12:00",
+            "duration": 1,
+            "sectionId": "1758447797419",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "8",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.564 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.852 +00:00"
+          },
+          {
+            "id": "175844803555350879",
+            "day": "الخميس",
+            "startTime": "11:00",
+            "duration": 1,
+            "sectionId": "1758447797485",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "8",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.553 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.836 +00:00"
+          },
+          {
+            "id": "175844803553955504",
+            "day": "الخميس",
+            "startTime": "10:00",
+            "duration": 1,
+            "sectionId": "1758447797026",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "8",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.540 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.820 +00:00"
+          },
+          {
+            "id": "175844803552292030",
+            "day": "الأربعاء",
+            "startTime": "12:00",
+            "duration": 1,
+            "sectionId": "1758447797388",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "11",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.522 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.808 +00:00"
+          },
+          {
+            "id": "175844803550303615",
+            "day": "الأربعاء",
+            "startTime": "11:00",
+            "duration": 1,
+            "sectionId": "1758447797520",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "11",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.504 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.796 +00:00"
+          },
+          {
+            "id": "175844803547714858",
+            "day": "الأربعاء",
+            "startTime": "10:00",
+            "duration": 1,
+            "sectionId": "1758447797548",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "11",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.477 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.778 +00:00"
+          },
+          {
+            "id": "175844803546117617",
+            "day": "الثلاثاء",
+            "startTime": "18:00",
+            "duration": 1,
+            "sectionId": "1758447797026",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "12",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.461 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.762 +00:00"
+          },
+          {
+            "id": "175844803544250053",
+            "day": "الثلاثاء",
+            "startTime": "17:00",
+            "duration": 1,
+            "sectionId": "1758447797354",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "12",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.443 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.746 +00:00"
+          },
+          {
+            "id": "175844803542655594",
+            "day": "الثلاثاء",
+            "startTime": "16:00",
+            "duration": 1,
+            "sectionId": "1758447797076",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "12",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.426 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.732 +00:00"
+          },
+          {
+            "id": "175844803541015942",
+            "day": "الثلاثاء",
+            "startTime": "15:00",
+            "duration": 1,
+            "sectionId": "1758447797485",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "12",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.411 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.715 +00:00"
+          },
+          {
+            "id": "175844803539220744",
+            "day": "الإثنين",
+            "startTime": "18:00",
+            "duration": 1,
+            "sectionId": "1758447797520",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "8",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.393 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.698 +00:00"
+          },
+          {
+            "id": "175844803537628676",
+            "day": "الإثنين",
+            "startTime": "17:00",
+            "duration": 1,
+            "sectionId": "1758447797419",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "8",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.377 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.683 +00:00"
+          },
+          {
+            "id": "175844803536141287",
+            "day": "الإثنين",
+            "startTime": "16:00",
+            "duration": 1,
+            "sectionId": "1758447797548",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "8",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.361 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.668 +00:00"
+          },
+          {
+            "id": "175844803533293688",
+            "day": "الإثنين",
+            "startTime": "15:00",
+            "duration": 1,
+            "sectionId": "1758447797455",
+            "subject": "حصة دراسية",
+            "teacher": "",
+            "classroom": "8",
+            "sessionType": "official",
+            "createdAt": "2025-09-21 09:47:15.334 +00:00",
+            "updatedAt": "2025-09-21 09:54:03.643 +00:00"
+          }
+        ],
+        "missing": 0
+      },
+      "administrative_timetable": {
+        "current": [],
+        "backup": [],
+        "missing": 0
+      }
+    },
+    "otherTables": {
+      "Sections": {
+        "currentCount": 9,
+        "backupCount": 9,
+        "missing": 0
+      },
+      "Students": {
+        "currentCount": 316,
+        "backupCount": 317,
+        "missing": 1
+      },
+      "LessonTemplates": {
+        "currentCount": 1,
+        "backupCount": 0,
+        "missing": -1
+      },
+      "StudentAssessments": {
+        "currentCount": 0,
+        "backupCount": 0,
+        "missing": 0
+      },
+      "Lessons": {
+        "currentCount": 0,
+        "backupCount": 0,
+        "missing": 0
+      }
+    },
+    "recentData": {
+      "أحداث الأسبوع الماضي": {
+        "current": [
+          {
+            "table_name": "AdminScheduleEntries",
+            "count": 18
+          },
+          {
+            "table_name": "administrative_timetable",
+            "count": 0
+          }
+        ],
+        "backup": [
+          {
+            "table_name": "AdminScheduleEntries",
+            "count": 18
+          },
+          {
+            "table_name": "administrative_timetable",
+            "count": 0
+          }
+        ]
+      },
+      "دروس الأسبوع الماضي": {
+        "current": [
+          {
+            "count": 9
+          }
+        ],
+        "backup": [
+          {
+            "count": 10
+          }
+        ]
+      },
+      "قوالب حديثة": {
+        "current": [
+          {
+            "count": 1
+          }
+        ],
+        "backup": [
+          {
+            "count": 0
+          }
+        ]
+      }
+    },
+    "patterns": [
+      {
+        "type": "creation_activity",
+        "data": [
+          {
+            "creation_date": "2025-09-24",
+            "records_created": 1
+          },
+          {
+            "creation_date": "2025-09-23",
+            "records_created": 4
+          },
+          {
+            "creation_date": "2025-09-22",
+            "records_created": 4
+          },
+          {
+            "creation_date": "2025-09-21",
+            "records_created": 18
+          }
+        ]
+      }
+    ]
+  }
+}

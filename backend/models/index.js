@@ -1,6 +1,7 @@
 const sequelize = require('../config/database');
 const Section = require('./section');
 const Lesson = require('./lesson');
+const LessonTemplate = require('./lessonTemplate');
 const LessonLog = require('./lessonLog');
 const Student = require('./student');
 const StudentAssessment = require('./studentAssessment');
@@ -38,6 +39,7 @@ const db = {
   Sequelize: sequelize.Sequelize,
   Section,
   Lesson,
+  LessonTemplate,
   LessonLog,
   Student,
   StudentAssessment,

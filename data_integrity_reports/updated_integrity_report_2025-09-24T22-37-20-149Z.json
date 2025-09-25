@@ -1,0 +1,140 @@
+{
+  "timestamp": "2025-09-24T22:37:20.120Z",
+  "checks": {
+    "textbookStatus": [
+      {
+        "date": "2025-09-24",
+        "total_entries": 1,
+        "unique_sections": 1,
+        "section_names": "TCS-3",
+        "earliest_time": "11:00",
+        "latest_time": "11:00"
+      },
+      {
+        "date": "2025-09-23",
+        "total_entries": 4,
+        "unique_sections": 4,
+        "section_names": "1BACSH-2,TCLSH-1,1BACSH-3,TCS-2",
+        "earliest_time": "15:00",
+        "latest_time": "18:00"
+      },
+      {
+        "date": "2025-09-22",
+        "total_entries": 4,
+        "unique_sections": 4,
+        "section_names": "TCS-3,TCS-1,TCLSH-3,TCSF-1",
+        "earliest_time": "15:00",
+        "latest_time": "18:00"
+      }
+    ],
+    "attendanceConsistency": {
+      "details": [
+        {
+          "date": "2025-09-24",
+          "sectionId": "1758447797520",
+          "sectionName": "TCS-3",
+          "lessonTitle": "سورة الكهف الجزء الأول",
+          "unique_students_with_attendance": 0,
+          "total_attendance_records": 0,
+          "attendance_status": "NO_ATTENDANCE_RECORDED"
+        },
+        {
+          "date": "2025-09-23",
+          "sectionId": "1758447797026",
+          "sectionName": "1BACSH-2",
+          "lessonTitle": "سورة يوسف الجزء الأول الآيات من 1 إلى 20",
+          "unique_students_with_attendance": 28,
+          "total_attendance_records": 28,
+          "attendance_status": "GOOD_ATTENDANCE"
+        },
+        {
+          "date": "2025-09-23",
+          "sectionId": "1758447797076",
+          "sectionName": "1BACSH-3",
+          "lessonTitle": "سورة يوسف",
+          "unique_students_with_attendance": 28,
+          "total_attendance_records": 28,
+          "attendance_status": "GOOD_ATTENDANCE"
+        },
+        {
+          "date": "2025-09-23",
+          "sectionId": "1758447797354",
+          "sectionName": "TCLSH-1",
+          "lessonTitle": "سورة الكهف الجزء الأول",
+          "unique_students_with_attendance": 33,
+          "total_attendance_records": 33,
+          "attendance_status": "GOOD_ATTENDANCE"
+        },
+        {
+          "date": "2025-09-23",
+          "sectionId": "1758447797485",
+          "sectionName": "TCS-2",
+          "lessonTitle": "تقويم تشخيصي",
+          "unique_students_with_attendance": 40,
+          "total_attendance_records": 40,
+          "attendance_status": "GOOD_ATTENDANCE"
+        },
+        {
+          "date": "2025-09-22",
+          "sectionId": "1758447797419",
+          "sectionName": "TCLSH-3",
+          "lessonTitle": "تقويم تشخيصي",
+          "unique_students_with_attendance": 32,
+          "total_attendance_records": 32,
+          "attendance_status": "GOOD_ATTENDANCE"
+        },
+        {
+          "date": "2025-09-22",
+          "sectionId": "1758447797455",
+          "sectionName": "TCS-1",
+          "lessonTitle": "تقويم تشخيصي",
+          "unique_students_with_attendance": 40,
+          "total_attendance_records": 40,
+          "attendance_status": "GOOD_ATTENDANCE"
+        },
+        {
+          "date": "2025-09-22",
+          "sectionId": "1758447797520",
+          "sectionName": "TCS-3",
+          "lessonTitle": "سورة الكهف الجزء الأول",
+          "unique_students_with_attendance": 40,
+          "total_attendance_records": 40,
+          "attendance_status": "GOOD_ATTENDANCE"
+        },
+        {
+          "date": "2025-09-22",
+          "sectionId": "1758447797548",
+          "sectionName": "TCSF-1",
+          "lessonTitle": "تقويم تشخيصي",
+          "unique_students_with_attendance": 39,
+          "total_attendance_records": 39,
+          "attendance_status": "GOOD_ATTENDANCE"
+        }
+      ],
+      "noAttendance": 1,
+      "lowAttendance": 0
+    },
+    "orphanedAttendances": [
+      {
+        "date": "2025-09-24",
+        "sectionId": "1758447797548",
+        "attendance_count": 39,
+        "section_name": "TCSF-1"
+      }
+    ],
+    "dateGaps": [],
+    "dataQuality": {
+      "emptyContent": 0,
+      "duplicateEntries": [],
+      "futureDates": 0,
+      "missingTitles": 0,
+      "invalidDurations": 0
+    }
+  },
+  "summary": {
+    "totalIssues": 2,
+    "criticalIssues": 1,
+    "warnings": 1,
+    "status": "CRITICAL"
+  }
+}

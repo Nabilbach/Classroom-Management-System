@@ -545,12 +545,12 @@ function Schedule() {
       const entries = await fetchAdminSchedule();
       if (!Array.isArray(entries)) return setWeeklyScheduleTemplate([]);
 
+      // تعديل: عرض جميع الأحداث حتى لو لم يكن القسم موجود في القائمة
       const validEntries = entries.filter(
         entry =>
           entry.startTime &&
           entry.day &&
-          entry.sectionId &&
-          availableSections.some(s => s.id === entry.sectionId)
+          entry.sectionId // إزالة شرط وجود القسم في availableSections
       );
 
       const schedule = validEntries.map(entry => {
@@ -561,9 +561,9 @@ function Schedule() {
           startTime: entry.startTime,
           duration: entry.duration || 1,
           sectionId: entry.sectionId || '',
-          sectionName: section?.name || '',
-          subject: 'حصة دراسية',
-          teacher: '',
+          sectionName: section?.name || `قسم ${entry.sectionId}` || 'قسم غير معروف', // إظهار معرف القسم إذا لم يجد الاسم
+          subject: entry.subject || 'حصة دراسية',
+          teacher: entry.teacher || '',
           classroom: entry.classroom || '',
           sessionType: (entry.sessionType as "official" | "extra" | "compensatory") || 'official',
         };
