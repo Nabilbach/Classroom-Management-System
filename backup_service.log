@@ -1,0 +1,2 @@
+{"timestamp":"2025-09-25T16:53:24.200Z","type":"SERVICE_STARTED","message":"تم تفعيل خدمة النسخ الاحتياطية","data":{},"user":"nabil"}
+{"timestamp":"2025-09-25T16:53:24.698Z","type":"BACKUP_CREATED","message":"تم إنشاء النسخة الاحتياطية: auto_backup_2025-09-25T16-53-24-203Z","data":{"totalSize":1535683,"fileCount":10,"directoryCount":5},"user":"nabil"}

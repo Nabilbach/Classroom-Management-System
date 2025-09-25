@@ -2,11 +2,93 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('./config/database');
 const Section = require('./models/section');
 const AdministrativeTimetableEntry = require('./models/administrativeTimetableEntry');
+const fs = require('fs');
+
+// 🛡️ نظام حماية الترحيل - Migration Protection System
+class MigrationProtection {
+  constructor() {
+    this.backupPath = null;
+  }
+
+  async checkEnvironment() {
+    // منع في الإنتاج بدون متغير خاص
+    if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_PRODUCTION_MIGRATION) {
+      console.log('🚫 تحذير: ترحيل قاعدة البيانات في بيئة الإنتاج محظور');
+      console.log('💡 للسماح بالترحيل في الإنتاج: set ALLOW_PRODUCTION_MIGRATION=true');
+      process.exit(1);
+    }
+
+    console.log('✅ فحص البيئة: مسموح بالترحيل');
+  }
+
+  async createPreMigrationBackup() {
+    console.log('📦 إنشاء نسخة احتياطية قبل الترحيل...');
+    
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    this.backupPath = `pre_migration_backup_${timestamp}.db`;
+    
+    // نسخ قاعدة البيانات الحالية
+    const dbPath = process.env.NODE_ENV === 'production' ? 'classroom.db' : 
+                   process.env.NODE_ENV === 'test' ? 'classroom_test.db' : 'classroom_dev.db';
+    
+    if (fs.existsSync(dbPath)) {
+      fs.copyFileSync(dbPath, this.backupPath);
+      console.log(`✅ تم إنشاء نسخة احتياطية: ${this.backupPath}`);
+    } else {
+      console.log('⚠️ لم يتم العثور على قاعدة البيانات للنسخ الاحتياطي');
+    }
+  }
+
+  async logMigrationStart() {
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      operation: 'MANUAL_MIGRATION_START',
+      environment: process.env.NODE_ENV || 'unknown',
+      user: process.env.USERNAME || 'unknown',
+      backupCreated: this.backupPath
+    };
+
+    fs.appendFileSync('./security_audit.log', JSON.stringify(logEntry) + '\n');
+    console.log('📝 تم تسجيل بداية الترحيل');
+  }
+
+  async logMigrationEnd(success, error = null) {
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      operation: 'MANUAL_MIGRATION_END',
+      success: success,
+      error: error?.message || null,
+      backupPath: this.backupPath
+    };
+
+    fs.appendFileSync('./security_audit.log', JSON.stringify(logEntry) + '\n');
+    
+    if (success) {
+      console.log('✅ تم تسجيل نجاح الترحيل');
+    } else {
+      console.log('❌ تم تسجيل فشل الترحيل');
+      console.log(`🔄 يمكن الاستعادة من: ${this.backupPath}`);
+    }
+  }
+}
 
 const migrate = async () => {
+  const protection = new MigrationProtection();
   const queryInterface = sequelize.getQueryInterface();
 
   try {
+    console.log('🛡️ بدء فحوصات الأمان للترحيل...\n');
+    
+    // فحص البيئة
+    await protection.checkEnvironment();
+    
+    // إنشاء نسخة احتياطية
+    await protection.createPreMigrationBackup();
+    
+    // تسجيل بداية الترحيل
+    await protection.logMigrationStart();
+    
+    console.log('\n🔄 بدء عملية الترحيل...');
     // Add sectionId column if it doesn't exist
     const tableDescription = await queryInterface.describeTable('administrative_timetable');
     if (!tableDescription.sectionId) {
@@ -50,12 +132,23 @@ const migrate = async () => {
     // Remove sectionName column
     await queryInterface.removeColumn('administrative_timetable', 'sectionName');
 
-    console.log('Migration completed successfully!');
+    console.log('✅ Migration completed successfully!');
+    await protection.logMigrationEnd(true);
+    
   } catch (error) {
-    console.error('Migration failed:', error);
+    console.error('❌ Migration failed:', error);
+    await protection.logMigrationEnd(false, error);
+    
+    // في حالة الفشل، إرشادات الاستعادة
+    console.log('\n🆘 إرشادات الاستعادة:');
+    console.log(`1. أوقف جميع الخدمات`);
+    console.log(`2. استعد النسخة الاحتياطية: ${protection.backupPath}`);
+    console.log(`3. أعد تشغيل النظام`);
+    
   } finally {
     await sequelize.close();
   }
 };
 
+// تشغيل مع الحماية
 migrate();
