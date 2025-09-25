@@ -1,0 +1,96 @@
+{
+  "timestamp": "2025-09-25T12-59-07-222Z",
+  "environments": {
+    "إنتاج": {
+      "scriptExists": true,
+      "hasEnvConfig": false,
+      "hasStartCommand": true,
+      "status": "⚠️ ناقص"
+    },
+    "تطوير": {
+      "scriptExists": true,
+      "hasEnvConfig": false,
+      "hasStartCommand": true,
+      "status": "⚠️ ناقص"
+    },
+    "اختبار": {
+      "scriptExists": true,
+      "hasEnvConfig": false,
+      "hasStartCommand": true,
+      "status": "⚠️ ناقص"
+    }
+  },
+  "ports": {
+    "3000": {
+      "inUse": true,
+      "status": "⚠️ مستخدم"
+    },
+    "3001": {
+      "inUse": false,
+      "status": "✅ متاح"
+    },
+    "3002": {
+      "inUse": false,
+      "status": "✅ متاح"
+    }
+  },
+  "databases": {
+    "إنتاج": {
+      "exists": true,
+      "size": "348 KB",
+      "lastModified": "2025-09-25T11:56:25.952Z",
+      "status": "✅ صالح"
+    },
+    "تطوير": {
+      "exists": true,
+      "size": "360 KB",
+      "lastModified": "2025-09-25T12:50:36.963Z",
+      "status": "✅ صالح"
+    },
+    "اختبار": {
+      "exists": false,
+      "error": "ENOENT: no such file or directory, stat 'C:\\Users\\nabil\\OneDrive\\Documents\\Classroom Management System\\classroom_test.db'",
+      "status": "❌ مفقود"
+    }
+  },
+  "configs": {
+    "إنتاج": {
+      "exists": true,
+      "port": 3000,
+      "database": null,
+      "portCorrect": true,
+      "status": "✅ صحيح"
+    },
+    "تطوير": {
+      "exists": true,
+      "port": 3001,
+      "database": null,
+      "portCorrect": true,
+      "status": "✅ صحيح"
+    },
+    "اختبار": {
+      "exists": true,
+      "port": 3002,
+      "database": null,
+      "portCorrect": true,
+      "status": "✅ صحيح"
+    }
+  },
+  "security": {
+    "backups": {
+      "total": 3,
+      "status": "✅ كافية"
+    },
+    "portSeparation": {
+      "hasConflict": false,
+      "status": "✅ منفصل"
+    },
+    "databaseSeparation": {
+      "separateDBs": 2,
+      "status": "⚠️ غير مكتمل"
+    }
+  },
+  "recommendations": [
+    "📁 إنشاء قواعد بيانات منفصلة للبيئات المفقودة"
+  ]
+}

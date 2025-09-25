@@ -1,0 +1,189 @@
+{
+  "timestamp": "2025-09-25T12:46:14.900Z",
+  "summary": {
+    "totalDatabases": 3,
+    "totalConfigs": 4,
+    "conflicts": 0,
+    "discrepancies": 4,
+    "recommendations": 2
+  },
+  "databases": [
+    {
+      "name": "classroom.db",
+      "path": "C:\\Users\\nabil\\OneDrive\\Documents\\Classroom Management System\\classroom.db",
+      "size": 356352,
+      "modified": "2025-09-25T11:56:25.952Z",
+      "environment": "production",
+      "tableCount": 14,
+      "recordCounts": {
+        "ScheduledLessons": 15,
+        "LessonTemplates": 26,
+        "Attendances": 422,
+        "AdminScheduleEntries": 18,
+        "Sections": 9,
+        "TextbookEntries": 14,
+        "Students": 316
+      },
+      "tables": [
+        "sqlite_sequence",
+        "Sections",
+        "LessonLogs",
+        "Students",
+        "StudentAssessments",
+        "ScheduledLessons",
+        "administrative_timetable",
+        "AdminScheduleEntries",
+        "Attendances",
+        "TextbookEntries",
+        "LessonTemplates",
+        "audit_log",
+        "Lessons",
+        "Attendance"
+      ]
+    },
+    {
+      "name": "classroom_dev.db",
+      "path": "C:\\Users\\nabil\\OneDrive\\Documents\\Classroom Management System\\classroom_dev.db",
+      "size": 114688,
+      "modified": "2025-09-24T18:23:12.228Z",
+      "environment": "development",
+      "tableCount": 11,
+      "recordCounts": {
+        "ScheduledLessons": 0,
+        "Attendances": 0,
+        "AdminScheduleEntries": 0,
+        "Students": 0,
+        "Sections": 0,
+        "TextbookEntries": 0
+      },
+      "tables": [
+        "Sections",
+        "Lessons",
+        "LessonLogs",
+        "Students",
+        "sqlite_sequence",
+        "StudentAssessments",
+        "ScheduledLessons",
+        "administrative_timetable",
+        "AdminScheduleEntries",
+        "Attendances",
+        "TextbookEntries"
+      ]
+    },
+    {
+      "name": "classroom_backup_2.db",
+      "path": "C:\\Users\\nabil\\OneDrive\\Documents\\Classroom Management System\\classroom_backup_2.db",
+      "size": 0,
+      "modified": "2025-09-20T18:39:27.891Z",
+      "environment": "backup",
+      "tableCount": 0,
+      "recordCounts": {},
+      "tables": []
+    }
+  ],
+  "configs": [
+    {
+      "name": ".env",
+      "path": "C:\\Users\\nabil\\OneDrive\\Documents\\Classroom Management System\\.env",
+      "content": "VITE_API_BASE_URL=http://localhost:3000",
+      "databaseRefs": [],
+      "environment": "default"
+    },
+    {
+      "name": ".env.development",
+      "path": "C:\\Users\\nabil\\OneDrive\\Documents\\Classroom Management System\\.env.development",
+      "content": "# Development Environment Configuration\r\nNODE_ENV=development\r\nPORT=3001\r\nDB_PATH=classroom_dev.db\r\nAPP_NAME=\"Classroom Management System - Development\"\r\n\r\n# Frontend Configuration\r\nVITE_API_URL=http://localhost:3001\r\nVITE_APP_ENV=development",
+      "databaseRefs": [
+        "DB_PATH=classroom_dev.db",
+        "classroom_dev.db"
+      ],
+      "environment": "development"
+    },
+    {
+      "name": ".env.production",
+      "path": "C:\\Users\\nabil\\OneDrive\\Documents\\Classroom Management System\\.env.production",
+      "content": "# Production Environment Configuration\r\nNODE_ENV=production\r\nPORT=3000\r\nDB_PATH=classroom.db\r\nAPP_NAME=\"Classroom Management System - Production\"\r\n\r\n# Frontend Configuration  \r\nVITE_API_URL=http://localhost:3000\r\nVITE_APP_ENV=production",
+      "databaseRefs": [
+        "DB_PATH=classroom.db",
+        "classroom.db"
+      ],
+      "environment": "production"
+    },
+    {
+      "name": "backend/config/database.js",
+      "path": "C:\\Users\\nabil\\OneDrive\\Documents\\Classroom Management System\\backend\\config\\database.js",
+      "content": "const { Sequelize } = require('sequelize');\r\nconst path = require('path');\r\n\r\nconst sequelize = new Sequelize({\r\n  dialect: 'sqlite',\r\n  storage: path.join(__dirname, '..', '..', 'classroom.db'),\r\n  logging: false,\r\n  dialectOptions: {\r\n    charset: 'utf8mb4',\r\n  },\r\n  define: {\r\n    charset: 'utf8mb4',\r\n    collate: 'utf8mb4_unicode_ci',\r\n  },\r\n});\r\n\r\nmodule.exports = sequelize;\r\n",
+      "databaseRefs": [
+        "classroom.db"
+      ],
+      "environment": "unknown"
+    }
+  ],
+  "findings": {
+    "environmentCount": 0,
+    "databaseConflicts": [],
+    "configInconsistencies": [],
+    "dataDiscrepancies": [
+      {
+        "table": "LessonTemplates",
+        "maxCount": 26,
+        "minCount": 0,
+        "difference": 26,
+        "environments": {
+          "production(classroom.db)": 26,
+          "development(classroom_dev.db)": 0,
+          "backup(classroom_backup_2.db)": 0
+        }
+      },
+      {
+        "table": "ScheduledLessons",
+        "maxCount": 15,
+        "minCount": 0,
+        "difference": 15,
+        "environments": {
+          "production(classroom.db)": 15,
+          "development(classroom_dev.db)": 0,
+          "backup(classroom_backup_2.db)": 0
+        }
+      },
+      {
+        "table": "TextbookEntries",
+        "maxCount": 14,
+        "minCount": 0,
+        "difference": 14,
+        "environments": {
+          "production(classroom.db)": 14,
+          "development(classroom_dev.db)": 0,
+          "backup(classroom_backup_2.db)": 0
+        }
+      },
+      {
+        "table": "Students",
+        "maxCount": 316,
+        "minCount": 0,
+        "difference": 316,
+        "environments": {
+          "production(classroom.db)": 316,
+          "development(classroom_dev.db)": 0,
+          "backup(classroom_backup_2.db)": 0
+        }
+      }
+    ],
+    "recommendations": [
+      {
+        "priority": "CRITICAL",
+        "category": "Data Discrepancies",
+        "title": "تباين حرج في البيانات",
+        "description": "توجد فروق كبيرة في 4 جداول",
+        "solution": "مراجعة عاجلة وتوحيد البيانات"
+      },
+      {
+        "priority": "MEDIUM",
+        "category": "Environment Management",
+        "title": "تحسين إدارة البيئات",
+        "description": "تطوير نظام واضح لإدارة البيئات المختلفة",
+        "solution": "إنشاء متغيرات بيئة واضحة وتوثيق النظام"
+      }
+    ]
+  }
+}

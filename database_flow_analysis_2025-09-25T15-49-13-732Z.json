@@ -1,0 +1,1392 @@
+{
+  "timestamp": "2025-09-25T15:49:13.403Z",
+  "databases": {
+    "classroom.db": {
+      "exists": true,
+      "size": 348,
+      "lastModified": "2025-09-25T11:56:25.952Z",
+      "type": "production"
+    },
+    "classroom_dev.db": {
+      "exists": true,
+      "size": 360,
+      "lastModified": "2025-09-25T12:50:36.963Z",
+      "type": "development"
+    },
+    "classroom_test.db": {
+      "exists": true,
+      "size": 360,
+      "lastModified": "2025-09-25T12:50:36.963Z",
+      "type": "testing"
+    },
+    "classroom_backup_20250924_174347.db": {
+      "exists": true,
+      "size": 252,
+      "lastModified": "2025-09-24T09:55:30.009Z",
+      "type": "backup"
+    },
+    "classroom_backup_2.db": {
+      "exists": true,
+      "size": 0,
+      "lastModified": "2025-09-20T18:39:27.891Z",
+      "type": "backup"
+    }
+  },
+  "connections": {
+    "direct": [
+      {
+        "file": "backend\\check_evaluation_tables.js",
+        "database": "../classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "backend\\check_evaluation_tables.js",
+        "database": "../../Classroom Management System - Development/classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "check_ids.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "check_ids.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "check_schema.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "check_schema.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "check_table_structure.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "check_table_structure.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "compare_attendance_structures.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "compare_attendance_structures.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "compare_lessons.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "compare_lessons.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "complete_database_rebuild.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": true
+        }
+      },
+      {
+        "file": "comprehensive_data_protection_system.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": true
+        }
+      },
+      {
+        "file": "comprehensive_event_tables_search.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "comprehensive_event_tables_search.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "comprehensive_final_report.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "comprehensive_investigation.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "comprehensive_investigation.cjs",
+        "database": "./auto_backups/${latestBackup}",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "count_lesson_templates.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "create_curriculum_templates.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "deep_investigation_corrected.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "deep_investigation_corrected.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "detailed_check.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "detailed_events_investigation.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "detailed_events_investigation.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "detailed_table_inspection.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "emergency_data_check.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "emergency_data_restore.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": true
+        }
+      },
+      {
+        "file": "final_attendance_report_20250923.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "final_data_solution.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": true
+        }
+      },
+      {
+        "file": "final_root_cause_analysis.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "final_root_cause_analysis.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "final_system_report.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "final_textbook_report.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "fix_database_structure.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": true
+        }
+      },
+      {
+        "file": "fix_data_check.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "fix_schedule_display.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "inspect_database_structure.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "investigate_attendance_20250923.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "investigate_data_loss_root_cause.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "investigate_data_loss_root_cause.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "investigate_lesson_records.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "investigate_lesson_records.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "investigate_textbook_entries.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "investigate_textbook_entries.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "monitoring_service.js",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      },
+      {
+        "file": "restore_attendance_20250923.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "restore_attendance_20250923.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "restore_attendance_20250924.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "restore_attendance_20250924.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "restore_from_auto_backup.cjs",
+        "database": "./auto_backups/auto_backup_2025-09-24T23-10-57-110Z.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "restore_from_auto_backup.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "restore_from_auto_backup.cjs",
+        "database": "./auto_backups/auto_backup_2025-09-24T23-10-57-110Z.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "restore_lessons_final.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "restore_lessons_final.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "restore_lessons_fixed.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "restore_lessons_fixed.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "restore_missing_lessons.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "restore_missing_lessons.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "restore_textbook_entries.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "restore_textbook_entries.cjs",
+        "database": "classroom_backup_20250924_174347.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": true,
+          "structure": false
+        }
+      },
+      {
+        "file": "schedule_display_investigation.cjs",
+        "database": "classroom.db",
+        "type": "sqlite3-direct",
+        "operations": {
+          "read": true,
+          "write": false,
+          "structure": false
+        }
+      }
+    ],
+    "orm": [
+      {
+        "file": "analyze_database_flows.cjs",
+        "type": "sequelize-orm",
+        "models": [
+          "Section",
+          "Lesson",
+          "Student",
+          "Attendance"
+        ]
+      },
+      {
+        "file": "backend\\analyze_educational_levels.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Section",
+          "Section",
+          "Section"
+        ]
+      },
+      {
+        "file": "backend\\check_admin_tables.js",
+        "type": "sequelize-orm",
+        "models": []
+      },
+      {
+        "file": "backend\\check_att_schema.js",
+        "type": "sequelize-orm",
+        "models": []
+      },
+      {
+        "file": "backend\\check_evaluation_prod.js",
+        "type": "sequelize-orm",
+        "models": []
+      },
+      {
+        "file": "backend\\check_students.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Student",
+          "Section",
+          "Student",
+          "Section",
+          "Section",
+          "Student",
+          "Student",
+          "Section",
+          "Section",
+          "Section",
+          "Section"
+        ]
+      },
+      {
+        "file": "backend\\config\\database.dev.js",
+        "type": "sequelize-orm",
+        "models": []
+      },
+      {
+        "file": "backend\\config\\database.js",
+        "type": "sequelize-orm",
+        "models": []
+      },
+      {
+        "file": "backend\\detailed_check.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Student",
+          "Section",
+          "Student"
+        ]
+      },
+      {
+        "file": "backend\\index.dev.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Section",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Section",
+          "Section",
+          "Section",
+          "Section",
+          "Section",
+          "Section",
+          "Section",
+          "Section",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student"
+        ]
+      },
+      {
+        "file": "backend\\index.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Section",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Lesson",
+          "Section",
+          "Section",
+          "Section",
+          "Section",
+          "Section",
+          "Section",
+          "Section",
+          "Section",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student",
+          "Student"
+        ]
+      },
+      {
+        "file": "backend\\inspect_db.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Student"
+        ]
+      },
+      {
+        "file": "backend\\manual_migration.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Section",
+          "Section"
+        ]
+      },
+      {
+        "file": "backend\\migrate.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Section",
+          "Section",
+          "Lesson",
+          "Lesson"
+        ]
+      },
+      {
+        "file": "backend\\models\\administrativeTimetableEntry.js",
+        "type": "sequelize-orm",
+        "models": []
+      },
+      {
+        "file": "backend\\models\\adminScheduleEntry.js",
+        "type": "sequelize-orm",
+        "models": []
+      },
+      {
+        "file": "backend\\models\\attendance.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Attendance",
+          "Attendance",
+          "Attendance"
+        ]
+      },
+      {
+        "file": "backend\\models\\attendanceModel.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Attendance",
+          "Attendance",
+          "Attendance"
+        ]
+      },
+      {
+        "file": "backend\\models\\index.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Section",
+          "Lesson",
+          "Student",
+          "Attendance",
+          "Section",
+          "Lesson",
+          "Lesson",
+          "Section",
+          "Lesson",
+          "Lesson",
+          "Section",
+          "Section",
+          "Section",
+          "Student",
+          "Student",
+          "Section",
+          "Student",
+          "Student",
+          "Attendance",
+          "Student",
+          "Attendance",
+          "Attendance",
+          "Student",
+          "Section",
+          "Attendance",
+          "Attendance",
+          "Section",
+          "Section",
+          "Lesson",
+          "Student",
+          "Attendance"
+        ]
+      },
+      {
+        "file": "backend\\models\\lesson.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Lesson",
+          "Lesson",
+          "Lesson"
+        ]
+      },
+      {
+        "file": "backend\\models\\lessonLog.js",
+        "type": "sequelize-orm",
+        "models": []
+      },
+      {
+        "file": "backend\\models\\lessonTemplate.js",
+        "type": "sequelize-orm",
+        "models": []
+      },
+      {
+        "file": "backend\\models\\scheduledLesson.js",
+        "type": "sequelize-orm",
+        "models": []
+      },
+      {
+        "file": "backend\\models\\section.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Section",
+          "Section",
+          "Section"
+        ]
+      },
+      {
+        "file": "backend\\models\\student.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Student",
+          "Student",
+          "Student"
+        ]
+      },
+      {
+        "file": "backend\\models\\studentAssessment.js",
+        "type": "sequelize-orm",
+        "models": []
+      },
+      {
+        "file": "backend\\models\\textbookEntry.js",
+        "type": "sequelize-orm",
+        "models": []
+      },
+      {
+        "file": "backend\\repair_student_sections.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Student",
+          "Section",
+          "Section",
+          "Section",
+          "Student",
+          "Student",
+          "Student"
+        ]
+      },
+      {
+        "file": "backend\\reset_db.js",
+        "type": "sequelize-orm",
+        "models": []
+      },
+      {
+        "file": "backend\\routes\\scheduledLessons.js",
+        "type": "sequelize-orm",
+        "models": [
+          "Section",
+          "Section",
+          "Section"
+        ]
+      },
+      {
+        "file": "backend\\routes\\textbook.js",
+        "type": "sequelize-orm",
+        "models": []
+      },
+      {
+        "file": "check_sequelize_templates.cjs",
+        "type": "sequelize-orm",
+        "models": []
+      },
+      {
+        "file": "test_schedule_api.cjs",
+        "type": "sequelize-orm",
+        "models": []
+      }
+    ],
+    "api": [
+      {
+        "file": "backend\\test_admin_schedule.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "backend\\test_get.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-81e029ff.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "dist\\assets\\index-c21d6be6.js",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "emergency_environment_fixer.cjs",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "emergency_environment_fixer.cjs",
+        "port": 3001,
+        "type": "api-client"
+      },
+      {
+        "file": "emergency_environment_fixer.cjs",
+        "port": 3002,
+        "type": "api-client"
+      },
+      {
+        "file": "emergency_environment_fixer_clean.cjs",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "emergency_environment_fixer_clean.cjs",
+        "port": 3001,
+        "type": "api-client"
+      },
+      {
+        "file": "emergency_environment_fixer_clean.cjs",
+        "port": 3002,
+        "type": "api-client"
+      },
+      {
+        "file": "src\\services\\api\\apiClient.ts",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "src\\services\\api\\curriculumService.ts",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "src\\services\\api\\lessonLogService.ts",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "src\\services\\api\\lessonTemplateServiceDB.ts",
+        "port": 5000,
+        "type": "api-client"
+      },
+      {
+        "file": "src\\services\\api\\lessonTemplateServiceDB.ts",
+        "port": 5001,
+        "type": "api-client"
+      },
+      {
+        "file": "src\\services\\api\\sectionService.ts",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "src\\services\\textbookService.ts",
+        "port": 3000,
+        "type": "api-client"
+      },
+      {
+        "file": "test_schedule_api.cjs",
+        "port": 3000,
+        "type": "api-client"
+      }
+    ],
+    "scripts": []
+  },
+  "flows": {
+    "classroom.db": {
+      "readers": 60,
+      "writers": 20,
+      "modifiers": 5
+    },
+    "classroom_dev.db": {
+      "readers": 0,
+      "writers": 0,
+      "modifiers": 0
+    },
+    "classroom_test.db": {
+      "readers": 0,
+      "writers": 0,
+      "modifiers": 0
+    },
+    "classroom_backup_20250924_174347.db": {
+      "readers": 18,
+      "writers": 6,
+      "modifiers": 0
+    },
+    "classroom_backup_2.db": {
+      "readers": 18,
+      "writers": 6,
+      "modifiers": 0
+    }
+  },
+  "risks": [
+    {
+      "type": "multiple-writers",
+      "severity": "high",
+      "description": "14 ملف يكتب في قاعدة الإنتاج مباشرة",
+      "files": [
+        "complete_database_rebuild.cjs",
+        "comprehensive_data_protection_system.cjs",
+        "create_curriculum_templates.cjs",
+        "emergency_data_restore.cjs",
+        "final_data_solution.cjs",
+        "fix_database_structure.cjs",
+        "fix_schedule_display.cjs",
+        "restore_attendance_20250923.cjs",
+        "restore_attendance_20250924.cjs",
+        "restore_from_auto_backup.cjs",
+        "restore_lessons_final.cjs",
+        "restore_lessons_fixed.cjs",
+        "restore_missing_lessons.cjs",
+        "restore_textbook_entries.cjs"
+      ]
+    },
+    {
+      "type": "port-confusion",
+      "severity": "medium",
+      "description": "استخدام 5 منافذ مختلفة: 3000, 3001, 3002, 5000, 5001",
+      "ports": [
+        3000,
+        3001,
+        3002,
+        5000,
+        5001
+      ]
+    },
+    {
+      "type": "unprotected-writes",
+      "severity": "high",
+      "description": "18 اتصال كتابة غير محمي",
+      "files": [
+        "comprehensive_data_protection_system.cjs",
+        "create_curriculum_templates.cjs",
+        "fix_schedule_display.cjs",
+        "restore_attendance_20250923.cjs",
+        "restore_attendance_20250923.cjs",
+        "restore_attendance_20250924.cjs",
+        "restore_attendance_20250924.cjs",
+        "restore_from_auto_backup.cjs",
+        "restore_from_auto_backup.cjs",
+        "restore_from_auto_backup.cjs",
+        "restore_lessons_final.cjs",
+        "restore_lessons_final.cjs",
+        "restore_lessons_fixed.cjs",
+        "restore_lessons_fixed.cjs",
+        "restore_missing_lessons.cjs",
+        "restore_missing_lessons.cjs",
+        "restore_textbook_entries.cjs",
+        "restore_textbook_entries.cjs"
+      ]
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "urgent",
+      "action": "إنشاء مدير اتصال موحد",
+      "description": "توحيد جميع عمليات الكتابة تحت مدير واحد لتجنب التضارب"
+    },
+    {
+      "priority": "urgent",
+      "action": "إضافة حماية المعاملات",
+      "description": "تطبيق transactions في جميع عمليات الكتابة لضمان سلامة البيانات"
+    },
+    {
+      "priority": "medium",
+      "action": "توحيد منافذ API",
+      "description": "تجميع جميع خدمات API تحت منفذ موحد لكل بيئة"
+    },
+    {
+      "priority": "high",
+      "action": "إصلاح التكوين الثابت",
+      "description": "تعديل backend/config/database.js ليستخدم متغيرات البيئة"
+    },
+    {
+      "priority": "medium",
+      "action": "إنشاء نظام مراقبة",
+      "description": "تطبيق مراقبة مستمرة لجميع اتصالات قاعدة البيانات"
+    }
+  ]
+}

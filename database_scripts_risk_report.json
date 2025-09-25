@@ -1,0 +1,1594 @@
+{
+  "timestamp": "2025-09-25T16:37:27.943Z",
+  "totalScripts": 57,
+  "riskDistribution": {
+    "CRITICAL": 2,
+    "HIGH": 8,
+    "MEDIUM": 11,
+    "LOW": 36
+  },
+  "results": [
+    {
+      "file": "analyze_database_flows.cjs",
+      "fileName": "analyze_database_flows",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: analyze"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 35,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\analyze_educational_levels.js",
+      "fileName": "analyze_educational_levels",
+      "riskLevel": "MEDIUM",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: analyze"
+      ],
+      "patterns": [
+        {
+          "level": "MEDIUM",
+          "pattern": "/\\.update\\(/g",
+          "matches": 1,
+          "examples": [
+            ".update("
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 16,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/\\.findAll\\(\\)/g",
+          "matches": 2,
+          "examples": [
+            ".findAll()",
+            ".findAll()"
+          ]
+        }
+      ],
+      "recommendations": [
+        "🟡 راجع التغييرات قبل التشغيل",
+        "🟡 أضف آلية للتراجع"
+      ]
+    },
+    {
+      "file": "backend\\check_admin_tables.js",
+      "fileName": "check_admin_tables",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 2,
+          "examples": [
+            "console.log",
+            "console.log"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/process\\.exit/g",
+          "matches": 2,
+          "examples": [
+            "process.exit",
+            "process.exit"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\check_att_schema.js",
+      "fileName": "check_att_schema",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 4,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\check_data_simple.js",
+      "fileName": "check_data_simple",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 8,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/\\.findAll\\(\\)/g",
+          "matches": 1,
+          "examples": [
+            ".findAll()"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/process\\.exit/g",
+          "matches": 2,
+          "examples": [
+            "process.exit",
+            "process.exit"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\check_evaluation_prod.js",
+      "fileName": "check_evaluation_prod",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 3,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\check_evaluation_tables.js",
+      "fileName": "check_evaluation_tables",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 6,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\check_students.js",
+      "fileName": "check_students",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 8,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\check_templates.js",
+      "fileName": "check_templates",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 13,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\detailed_check.js",
+      "fileName": "detailed_check",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 9,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\fix_schedule_days.js",
+      "fileName": "fix_schedule_days",
+      "riskLevel": "HIGH",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: fix"
+      ],
+      "patterns": [
+        {
+          "level": "MEDIUM",
+          "pattern": "/\\.update\\(/g",
+          "matches": 1,
+          "examples": [
+            ".update("
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 7,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/\\.findAll\\(\\)/g",
+          "matches": 1,
+          "examples": [
+            ".findAll()"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/process\\.exit/g",
+          "matches": 2,
+          "examples": [
+            "process.exit",
+            "process.exit"
+          ]
+        }
+      ],
+      "recommendations": [
+        "⚠️ خذ نسخة احتياطية",
+        "⚠️ اختبر في بيئة منفصلة",
+        "⚠️ أضف تسجيل للعمليات"
+      ]
+    },
+    {
+      "file": "backend\\import_backup.js",
+      "fileName": "import_backup",
+      "riskLevel": "LOW",
+      "risks": [],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 31,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/process\\.exit/g",
+          "matches": 4,
+          "examples": [
+            "process.exit",
+            "process.exit",
+            "process.exit"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\import_templates.js",
+      "fileName": "import_templates",
+      "riskLevel": "LOW",
+      "risks": [],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 35,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\inspect_db.js",
+      "fileName": "inspect_db",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: inspect"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 2,
+          "examples": [
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\migrate.js",
+      "fileName": "migrate",
+      "riskLevel": "HIGH",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: migrate"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 8,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "⚠️ خذ نسخة احتياطية",
+        "⚠️ اختبر في بيئة منفصلة",
+        "⚠️ أضف تسجيل للعمليات"
+      ]
+    },
+    {
+      "file": "backend\\repair_student_sections.js",
+      "fileName": "repair_student_sections",
+      "riskLevel": "MEDIUM",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: repair"
+      ],
+      "patterns": [
+        {
+          "level": "MEDIUM",
+          "pattern": "/\\.create\\(/g",
+          "matches": 1,
+          "examples": [
+            ".create("
+          ]
+        },
+        {
+          "level": "MEDIUM",
+          "pattern": "/\\.update\\(/g",
+          "matches": 1,
+          "examples": [
+            ".update("
+          ]
+        },
+        {
+          "level": "MEDIUM",
+          "pattern": "/Date\\.now\\(\\)\\.toString\\(\\)/g",
+          "matches": 1,
+          "examples": [
+            "Date.now().toString()"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 3,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/process\\.exit/g",
+          "matches": 1,
+          "examples": [
+            "process.exit"
+          ]
+        }
+      ],
+      "recommendations": [
+        "🟡 راجع التغييرات قبل التشغيل",
+        "🟡 أضف آلية للتراجع"
+      ]
+    },
+    {
+      "file": "backend\\reset_db.js",
+      "fileName": "reset_db",
+      "riskLevel": "CRITICAL",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: reset"
+      ],
+      "patterns": [
+        {
+          "level": "CRITICAL",
+          "pattern": "/\\.drop\\(\\)/g",
+          "matches": 1,
+          "examples": [
+            ".drop()"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 7,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "🚨 خذ نسخة احتياطية قبل التشغيل",
+        "🚨 اختبر في بيئة تطوير أولاً",
+        "🚨 أضف تأكيد يدوي قبل التنفيذ",
+        "🚨 راجع الكود مع فريق آخر"
+      ]
+    },
+    {
+      "file": "backend\\restore_schedule.js",
+      "fileName": "restore_schedule",
+      "riskLevel": "MEDIUM",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: restore"
+      ],
+      "patterns": [
+        {
+          "level": "MEDIUM",
+          "pattern": "/\\.create\\(/g",
+          "matches": 1,
+          "examples": [
+            ".create("
+          ]
+        },
+        {
+          "level": "MEDIUM",
+          "pattern": "/Date\\.now\\(\\)\\.toString\\(\\)/g",
+          "matches": 1,
+          "examples": [
+            "Date.now().toString()"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 12,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/\\.findAll\\(\\)/g",
+          "matches": 1,
+          "examples": [
+            ".findAll()"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/process\\.exit/g",
+          "matches": 2,
+          "examples": [
+            "process.exit",
+            "process.exit"
+          ]
+        }
+      ],
+      "recommendations": [
+        "🟡 راجع التغييرات قبل التشغيل",
+        "🟡 أضف آلية للتراجع"
+      ]
+    },
+    {
+      "file": "backend\\test-api.js",
+      "fileName": "test-api",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: test"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 9,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\test-server.js",
+      "fileName": "test-server",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: test"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 4,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/process\\.exit/g",
+          "matches": 1,
+          "examples": [
+            "process.exit"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\test_admin_schedule.js",
+      "fileName": "test_admin_schedule",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: test"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 7,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\test_api.js",
+      "fileName": "test_api",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: test"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 2,
+          "examples": [
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "backend\\test_get.js",
+      "fileName": "test_get",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: test"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 3,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/process\\.exit/g",
+          "matches": 2,
+          "examples": [
+            "process.exit",
+            "process.exit"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "check_attendance.cjs",
+      "fileName": "check_attendance",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 30,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/process\\.exit/g",
+          "matches": 1,
+          "examples": [
+            "process.exit"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "check_attendance.js",
+      "fileName": "check_attendance",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 30,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/process\\.exit/g",
+          "matches": 1,
+          "examples": [
+            "process.exit"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "check_backup_lessons.cjs",
+      "fileName": "check_backup_lessons",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 22,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/process\\.exit/g",
+          "matches": 1,
+          "examples": [
+            "process.exit"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "check_files.cjs",
+      "fileName": "check_files",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 18,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "check_ids.cjs",
+      "fileName": "check_ids",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 9,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "check_learning_data.cjs",
+      "fileName": "check_learning_data",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 11,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "check_lesson_tables.cjs",
+      "fileName": "check_lesson_tables",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 26,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "check_schema.cjs",
+      "fileName": "check_schema",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 16,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "check_sequelize_templates.cjs",
+      "fileName": "check_sequelize_templates",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 15,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "check_table_structure.cjs",
+      "fileName": "check_table_structure",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 12,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "database_risk_analyzer.cjs",
+      "fileName": "database_risk_analyzer",
+      "riskLevel": "CRITICAL",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: analyze"
+      ],
+      "patterns": [
+        {
+          "level": "CRITICAL",
+          "pattern": "/TRUNCATE/gi",
+          "matches": 2,
+          "examples": [
+            "TRUNCATE",
+            "truncate"
+          ]
+        },
+        {
+          "level": "HIGH",
+          "pattern": "/removeColumn/g",
+          "matches": 1,
+          "examples": [
+            "removeColumn"
+          ]
+        },
+        {
+          "level": "MEDIUM",
+          "pattern": "/addColumn/g",
+          "matches": 1,
+          "examples": [
+            "addColumn"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 25,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "🚨 خذ نسخة احتياطية قبل التشغيل",
+        "🚨 اختبر في بيئة تطوير أولاً",
+        "🚨 أضف تأكيد يدوي قبل التنفيذ",
+        "🚨 راجع الكود مع فريق آخر"
+      ]
+    },
+    {
+      "file": "detailed_attendance_check.cjs",
+      "fileName": "detailed_attendance_check",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 20,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/process\\.exit/g",
+          "matches": 1,
+          "examples": [
+            "process.exit"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "detailed_check.cjs",
+      "fileName": "detailed_check",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 19,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "detailed_learning_check.cjs",
+      "fileName": "detailed_learning_check",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 37,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "detailed_table_inspection.cjs",
+      "fileName": "detailed_table_inspection",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: inspect"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 20,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "emergency_data_check.cjs",
+      "fileName": "emergency_data_check",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 14,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "emergency_data_restore.cjs",
+      "fileName": "emergency_data_restore",
+      "riskLevel": "MEDIUM",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: restore"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 28,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "🟡 راجع التغييرات قبل التشغيل",
+        "🟡 أضف آلية للتراجع"
+      ]
+    },
+    {
+      "file": "emergency_environment_fixer.cjs",
+      "fileName": "emergency_environment_fixer",
+      "riskLevel": "HIGH",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: fix"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 49,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/process\\.exit/g",
+          "matches": 2,
+          "examples": [
+            "process.exit",
+            "process.exit"
+          ]
+        }
+      ],
+      "recommendations": [
+        "⚠️ خذ نسخة احتياطية",
+        "⚠️ اختبر في بيئة منفصلة",
+        "⚠️ أضف تسجيل للعمليات"
+      ]
+    },
+    {
+      "file": "emergency_environment_fixer_clean.cjs",
+      "fileName": "emergency_environment_fixer_clean",
+      "riskLevel": "HIGH",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: fix"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 32,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        },
+        {
+          "level": "LOW",
+          "pattern": "/process\\.exit/g",
+          "matches": 2,
+          "examples": [
+            "process.exit",
+            "process.exit"
+          ]
+        }
+      ],
+      "recommendations": [
+        "⚠️ خذ نسخة احتياطية",
+        "⚠️ اختبر في بيئة منفصلة",
+        "⚠️ أضف تسجيل للعمليات"
+      ]
+    },
+    {
+      "file": "final_check.cjs",
+      "fileName": "final_check",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 23,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "fix_database_structure.cjs",
+      "fileName": "fix_database_structure",
+      "riskLevel": "HIGH",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: fix"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 31,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "⚠️ خذ نسخة احتياطية",
+        "⚠️ اختبر في بيئة منفصلة",
+        "⚠️ أضف تسجيل للعمليات"
+      ]
+    },
+    {
+      "file": "fix_data_check.cjs",
+      "fileName": "fix_data_check",
+      "riskLevel": "HIGH",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: fix",
+        "اسم الملف يحتوي على كلمة خطرة: check"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 19,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "⚠️ خذ نسخة احتياطية",
+        "⚠️ اختبر في بيئة منفصلة",
+        "⚠️ أضف تسجيل للعمليات"
+      ]
+    },
+    {
+      "file": "fix_schedule_display.cjs",
+      "fileName": "fix_schedule_display",
+      "riskLevel": "HIGH",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: fix"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 44,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "⚠️ خذ نسخة احتياطية",
+        "⚠️ اختبر في بيئة منفصلة",
+        "⚠️ أضف تسجيل للعمليات"
+      ]
+    },
+    {
+      "file": "inspect_database_structure.cjs",
+      "fileName": "inspect_database_structure",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: inspect"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 13,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "restore_attendance_20250923.cjs",
+      "fileName": "restore_attendance_20250923",
+      "riskLevel": "MEDIUM",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: restore"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 23,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "🟡 راجع التغييرات قبل التشغيل",
+        "🟡 أضف آلية للتراجع"
+      ]
+    },
+    {
+      "file": "restore_attendance_20250924.cjs",
+      "fileName": "restore_attendance_20250924",
+      "riskLevel": "MEDIUM",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: restore"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 20,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "🟡 راجع التغييرات قبل التشغيل",
+        "🟡 أضف آلية للتراجع"
+      ]
+    },
+    {
+      "file": "restore_from_auto_backup.cjs",
+      "fileName": "restore_from_auto_backup",
+      "riskLevel": "MEDIUM",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: restore"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 17,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "🟡 راجع التغييرات قبل التشغيل",
+        "🟡 أضف آلية للتراجع"
+      ]
+    },
+    {
+      "file": "restore_lessons_final.cjs",
+      "fileName": "restore_lessons_final",
+      "riskLevel": "MEDIUM",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: restore"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 19,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "🟡 راجع التغييرات قبل التشغيل",
+        "🟡 أضف آلية للتراجع"
+      ]
+    },
+    {
+      "file": "restore_lessons_fixed.cjs",
+      "fileName": "restore_lessons_fixed",
+      "riskLevel": "HIGH",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: fix",
+        "اسم الملف يحتوي على كلمة خطرة: restore"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 18,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "⚠️ خذ نسخة احتياطية",
+        "⚠️ اختبر في بيئة منفصلة",
+        "⚠️ أضف تسجيل للعمليات"
+      ]
+    },
+    {
+      "file": "restore_missing_lessons.cjs",
+      "fileName": "restore_missing_lessons",
+      "riskLevel": "MEDIUM",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: restore"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 13,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "🟡 راجع التغييرات قبل التشغيل",
+        "🟡 أضف آلية للتراجع"
+      ]
+    },
+    {
+      "file": "restore_textbook_entries.cjs",
+      "fileName": "restore_textbook_entries",
+      "riskLevel": "MEDIUM",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: restore"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 34,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "🟡 راجع التغييرات قبل التشغيل",
+        "🟡 أضف آلية للتراجع"
+      ]
+    },
+    {
+      "file": "test_environment_separation.cjs",
+      "fileName": "test_environment_separation",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: test"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 39,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "test_schedule_api.cjs",
+      "fileName": "test_schedule_api",
+      "riskLevel": "LOW",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: test"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 35,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "ℹ️ مراقبة استهلاك الموارد"
+      ]
+    },
+    {
+      "file": "updated_data_integrity_monitor.cjs",
+      "fileName": "updated_data_integrity_monitor",
+      "riskLevel": "MEDIUM",
+      "risks": [
+        "اسم الملف يحتوي على كلمة خطرة: update"
+      ],
+      "patterns": [
+        {
+          "level": "LOW",
+          "pattern": "/console\\.log/g",
+          "matches": 34,
+          "examples": [
+            "console.log",
+            "console.log",
+            "console.log"
+          ]
+        }
+      ],
+      "recommendations": [
+        "🟡 راجع التغييرات قبل التشغيل",
+        "🟡 أضف آلية للتراجع"
+      ]
+    }
+  ]
+}
