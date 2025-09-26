@@ -91,16 +91,14 @@ export const formatTimeToArabic = (time: string): string => {
   }
 };
 
-// دالة لتحويل التاريخ إلى نص عربي
+// دالة لتحويل التاريخ إلى تنسيق DD-MM-YYYY
 export const formatDateToArabic = (dateString: string): string => {
   try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ar-MA', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'long'
-    });
+    const date = new Date(dateString + 'T00:00:00');
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
   } catch (error) {
     return dateString;
   }

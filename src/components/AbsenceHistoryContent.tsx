@@ -66,7 +66,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
   useEffect(() => {
     const fetchAvailableDates = async () => {
       try {
-                const response = await fetch('http://localhost:3000/api/schedule/current-lesson');
+        const response = await fetch('http://localhost:3000/api/attendance');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const allRecords: AttendanceRecord[] = await response.json();
         
@@ -593,12 +593,12 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
             <thead>
               <tr>
                 <th style={{ width: '8%' }}>ر.ت</th>
-                <th style={{ width: '25%' }}>الاسم الكامل</th>
-                {!selectedDate && <th style={{ width: '15%' }}>التاريخ</th>}
+                <th style={{ width: '20%' }}>الاسم الكامل</th>
+                <th style={{ width: '15%' }}>التاريخ</th>
                 <th style={{ width: '10%' }}>الحصة</th>
                 <th style={{ width: '12%' }}>الفترة</th>
                 <th style={{ width: '15%' }}>عدد الغيابات</th>
-                <th style={{ width: '15%' }}>الحالة</th>
+                <th style={{ width: '20%' }}>الحالة</th>
               </tr>
             </thead>
             <tbody>
@@ -610,7 +610,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                     <td className="name-cell">
                       {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
                     </td>
-                    {!selectedDate && <td>{formatDateToArabic(r.date)}</td>}
+                    <td>{formatDateToArabic(r.date)}</td>
                     <td>{lessonInfo ? lessonInfo.lessonNumber : '-'}</td>
                     <td>{lessonInfo?.period || 'غير محدد'}</td>
                     <td>{r.absences ?? 0}</td>
@@ -620,7 +620,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
               })}
               {presentSorted.length === 0 && (
                 <tr>
-                  <td colSpan={selectedDate ? 6 : 7}>لا يوجد طلاب حاضرون</td>
+                  <td colSpan={7}>لا يوجد طلاب حاضرون</td>
                 </tr>
               )}
             </tbody>
@@ -633,12 +633,12 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
             <thead>
               <tr>
                 <th style={{ width: '8%' }}>ر.ت</th>
-                <th style={{ width: '25%' }}>الاسم الكامل</th>
-                {!selectedDate && <th style={{ width: '15%' }}>التاريخ</th>}
+                <th style={{ width: '20%' }}>الاسم الكامل</th>
+                <th style={{ width: '15%' }}>التاريخ</th>
                 <th style={{ width: '10%' }}>الحصة</th>
                 <th style={{ width: '12%' }}>الفترة</th>
                 <th style={{ width: '15%' }}>عدد الغيابات</th>
-                <th style={{ width: '15%' }}>الحالة</th>
+                <th style={{ width: '20%' }}>الحالة</th>
               </tr>
             </thead>
             <tbody>
@@ -650,7 +650,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                     <td className="name-cell">
                       {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
                     </td>
-                    {!selectedDate && <td>{formatDateToArabic(r.date)}</td>}
+                    <td>{formatDateToArabic(r.date)}</td>
                     <td>{lessonInfo ? lessonInfo.lessonNumber : '-'}</td>
                     <td>{lessonInfo?.period || 'غير محدد'}</td>
                     <td>{r.absences ?? 0}</td>
@@ -660,7 +660,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
               })}
               {absentSorted.length === 0 && (
                 <tr>
-                  <td colSpan={selectedDate ? 6 : 7}>لا يوجد طلاب غائبون</td>
+                  <td colSpan={7}>لا يوجد طلاب غائبون</td>
                 </tr>
               )}
             </tbody>
