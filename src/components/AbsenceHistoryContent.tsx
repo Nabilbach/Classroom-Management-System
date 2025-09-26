@@ -21,6 +21,10 @@ import {
   Divider,
   Chip,
   useMediaQuery,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { Print as PrintIcon } from '@mui/icons-material';
 import { useSections } from '../contexts/SectionsContext';
@@ -51,6 +55,8 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
   const [selectedSectionId, setSelectedSectionId] = useState<string>('');
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [selectedStudentForDetails, setSelectedStudentForDetails] = useState<AttendanceRecord | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { sections } = useSections();
   const { recommendedSectionId, displayMessage, isTeachingTime } = useCurrentLesson();
 
@@ -310,6 +316,40 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     setSelectedStudentForDetails(record);
   };
 
+  // دالة حذف جميع السجلات
+  const handleDeleteAllRecords = async () => {
+    try {
+      setIsDeleting(true);
+      const response = await fetch('http://localhost:3000/api/attendance/all', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('تم حذف جميع السجلات:', result);
+      
+      // إعادة تعيين البيانات
+      setRecords([]);
+      setAvailableDates([]);
+      setSelectedDate('');
+      
+      alert(`تم حذف ${result.deletedCount || 0} سجل غياب بنجاح`);
+      
+    } catch (error) {
+      console.error('خطأ في حذف السجلات:', error);
+      alert('حدث خطأ في حذف السجلات. يرجى المحاولة مرة أخرى.');
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmOpen(false);
+    }
+  };
+
   const isMobile = useMediaQuery('(max-width:600px)');
   return (
     <Card sx={{ maxWidth: 900, mx: 'auto', my: 2, boxShadow: 6, borderRadius: 4, height: isMobile ? '100vh' : '90vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -357,6 +397,15 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
             </FormControl>
             <Button variant="contained" onClick={fetchData} sx={{ height: 56 }}>
               تحديث البيانات
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={() => setDeleteConfirmOpen(true)}
+              disabled={records.length === 0 || isDeleting}
+              sx={{ minWidth: 120 }}
+            >
+              {isDeleting ? 'حذف...' : 'حذف جميع السجلات'}
             </Button>
             <Button
               variant="outlined"
@@ -705,6 +754,58 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
           }}
         />
       )}
+
+      {/* نافذة تأكيد حذف جميع السجلات */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => !isDeleting && setDeleteConfirmOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ 
+          bgcolor: 'error.main', 
+          color: 'error.contrastText',
+          textAlign: 'center',
+          fontWeight: 'bold'
+        }}>
+          تأكيد حذف جميع السجلات
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="h6" color="error" sx={{ mb: 2 }}>
+              ⚠️ تحذير هام!
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              هل أنت متأكد من رغبتك في حذف <strong>جميع</strong> سجلات الغياب؟
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              عدد السجلات التي سيتم حذفها: <strong>{records.length}</strong>
+            </Typography>
+            <Typography variant="body2" color="error" sx={{ fontWeight: 'bold' }}>
+              هذه العملية لا يمكن التراجع عنها!
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, justifyContent: 'center', gap: 2 }}>
+          <Button
+            onClick={() => setDeleteConfirmOpen(false)}
+            variant="outlined"
+            disabled={isDeleting}
+            sx={{ minWidth: 100 }}
+          >
+            إلغاء
+          </Button>
+          <Button
+            onClick={handleDeleteAllRecords}
+            variant="contained"
+            color="error"
+            disabled={isDeleting}
+            sx={{ minWidth: 120 }}
+          >
+            {isDeleting ? 'جاري الحذف...' : 'نعم، احذف الجميع'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 };
