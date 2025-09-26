@@ -96,6 +96,30 @@ function StudentManagement() {
     setAttendanceStatus(allAbsentStatus);
   };
 
+  // دالة تعيين الكل كغائب ما عدا المستثنين
+  const handleMarkAllAbsentExcept = () => {
+    const status = sectionStudents.reduce((acc, s) => {
+      acc[s.id] = excludedIds.includes(String(s.id)); // المستثنى حاضر، الباقي غائب
+      return acc;
+    }, {} as Record<string, boolean>);
+    setAttendanceStatus(status);
+    setExcludeModalOpen(false);
+    setExcludedIds([]);
+    setExcludeType(null);
+  };
+
+  // دالة تعيين الكل كحاضر ما عدا المستثنين
+  const handleMarkAllPresentExcept = () => {
+    const status = sectionStudents.reduce((acc, s) => {
+      acc[s.id] = !excludedIds.includes(String(s.id)); // المستثنى غائب، الباقي حاضر
+      return acc;
+    }, {} as Record<string, boolean>);
+    setAttendanceStatus(status);
+    setExcludeModalOpen(false);
+    setExcludedIds([]);
+    setExcludeType(null);
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -127,6 +151,11 @@ function StudentManagement() {
   const [attendanceStatus, setAttendanceStatus] = useState<Record<string, boolean>>({});
   const [showAbsentListModal, setShowAbsentListModal] = useState(false);
   const [absentStudents, setAbsentStudents] = useState<Student[]>([]);
+
+  // نافذة اختيار الطلاب المستثنين
+  const [excludeModalOpen, setExcludeModalOpen] = useState(false);
+  const [excludeType, setExcludeType] = useState<'absent' | 'present' | null>(null);
+  const [excludedIds, setExcludedIds] = useState<string[]>([]);
 
   // Local optimistic order: list of student IDs in their temporary order
   const [localOrderIds, setLocalOrderIds] = useState<number[] | null>(null);
@@ -165,9 +194,6 @@ function StudentManagement() {
   // Tick every 30s to refresh countdowns
   useEffect(() => {
     const t = setInterval(() => setNowTick(Date.now()), 30000);
-              <Button onClick={handleMarkAllAbsent} variant="outlined" color="warning">
-                تعيين جميع الطلاب غائبين
-              </Button>
     return () => clearInterval(t);
   }, []);
 
@@ -537,6 +563,15 @@ function StudentManagement() {
               <Button onClick={handleSaveAttendance} variant="contained" color="success">
                 حفظ الحضور
               </Button>
+              <Button onClick={handleMarkAllAbsent} variant="contained" color="warning" sx={{ backgroundColor: '#ff9800', color: 'white', fontWeight: 'bold' }}>
+                🚫 الجميع غائب
+              </Button>
+              <Button onClick={() => { setExcludeType('absent'); setExcludeModalOpen(true); }} variant="outlined" color="warning" sx={{ fontWeight: 'bold' }}>
+                ⚠️ الجميع غائب ما عدا...
+              </Button>
+              <Button onClick={() => { setExcludeType('present'); setExcludeModalOpen(true); }} variant="outlined" color="success" sx={{ fontWeight: 'bold' }}>
+                ✅ الجميع حاضر ما عدا...
+              </Button>
               <Button onClick={handleCancelAttendance} variant="outlined" color="error">
                 إلغاء
               </Button>
@@ -691,6 +726,62 @@ function StudentManagement() {
           <Button variant="text" color="inherit" onClick={handleConfirmModalClose}>إلغاء</Button>
         </DialogActions>
       </Dialog>
+
+      {/* نافذة اختيار الطلاب المستثنين */}
+      <Dialog open={excludeModalOpen} onClose={() => setExcludeModalOpen(false)} maxWidth="sm" fullWidth dir="rtl">
+        <DialogTitle sx={{ fontWeight: 'bold', backgroundColor: excludeType === 'absent' ? '#fff3e0' : '#e8f5e8' }}>
+          {excludeType === 'absent' ? '⚠️ اختر الطلاب الحاضرين (الباقي سيكون غائب)' : '✅ اختر الطلاب الغائبين (الباقي سيكون حاضر)'}
+        </DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" gutterBottom sx={{ fontWeight: 'bold', marginBottom: 2 }}>
+            {excludeType === 'absent' 
+              ? 'سيتم تعيين جميع الطلاب كغائبين ما عدا من تختارهم هنا:' 
+              : 'سيتم تعيين جميع الطلاب كحاضرين ما عدا من تختارهم هنا:'}
+          </Typography>
+          <div style={{ maxHeight: 300, overflowY: 'auto', border: '1px solid #ddd', borderRadius: '8px', padding: '8px' }}>
+            {sectionStudents.map((student) => (
+              <div key={student.id} style={{ display: 'flex', alignItems: 'center', marginBottom: 12, padding: '8px', backgroundColor: excludedIds.includes(String(student.id)) ? '#e3f2fd' : '#fff', borderRadius: '4px', border: '1px solid #eee' }}>
+                <input
+                  type="checkbox"
+                  checked={excludedIds.includes(String(student.id))}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setExcludedIds((prev) => [...prev, String(student.id)]);
+                    } else {
+                      setExcludedIds((prev) => prev.filter((id) => id !== String(student.id)));
+                    }
+                  }}
+                  id={`exclude-${student.id}`}
+                  style={{ marginLeft: 8 }}
+                />
+                <label htmlFor={`exclude-${student.id}`} style={{ cursor: 'pointer', fontWeight: 'bold' }}>
+                  {student.classOrder}. {student.firstName} {student.lastName}
+                </label>
+              </div>
+            ))}
+          </div>
+          {excludedIds.length > 0 && (
+            <Typography variant="body2" sx={{ marginTop: 2, fontWeight: 'bold', color: excludeType === 'absent' ? '#ff9800' : '#4caf50' }}>
+              عدد المستثنين: {excludedIds.length} طالب
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {excludeType === 'absent' ? (
+            <Button onClick={handleMarkAllAbsentExcept} variant="contained" color="warning" disabled={excludedIds.length === 0}>
+              ⚠️ تطبيق (الجميع غائب ما عدا المحددين)
+            </Button>
+          ) : (
+            <Button onClick={handleMarkAllPresentExcept} variant="contained" color="success" disabled={excludedIds.length === 0}>
+              ✅ تطبيق (الجميع حاضر ما عدا المحددين)
+            </Button>
+          )}
+          <Button onClick={() => { setExcludeModalOpen(false); setExcludedIds([]); setExcludeType(null); }} variant="outlined" color="error">
+            إلغاء
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <BackToTopButton />
     </div>
   );
