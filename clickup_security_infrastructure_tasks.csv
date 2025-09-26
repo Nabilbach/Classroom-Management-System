@@ -1,0 +1,11 @@
+Task Name,Description,Status,Priority,Assignee,Due Date,Estimate (hours),Tags,List
+فصل البيئات,إنشاء بيئات منفصلة للإنتاج والتطوير والاختبار,Complete,Critical,نبيل باش,2025-09-22,20,"environments,security,devops",Security Infrastructure
+نظام النسخ الاحتياطية,تطبيق نظام نسخ احتياطية تلقائية ومتعددة,Complete,Critical,نبيل باش,2025-09-22,12,"backup,data-protection,automation",Security Infrastructure
+حماية قاعدة البيانات,تأمين الوصول لقاعدة البيانات ومنع فقدان البيانات,Complete,Critical,نبيل باش,2025-09-22,16,"database-security,data-integrity",Security Infrastructure
+حل مشاكل Git/OneDrive,حل تعارضات Git مع OneDrive وحماية مجلد .git,Complete,High,نبيل باش,2025-09-25,8,"git,onedrive,version-control",Security Infrastructure
+نظام المستخدمين والأدوار,تطبيق نظام تسجيل دخول وصلاحيات متدرجة,To Do,High,نبيل باش,2025-11-15,24,"authentication,authorization,users",Security Infrastructure
+تشفير البيانات الحساسة,تطبيق تشفير للبيانات الحساسة في قاعدة البيانات,To Do,High,نبيل باش,2025-11-20,16,"encryption,data-security",Security Infrastructure
+سجل العمليات (Audit Log),تطبيق نظام تسجيل جميع العمليات للمراجعة,To Do,Medium,نبيل باش,2025-11-25,14,"audit,logging,monitoring",Security Infrastructure
+مراقبة الأمان المستمرة,إعداد نظام مراقبة الأنشطة المشبوهة والتنبيهات,To Do,Medium,نبيل باش,2025-12-01,18,"monitoring,security-alerts,analysis",Security Infrastructure
+اختبارات الأمان,تطبيق اختبارات أمان شاملة واختبار سيناريوهات الطوارئ,To Do,Medium,نبيل باش,2025-12-05,12,"security-testing,penetration-testing",Security Infrastructure
+نسخ احتياطية محسنة,تحسين نظام النسخ الاحتياطية مع جدولة تلقائية,To Do,Medium,نبيل باش,2025-12-10,10,"backup-enhancement,automation,scheduling",Security Infrastructure

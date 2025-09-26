@@ -1,0 +1,9 @@
+Task Name,Description,Status,Priority,Assignee,Due Date,Estimate (hours),Tags,List
+نظام تسجيل الحضور,تطوير واجهات تسجيل الحضور الفردي والجماعي,Complete,High,نبيل باش,2025-09-25,16,"attendance,frontend,ui",Attendance System
+أزرار الحضور المتقدمة,تطبيق أزرار تعيين الكل حاضر/غائب مع الاستثناءات,Complete,High,نبيل باش,2025-09-25,12,"attendance,bulk-actions,exceptions",Attendance System
+حفظ بيانات الحضور,ربط واجهات الحضور بقاعدة البيانات وحفظ البيانات,Complete,High,نبيل باش,2025-09-25,10,"attendance,database,api",Attendance System
+واجهات إدارة الحضور,تحسين واجهات المستخدم لإدارة الحضور,Complete,Medium,نبيل باش,2025-09-25,8,"attendance,ui,ux",Attendance System
+تقارير الحضور الأساسية,إنشاء تقارير بسيطة لحضور الطلاب,In Progress,High,نبيل باش,2025-09-28,14,"reports,attendance,analytics",Reporting System
+إحصائيات الغياب,تطوير إحصائيات تفصيلية للغياب الشهري والأسبوعي,To Do,Medium,نبيل باش,2025-10-05,16,"statistics,absence,reports",Reporting System
+نظام تنبيهات الغياب,تطبيق تنبيهات للطلاب كثيري الغياب,To Do,Medium,نبيل باش,2025-10-10,12,"alerts,notifications,attendance",Attendance System
+تصدير تقارير الحضور,إضافة خيارات تصدير تقارير الحضور لـ Excel/PDF,To Do,Low,نبيل باش,2025-10-15,10,"export,reports,pdf,excel",Reporting System

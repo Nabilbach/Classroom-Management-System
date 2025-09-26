@@ -1,0 +1,9 @@
+Task Name,Description,Status,Priority,Assignee,Due Date,Estimate (hours),Tags,List
+إعداد البيئة التقنية,تكوين React + TypeScript + Vite + Material-UI,Complete,High,نبيل باش,2025-09-15,16,"setup,frontend,react",Foundation & Setup
+تكوين قاعدة البيانات,إعداد SQLite مع Sequelize ORM ونماذج البيانات,Complete,High,نبيل باش,2025-09-15,12,"database,backend,sequelize",Foundation & Setup  
+إعداد الخادم الخلفي,تكوين Express.js والمسارات الأساسية,Complete,High,نبيل باش,2025-09-16,10,"backend,express,api",Foundation & Setup
+نظام إدارة الأقسام,إنشاء واجهات وآليات إدارة الأقسام الدراسية,Complete,High,نبيل باش,2025-09-18,14,"sections,management,frontend",Foundation & Setup
+نظام إدارة الطلاب,تطوير واجهات إضافة وتعديل وحذف الطلاب,Complete,High,نبيل باش,2025-09-20,18,"students,management,crud",Foundation & Setup
+ربط الطلاب بالأقسام,تطبيق العلاقات بين الطلاب والأقسام,Complete,Medium,نبيل باش,2025-09-20,8,"relationships,database",Foundation & Setup
+حل مشاكل البيئات,فصل بيئات الإنتاج والتطوير والاختبار,Complete,Critical,نبيل باش,2025-09-22,20,"environments,security,devops",Foundation & Setup
+نظام النسخ الاحتياطية,تطبيق نظام نسخ احتياطية متقدم وآمن,Complete,Critical,نبيل باش,2025-09-22,12,"backup,security,data-protection",Foundation & Setup
