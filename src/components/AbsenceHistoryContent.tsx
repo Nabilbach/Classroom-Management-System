@@ -25,6 +25,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  SelectChangeEvent,
 } from '@mui/material';
 import { Print as PrintIcon } from '@mui/icons-material';
 import { useSections } from '../contexts/SectionsContext';
@@ -93,17 +94,29 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     fetchAvailableDates();
   }, []);
 
-  // Smart section detection using the hook - يحديث القسم تلقائياً حسب الحصة الحالية
+  // Smart section detection with localStorage persistence
   useEffect(() => {
     if (recommendedSectionId && sections.length > 0) {
-      // تحديث القسم تلقائياً عند وجود حصة حالية (حتى لو كان هناك قسم محدد مسبقاً)
+      // الأولوية الأولى: إذا كان هناك قسم موصى به (حصة حالية)
       if (selectedSectionId !== recommendedSectionId) {
         console.log('🎯 Auto-updating section based on current lesson:', recommendedSectionId);
         setSelectedSectionId(recommendedSectionId);
+        // حفظ القسم الموصى به كآخر قسم مستخدم
+        localStorage.setItem('lastSelectedSectionId', recommendedSectionId);
       }
     } else if (sections.length > 0 && selectedSectionId === '' && !recommendedSectionId) {
-      console.log('📝 Setting default section (fallback):', sections[0].name);
-      setSelectedSectionId(sections[0].id);
+      // الأولوية الثانية: استرجاع آخر قسم محفوظ
+      const savedSectionId = localStorage.getItem('lastSelectedSectionId');
+      if (savedSectionId && sections.find(s => s.id === savedSectionId)) {
+        console.log('� Restoring last selected section:', savedSectionId);
+        setSelectedSectionId(savedSectionId);
+      } else {
+        // الأولوية الثالثة: القسم الافتراضي أو الأول
+        const defaultSection = sections[0];
+        console.log('�📝 Setting default section (fallback):', defaultSection.name);
+        setSelectedSectionId(defaultSection.id);
+        localStorage.setItem('lastSelectedSectionId', defaultSection.id);
+      }
     }
   }, [recommendedSectionId, sections]);
 
@@ -308,6 +321,20 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     setSelectedStudentForDetails(record);
   };
 
+  // Handle manual section selection with localStorage persistence
+  const handleSectionChange = (event: SelectChangeEvent) => {
+    const newSectionId = event.target.value as string;
+    setSelectedSectionId(newSectionId);
+    
+    // حفظ الاختيار اليدوي فقط إذا لم تكن هناك حصة حالية
+    if (!recommendedSectionId || !isTeachingTime) {
+      localStorage.setItem('lastSelectedSectionId', newSectionId);
+      console.log('💾 Manually saved section to localStorage:', newSectionId);
+    } else {
+      console.log('🎯 Manual selection during teaching time - not saving to localStorage');
+    }
+  };
+
   // دالة حذف جميع السجلات
   const handleDeleteAllRecords = async () => {
     try {
@@ -377,7 +404,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
               <Select
                 value={selectedSectionId}
                 label="القسم"
-                onChange={(e) => setSelectedSectionId(e.target.value)}
+                onChange={handleSectionChange}
               >
                 {sections.map(section => (
                   <MenuItem key={section.id} value={section.id}>
