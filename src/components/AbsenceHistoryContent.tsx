@@ -28,7 +28,7 @@ import {
 } from '@mui/material';
 import { Print as PrintIcon } from '@mui/icons-material';
 import { useSections } from '../contexts/SectionsContext';
-import { getLessonInfo, formatDateToArabic, type LessonInfo } from '../utils/lessonTimeUtils';
+import { getLessonInfo, formatDateToArabic } from '../utils/lessonTimeUtils';
 import { useCurrentLesson } from '../hooks/useCurrentLesson';
 import StudentDetailModal from './students/StudentDetailModal';
 
@@ -734,22 +734,19 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
         <StudentDetailModal
           student={selectedStudentForDetails.student ? {
             id: selectedStudentForDetails.student.id,
-            firstName: selectedStudentForDetails.student.firstName,
-            lastName: selectedStudentForDetails.student.lastName,
-            classOrder: selectedStudentForDetails.student.classOrder,
-            pathwayNumber: selectedStudentForDetails.student.pathwayNumber,
+            firstName: selectedStudentForDetails.student.firstName || '',
+            lastName: selectedStudentForDetails.student.lastName || '',
+            classOrder: selectedStudentForDetails.student.classOrder || 0,
+            pathwayNumber: String(selectedStudentForDetails.student.pathwayNumber || ''),
             sectionId: selectedStudentForDetails.sectionId,
             birthDate: '', // Default values
             gender: ''
           } : null}
           isOpen={!!selectedStudentForDetails}
           onClose={() => setSelectedStudentForDetails(null)}
-          onEdit={() => {
-            // Edit functionality can be added later if needed
-            setSelectedStudentForDetails(null);
-          }}
-          onDelete={() => {
-            // Delete functionality can be added later if needed
+          onAssess={(student) => {
+            // Assessment functionality can be added later if needed
+            console.log('تقييم الطالب:', student);
             setSelectedStudentForDetails(null);
           }}
         />
