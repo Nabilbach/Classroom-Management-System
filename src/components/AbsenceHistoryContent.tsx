@@ -93,16 +93,19 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     fetchAvailableDates();
   }, []);
 
-  // Smart section detection using the hook
+  // Smart section detection using the hook - يحديث القسم تلقائياً حسب الحصة الحالية
   useEffect(() => {
-    if (recommendedSectionId && sections.length > 0 && selectedSectionId === '') {
-      console.log('🎯 Setting section based on current lesson analysis:', recommendedSectionId);
-      setSelectedSectionId(recommendedSectionId);
+    if (recommendedSectionId && sections.length > 0) {
+      // تحديث القسم تلقائياً عند وجود حصة حالية (حتى لو كان هناك قسم محدد مسبقاً)
+      if (selectedSectionId !== recommendedSectionId) {
+        console.log('🎯 Auto-updating section based on current lesson:', recommendedSectionId);
+        setSelectedSectionId(recommendedSectionId);
+      }
     } else if (sections.length > 0 && selectedSectionId === '' && !recommendedSectionId) {
       console.log('📝 Setting default section (fallback):', sections[0].name);
       setSelectedSectionId(sections[0].id);
     }
-  }, [recommendedSectionId, sections, selectedSectionId]);
+  }, [recommendedSectionId, sections]);
 
   const fetchData = useCallback(async () => {
     try {
