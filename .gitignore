@@ -1,2 +1,25 @@
 node_modules
 .vscode/
+
+# Database files - تجنب conflicts في قاعدة البيانات
+*.db
+*.sqlite
+*.sqlite3
+classroom*.db
+
+# Backup files - نسخ احتياطية محلية فقط
+*_backup*.db
+backup_*.db
+
+# Log files
+*.log
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+
+# Temporary files
+*.tmp
+*.temp
