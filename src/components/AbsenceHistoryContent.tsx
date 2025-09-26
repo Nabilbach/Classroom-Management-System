@@ -407,11 +407,9 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                     <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '30%' }}>
                       الاسم الكامل
                     </TableCell>
-                    {!selectedDate && (
-                      <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '15%', textAlign: 'center' }}>
-                        التاريخ
-                      </TableCell>
-                    )}
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '15%', textAlign: 'center' }}>
+                      التاريخ
+                    </TableCell>
                     <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '10%', textAlign: 'center' }}>
                       الحصة
                     </TableCell>
@@ -429,6 +427,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                 <TableBody>
                   {presentSorted.map((r, idx) => {
                     const lessonInfo = getLessonInfo(r.createdAt || r.date);
+                    console.log('Present Record:', r); // للتصحيح
                     return (
                       <TableRow 
                         key={r.id} 
@@ -442,11 +441,9 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                         <TableCell>
                           {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
                         </TableCell>
-                        {!selectedDate && (
-                          <TableCell sx={{ textAlign: 'center' }}>
-                            {formatDateToArabic(r.date)}
-                          </TableCell>
-                        )}
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          {formatDateToArabic(r.date)}
+                        </TableCell>
                         <TableCell sx={{ textAlign: 'center' }}>
                           {lessonInfo ? lessonInfo.lessonNumber : '-'}
                         </TableCell>
@@ -496,11 +493,9 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                     <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '30%' }}>
                       الاسم الكامل
                     </TableCell>
-                    {!selectedDate && (
-                      <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '15%', textAlign: 'center' }}>
-                        التاريخ
-                      </TableCell>
-                    )}
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '15%', textAlign: 'center' }}>
+                      التاريخ
+                    </TableCell>
                     <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '10%', textAlign: 'center' }}>
                       الحصة
                     </TableCell>
@@ -531,11 +526,9 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                         <TableCell>
                           {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
                         </TableCell>
-                        {!selectedDate && (
-                          <TableCell sx={{ textAlign: 'center' }}>
-                            {formatDateToArabic(r.date)}
-                          </TableCell>
-                        )}
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          {formatDateToArabic(r.date)}
+                        </TableCell>
                         <TableCell sx={{ textAlign: 'center' }}>
                           {lessonInfo ? lessonInfo.lessonNumber : '-'}
                         </TableCell>
