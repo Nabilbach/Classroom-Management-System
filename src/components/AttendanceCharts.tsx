@@ -55,25 +55,83 @@ const AttendanceCharts: React.FC = () => {
   // ألوان للمخططات
   const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1'];
 
-  // جلب بيانات الاتجاه الأسبوعي
+  // جلب بيانات الاتجاه الأسبوعي من API الحضور المباشر
   const fetchWeeklyTrend = async () => {
     try {
-      const response = await fetch(`/api/attendance-reports/weekly-trend?sectionId=${selectedSection}`);
-      const data = await response.json();
-      setWeeklyTrend(data.weeklyTrend || []);
+      const weeklyData: WeeklyTrendData[] = [];
+      
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        const sectionParam = selectedSection !== 'all' ? `&sectionId=${selectedSection}` : '';
+        const response = await fetch(`/api/attendance?date=${dateStr}${sectionParam}`);
+        const data = await response.json();
+        
+        const total = data.length;
+        const present = data.filter((record: any) => record.isPresent).length;
+        const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+        
+        weeklyData.push({
+          date: dateStr,
+          dayOfWeek: date.toLocaleDateString('ar-EG', { weekday: 'short' }),
+          present,
+          total,
+          rate
+        });
+      }
+      
+      setWeeklyTrend(weeklyData);
     } catch (error) {
       console.error('خطأ في جلب الاتجاه الأسبوعي:', error);
+      setWeeklyTrend([]);
     }
   };
 
-  // جلب إحصائيات الأقسام
+  // جلب إحصائيات الأقسام من API الحضور المباشر
   const fetchSectionStats = async () => {
     try {
-      const response = await fetch(`/api/attendance-reports/overview?period=week`);
-      const data = await response.json();
-      setSectionStats(data.sectionStats || []);
+      // جلب قائمة الأقسام من السياق أو API
+      const sectionsResponse = await fetch('/api/sections');
+      const sections = await sectionsResponse.json();
+      
+      const today = new Date().toISOString().split('T')[0];
+      
+      const sectionStatsData: SectionStats[] = await Promise.all(
+        sections.map(async (section: any) => {
+          try {
+            const response = await fetch(`/api/attendance?date=${today}&sectionId=${section.id}`);
+            const data = await response.json();
+            
+            const total = data.length;
+            const present = data.filter((record: any) => record.isPresent).length;
+            const absent = total - present;
+            const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+            
+            return {
+              sectionName: section.name,
+              total,
+              present,
+              absent,
+              rate
+            };
+          } catch (error) {
+            return {
+              sectionName: section.name,
+              total: 0,
+              present: 0,
+              absent: 0,
+              rate: 0
+            };
+          }
+        })
+      );
+      
+      setSectionStats(sectionStatsData);
     } catch (error) {
       console.error('خطأ في جلب إحصائيات الأقسام:', error);
+      setSectionStats([]);
     }
   };
 

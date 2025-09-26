@@ -88,37 +88,52 @@ const StatisticsAndReports: React.FC = () => {
   const [attendanceData, setAttendanceData] = useState<AttendanceData[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // جلب بيانات الحضور من الـ API
+  // جلب بيانات الحضور من API الأساسي مباشرة
   const fetchAttendanceData = async () => {
     setLoading(true);
     try {
+      // تحديد التاريخ بناءً على الفترة المختارة
+      let dateParam = '';
+      const today = new Date().toISOString().split('T')[0];
+      
+      switch (selectedDateRange) {
+        case 'today':
+          dateParam = `date=${today}`;
+          break;
+        case 'week':
+          // جلب بيانات الأسبوع الحالي
+          dateParam = `date=${today}`;
+          break;
+        case 'month':
+          // جلب بيانات الشهر الحالي
+          dateParam = `date=${today}`;
+          break;
+        default:
+          dateParam = `date=${today}`;
+      }
+      
       const sectionParam = selectedSection !== 'all' ? `&sectionId=${selectedSection}` : '';
-      const response = await fetch(`/api/attendance-reports/overview?period=${selectedDateRange}${sectionParam}`);
+      const response = await fetch(`/api/attendance?${dateParam}${sectionParam}`);
       const data = await response.json();
       
-      // استخراج بيانات التقرير اليومي
-      const dailyResponse = await fetch(`/api/attendance-reports/daily?${sectionParam}`);
-      const dailyData = await dailyResponse.json();
-      
       // تحويل البيانات للتنسيق المطلوب
-      const formattedData: AttendanceData[] = [];
-      Object.values(dailyData.attendanceBySection || {}).forEach((section: any) => {
-        section.students.forEach((student: any) => {
-          formattedData.push({
-            id: student.attendanceId,
-            studentId: student.id,
-            sectionId: section.sectionInfo?.id || '',
-            date: dailyData.date,
-            isPresent: student.isPresent,
-            student: {
-              firstName: student.name.split(' ')[0] || '',
-              lastName: student.name.split(' ').slice(1).join(' ') || ''
-            }
-          });
-        });
-      });
+      const formattedData: AttendanceData[] = data.map((record: any) => ({
+        id: record.id,
+        studentId: record.studentId,
+        sectionId: record.sectionId,
+        date: record.date,
+        isPresent: record.isPresent,
+        student: {
+          firstName: record.student?.firstName || '',
+          lastName: record.student?.lastName || ''
+        }
+      }));
       
       setAttendanceData(formattedData);
+      
+      // جلب الإحصائيات أيضاً
+      await fetchAttendanceStats();
+      
     } catch (error) {
       console.error('خطأ في جلب بيانات الحضور:', error);
       setAttendanceData([]);
@@ -139,8 +154,16 @@ const StatisticsAndReports: React.FC = () => {
     const absentToday = attendanceData.filter(record => !record.isPresent).length;
     const attendanceRate = totalStudents > 0 ? Math.round((presentToday / totalStudents) * 100) : 0;
     
-    // محاكاة البيانات الأسبوعية (سيتم استبدالها بـ API حقيقي لاحقاً)
-    const weeklyTrend = [85, 88, 90, 87, 92, 89, 91];
+    // حساب الاتجاه الأسبوعي من بيانات الحضور الحقيقية
+    const weeklyTrend: number[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dayAttendance = attendanceData.filter(record => record.date === date.toISOString().split('T')[0]);
+      const dayRate = dayAttendance.length > 0 ? 
+        Math.round((dayAttendance.filter(r => r.isPresent).length / dayAttendance.length) * 100) : 0;
+      weeklyTrend.push(dayRate);
+    }
     
     return {
       totalStudents,
@@ -251,22 +274,84 @@ const StatisticsAndReports: React.FC = () => {
     });
   }, [lessons, sections]);
 
-  // تقرير الحضور للطلاب (بيانات تجريبية)
-  const attendanceStats = useMemo(() => {
-    // في حال عدم توفر بيانات حضور، نستخدم بيانات تجريبية
-    if (!students || students.length === 0) return { sectionAttendance: [], mostAbsent: [] };
-    // مثال: كل طالب لديه عدد أيام غياب عشوائي
-    const sectionAttendance: { sectionName: string; percent: number }[] = sections.map(section => ({
-      sectionName: section.name,
-      percent: Math.floor(Math.random() * 30) + 70 // نسبة حضور عشوائية بين 70% و99%
-    }));
-    // الطلاب الأكثر غياباً
-    const mostAbsent = students.slice(0, 5).map(st => ({
-      name: `${st.firstName} ${st.lastName}`,
-      absences: Math.floor(Math.random() * 10) + 1
-    }));
-    return { sectionAttendance, mostAbsent };
-  }, [students, sections]);
+  // إحصائيات الحضور الحقيقية من قاعدة البيانات
+  const [attendanceStats, setAttendanceStats] = useState<any>({ sectionAttendance: [], mostAbsent: [] });
+  
+  // جلب إحصائيات الحضور الحقيقية
+  const fetchAttendanceStats = async () => {
+    try {
+      // جلب البيانات من API الحضور المباشر
+      const today = new Date().toISOString().split('T')[0];
+      
+      // حساب إحصائيات الأقسام من البيانات الموجودة
+      const sectionAttendance = await Promise.all(
+        sections.map(async (section) => {
+          try {
+            const response = await fetch(`/api/attendance?date=${today}&sectionId=${section.id}`);
+            const data = await response.json();
+            const total = data.length;
+            const present = data.filter((record: any) => record.isPresent).length;
+            const percent = total > 0 ? Math.round((present / total) * 100) : 0;
+            
+            return {
+              sectionName: section.name,
+              percent,
+              total,
+              present,
+              absent: total - present
+            };
+          } catch (error) {
+            console.error(`خطأ في جلب بيانات القسم ${section.name}:`, error);
+            return { sectionName: section.name, percent: 0, total: 0, present: 0, absent: 0 };
+          }
+        })
+      );
+
+      // حساب الطلاب الأكثر غياباً من البيانات الحقيقية
+      const mostAbsent = await Promise.all(
+        students.slice(0, 10).map(async (student) => {
+          try {
+            // جلب سجل الحضور للطالب من بداية الشهر
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            const monthStart = startOfMonth.toISOString().split('T')[0];
+            
+            const response = await fetch(`/api/attendance?studentId=${student.id}&startDate=${monthStart}`);
+            const data = await response.json();
+            const absences = data.filter((record: any) => !record.isPresent).length;
+            
+            return {
+              name: `${student.firstName} ${student.lastName}`,
+              absences
+            };
+          } catch (error) {
+            return {
+              name: `${student.firstName} ${student.lastName}`,
+              absences: 0
+            };
+          }
+        })
+      );
+
+      // ترتيب حسب عدد الغيابات وأخذ أعلى 5
+      const sortedAbsent = mostAbsent
+        .filter(student => student.absences > 0)
+        .sort((a, b) => b.absences - a.absences)
+        .slice(0, 5);
+
+      setAttendanceStats({ sectionAttendance, mostAbsent: sortedAbsent });
+    } catch (error) {
+      console.error('خطأ في جلب إحصائيات الحضور:', error);
+      setAttendanceStats({ sectionAttendance: [], mostAbsent: [] });
+    }
+  };
+
+  // تشغيل جلب الإحصائيات عند تغيير الطلاب أو الأقسام
+  useEffect(() => {
+    if (students.length > 0 && sections.length > 0) {
+      fetchAttendanceStats();
+    }
+  }, [students, sections, selectedSection]);
 
   // مؤشرات الأداء والتنبيهات الذكية
   const performanceAlerts = useMemo(() => {
