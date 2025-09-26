@@ -1,12 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Box,
-  Typograp               console.log('📝 Setting default section and loading data:', defaultSection.name);
-        setSelectedSectionId(defaultSection.id);
-        localStorage.setItem('lastSelectedSectionId', defaultSection.id);
-        setTimeout(() => fetchData(), 100);nsole.log('💾 Restoring last selected section and loading data:', savedSectionId);
-        setSelectedSectionId(savedSectionId);
-        setTimeout(() => fetchData(), 100);,
+  Typography,
   Button,
   Table,
   TableBody,
@@ -340,19 +335,26 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
   const handleDeleteAllRecords = async () => {
     try {
       setIsDeleting(true);
-      const response = await fetch('http://localhost:3000/api/attendance/all', {
+      console.log('🗑️ Starting delete all records...');
+      
+      const response = await fetch('http://localhost:3000/api/attendance?deleteAll=true', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'
         }
       });
 
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', response.headers);
+
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ Server response:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('تم حذف جميع السجلات:', result);
+      console.log('✅ تم حذف جميع السجلات:', result);
       
       // إعادة تعيين البيانات
       setRecords([]);
@@ -362,8 +364,9 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
       alert(`تم حذف ${result.deletedCount || 0} سجل غياب بنجاح`);
       
     } catch (error) {
-      console.error('خطأ في حذف السجلات:', error);
-      alert('حدث خطأ في حذف السجلات. يرجى المحاولة مرة أخرى.');
+      console.error('❌ خطأ في حذف السجلات:', error);
+      const errorMessage = error instanceof Error ? error.message : 'خطأ غير معروف';
+      alert(`حدث خطأ في حذف السجلات: ${errorMessage}\n\nيرجى التحقق من:\n- اتصال الإنترنت\n- تشغيل الخادم\n- وجود سجلات للحذف`);
     } finally {
       setIsDeleting(false);
       setDeleteConfirmOpen(false);

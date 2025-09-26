@@ -147,9 +147,39 @@ router.get('/', async (req, res) => {
 });
 
 // DELETE /api/attendance?date=YYYY-MM-DD&sectionId=ID - Delete attendance for a specific day/section
+// DELETE /api/attendance?deleteAll=true - Delete all attendance records
 router.delete('/', async (req, res) => {
   try {
-    let { date, sectionId } = req.query;
+    let { date, sectionId, deleteAll } = req.query;
+    
+    // Handle delete all records
+    if (deleteAll === 'true') {
+      console.log('🗑️ Request to delete all attendance records received');
+      
+      // First, check if there are any records
+      const totalRecords = await Attendance.count();
+      console.log(`📊 Found ${totalRecords} attendance records to delete`);
+      
+      if (totalRecords === 0) {
+        return res.json({ 
+          message: 'No attendance records found to delete',
+          deletedCount: 0 
+        });
+      }
+
+      const deletedCount = await Attendance.destroy({
+        where: {} // Delete all records
+      });
+      
+      console.log(`✅ Successfully deleted ${deletedCount} attendance records`);
+      
+      return res.json({ 
+        message: `Successfully deleted ${deletedCount} attendance records`,
+        deletedCount 
+      });
+    }
+    
+    // Handle delete by date/section
     if (!date) {
       return res.status(400).json({ message: 'date is required' });
     }
@@ -173,10 +203,14 @@ router.delete('/', async (req, res) => {
       deletedCount 
     });
   } catch (error) {
-    console.error('Error deleting day attendance:', error);
-    res.status(500).json({ message: 'Failed to delete attendance for the day' });
+    console.error('Error deleting attendance:', error);
+    res.status(500).json({ 
+      message: 'Failed to delete attendance records',
+      error: error.message 
+    });
   }
 });
+
 
 // GET /api/attendance/:id - Get a specific attendance record by ID
 router.get('/:id', async (req, res) => {
@@ -370,23 +404,6 @@ router.delete('/:id', async (req, res) => {
       message: 'Error deleting attendance record', 
       error: error.message 
     });
-  }
-});
-
-// DELETE /api/attendance/all - Delete all attendance records
-router.delete('/all', async (req, res) => {
-  try {
-    const deletedCount = await Attendance.destroy({
-      where: {} // Delete all records
-    });
-    
-    res.json({ 
-      message: `Deleted ${deletedCount} attendance records`,
-      deletedCount 
-    });
-  } catch (error) {
-    console.error('Error deleting all attendance records:', error);
-    res.status(500).json({ message: 'Failed to delete attendance records' });
   }
 });
 
