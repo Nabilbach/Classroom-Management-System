@@ -12,7 +12,7 @@ import {
   Paper,
   Tabs,
   Tab,
-  TextField,
+
   FormControl,
   InputLabel,
   Select,
@@ -43,11 +43,9 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
   const [activeTab, setActiveTab] = useState(0);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   // Removed unused loading state
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  });
-  const [selectedSectionId, setSelectedSectionId] = useState('');
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedSectionId, setSelectedSectionId] = useState<string>('');
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
   const { sections } = useSections();
 
   // Find selected section object
@@ -58,17 +56,60 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     setActiveTab(newValue);
   };
 
+  // Fetch available dates on component mount
   useEffect(() => {
-    if (sections.length > 0 && !selectedSectionId) {
+    const fetchAvailableDates = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/attendance');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const allRecords: AttendanceRecord[] = await response.json();
+        
+        // Extract unique dates and sort them (newest first)
+        const dates = [...new Set(allRecords.map((record) => record.date))];
+        dates.sort((a, b) => b.localeCompare(a)); // Descending order
+        setAvailableDates(dates);
+        
+        // Set the most recent date as default
+        if (dates.length > 0 && !selectedDate) {
+          setSelectedDate(dates[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching available dates:', error);
+      }
+    };
+
+    fetchAvailableDates();
+  }, []);
+
+  // Set default section to first section in list when sections load
+  useEffect(() => {
+    if (sections.length > 0 && selectedSectionId === '') {
       setSelectedSectionId(sections[0].id);
     }
   }, [sections, selectedSectionId]);
 
   const fetchData = async () => {
-    if (!selectedSectionId) return;
     try {
-      const sectionParam = encodeURIComponent(selectedSection?.name ?? selectedSectionId);
-      const response = await fetch(`http://localhost:3000/api/attendance?sectionId=${sectionParam}&date=${encodeURIComponent(selectedDate)}`);
+      let url = 'http://localhost:3000/api/attendance';
+      const params: string[] = [];
+      
+      // Add date parameter only if a specific date is selected
+      if (selectedDate) {
+        params.push(`date=${encodeURIComponent(selectedDate)}`);
+      }
+      
+      // Add section parameter if specific section is selected (not 'ALL')
+      if (selectedSectionId && selectedSectionId !== 'ALL') {
+        const sectionParam = encodeURIComponent(selectedSection?.name ?? selectedSectionId);
+        params.push(`sectionId=${sectionParam}`);
+      }
+      
+      // Append parameters to URL
+      if (params.length > 0) {
+        url += '?' + params.join('&');
+      }
+      
+      const response = await fetch(url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       setRecords(data);
@@ -136,7 +177,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     const printContent = printRef.current;
     if (!printContent) return;
 
-    const documentTitle = `سجل الحضور والغياب-${selectedSection?.name || 'قسم غير محدد'}-${selectedDate}`;
+    const documentTitle = `سجل الحضور والغياب-${selectedSectionId === 'ALL' ? 'كل الأقسام' : (selectedSection?.name || 'قسم غير محدد')}-${selectedDate}`;
     
     const printWindow = window.open('', '', 'width=800,height=600');
     if (!printWindow) return;
@@ -204,12 +245,12 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
   };
 
   const handleDeleteDay = async () => {
-    if (!selectedSectionId || !selectedDate) return;
+    if (!selectedSectionId || !selectedDate || selectedSectionId === 'ALL') return;
     const confirmed = window.confirm('هل أنت متأكد أنك تريد مسح سجل الغياب/الحضور لهذا اليوم بالكامل؟ لا يمكن التراجع.');
     if (!confirmed) return;
     try {
-  const sectionParam = encodeURIComponent(selectedSection?.name ?? selectedSectionId);
-  const res = await fetch(`http://localhost:3000/api/attendance?sectionId=${sectionParam}&date=${encodeURIComponent(selectedDate)}`, { method: 'DELETE' });
+      const sectionParam = encodeURIComponent(selectedSection?.name ?? selectedSectionId);
+      const res = await fetch(`http://localhost:3000/api/attendance?sectionId=${sectionParam}&date=${encodeURIComponent(selectedDate)}`, { method: 'DELETE' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       // Clear local records and refetch to be safe
       setRecords([]);
@@ -230,14 +271,26 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
             سجل الحضور والغياب
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-            <TextField
-              type="date"
-              label="التاريخ"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              sx={{ minWidth: 120 }}
-            />
+            <FormControl sx={{ minWidth: 140 }}>
+              <InputLabel>التاريخ</InputLabel>
+              <Select
+                value={selectedDate}
+                label="التاريخ"
+                onChange={(e) => setSelectedDate(e.target.value)}
+              >
+                <MenuItem value="">جميع التواريخ</MenuItem>
+                {availableDates.map(date => (
+                  <MenuItem key={date} value={date}>
+                    {new Date(date + 'T00:00:00').toLocaleDateString('ar-MA', {
+                      year: 'numeric',
+                      month: 'long', 
+                      day: 'numeric',
+                      weekday: 'long'
+                    })}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <FormControl sx={{ minWidth: 160 }}>
               <InputLabel>القسم</InputLabel>
               <Select
@@ -250,6 +303,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                     {section.name}
                   </MenuItem>
                 ))}
+                <MenuItem value="ALL">كل الأقسام</MenuItem>
               </Select>
             </FormControl>
             <Button variant="contained" onClick={fetchData} sx={{ height: 56 }}>
@@ -269,7 +323,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
         {/* Section and Date Info */}
         <Box sx={{ mb: 2, textAlign: 'center' }}>
           <Typography variant="subtitle1" color="text.secondary">
-            {selectedSection?.name || 'قسم غير محدد'} - {selectedDate}
+            {selectedSectionId === 'ALL' ? 'كل الأقسام' : (selectedSection?.name || 'قسم غير محدد')} - {selectedDate}
           </Typography>
         </Box>
         {/* Tabs */}
@@ -399,7 +453,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
       >
         <div className="header-title">سجل الحضور والغياب</div>
         <div style={{ textAlign: 'center', marginBottom: '20px', fontSize: '12px' }}>
-          {selectedSection?.name || 'قسم غير محدد'} - {selectedDate}
+          {selectedSectionId === 'ALL' ? 'كل الأقسام' : (selectedSection?.name || 'قسم غير محدد')} - {selectedDate}
         </div>
 
         <div style={{ marginBottom: '20px' }}>
