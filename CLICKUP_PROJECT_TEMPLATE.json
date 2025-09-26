@@ -1,0 +1,67 @@
+{
+  "template_name": "نظام إدارة الصفوف الدراسية",
+  "description": "قالب مشروع لتطوير نظام إدارة الصفوف",
+  "lists": [
+    {
+      "name": "✅ مهام مكتملة",
+      "color": "#4CAF50",
+      "tasks": [
+        {
+          "name": "👥 نظام إدارة الطلاب الكامل",
+          "description": "CRUD كامل + بحث + Excel + واجهات متقدمة",
+          "status": "complete",
+          "priority": "high",
+          "tags": [
+            "student-management",
+            "completed"
+          ],
+          "time_estimate": 20
+        },
+        {
+          "name": "📋 نظام الحضور والغياب المتقدم",
+          "description": "حضور فردي + جماعي + استثناءات + قاعدة بيانات",
+          "status": "complete",
+          "priority": "urgent",
+          "tags": [
+            "attendance",
+            "completed"
+          ],
+          "time_estimate": 18
+        }
+      ]
+    },
+    {
+      "name": "🔄 قيد التطوير",
+      "color": "#FF9800",
+      "tasks": [
+        {
+          "name": "🔧 تحسين Backend API",
+          "description": "إضافة UPDATE route + تحسينات الأداء",
+          "status": "in progress",
+          "priority": "high",
+          "tags": [
+            "backend",
+            "optimization"
+          ],
+          "time_estimate": 6
+        }
+      ]
+    }
+  ],
+  "custom_fields": [
+    {
+      "name": "نسبة الإكمال",
+      "type": "number",
+      "description": "النسبة المئوية للإنجاز"
+    },
+    {
+      "name": "مستوى التحقق",
+      "type": "dropdown",
+      "options": [
+        "غير محقق",
+        "محقق جزئياً",
+        "محقق كاملاً"
+      ]
+    }
+  ]
+}
