@@ -93,21 +93,28 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     try {
       // Don't fetch if section is not yet selected
       if (!selectedSectionId) {
+        console.log('Skipping fetch: no section selected'); // Debug log
         return;
       }
 
       let url = 'http://localhost:3000/api/attendance';
       const params: string[] = [];
       
-      // Add date parameter only if a specific date is selected
-      if (selectedDate) {
+      // Add date parameter only if a specific date is selected (not empty for "all dates")
+      if (selectedDate && selectedDate.trim() !== '') {
         params.push(`date=${encodeURIComponent(selectedDate)}`);
+        console.log('Adding date filter:', selectedDate); // Debug log
+      } else {
+        console.log('Fetching for ALL DATES'); // Debug log
       }
       
       // Add section parameter if specific section is selected (not 'ALL')
       if (selectedSectionId && selectedSectionId !== 'ALL') {
         const sectionParam = encodeURIComponent(selectedSection?.name ?? selectedSectionId);
         params.push(`sectionId=${sectionParam}`);
+        console.log('Adding section filter:', selectedSection?.name); // Debug log
+      } else if (selectedSectionId === 'ALL') {
+        console.log('Fetching for ALL SECTIONS'); // Debug log
       }
       
       // Append parameters to URL
@@ -119,7 +126,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
       const response = await fetch(url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
-      console.log('Fetched records:', data.length, 'for section:', selectedSection?.name); // Debug log
+      console.log('Fetched records:', data.length, 'for section:', selectedSectionId === 'ALL' ? 'ALL SECTIONS' : selectedSection?.name); // Debug log
       setRecords(data);
     } catch (error) {
       console.error('Error fetching attendance records:', error);
@@ -127,24 +134,24 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     }
   };
 
-  // Fetch data only when both section and date are ready
+  // Fetch data when section or date changes (including empty date for "all dates")
   useEffect(() => {
-    if (selectedSectionId && selectedDate && selectedSection) {
-      console.log('Triggering data fetch for:', selectedSection.name, 'on', selectedDate); // Debug log
+    if (selectedSectionId && selectedSection) {
+      console.log('Triggering data fetch for:', selectedSection.name, 'with date filter:', selectedDate || 'ALL DATES'); // Debug log
       fetchData();
     }
   }, [selectedSectionId, selectedDate, selectedSection]);
 
-  // Initial data load - ensure we have both section and date before fetching
+  // Initial data load - ensure we have section ready before fetching
   useEffect(() => {
-    if (sections.length > 0 && selectedDate && selectedSectionId) {
+    if (sections.length > 0 && selectedSectionId) {
       const section = sections.find(s => s.id === selectedSectionId);
       if (section) {
-        console.log('Initial data load for:', section.name); // Debug log
+        console.log('Initial data load for:', section.name, 'with date:', selectedDate || 'ALL DATES'); // Debug log
         fetchData();
       }
     }
-  }, [sections, selectedDate, selectedSectionId]);
+  }, [sections, selectedSectionId]);
 
   const present = useMemo(() => records.filter(r => r.isPresent), [records]);
   const absent = useMemo(() => records.filter(r => !r.isPresent), [records]);
