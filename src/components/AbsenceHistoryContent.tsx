@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -104,7 +104,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     }
   }, [recommendedSectionId, sections, selectedSectionId]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       // Don't fetch if section is not yet selected
       if (!selectedSectionId) {
@@ -147,7 +147,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
       console.error('Error fetching attendance records:', error);
       setRecords([]);
     }
-  };
+  }, [selectedSectionId, selectedDate, selectedSection]);
 
   // Fetch data when section or date changes (including empty date for "all dates")
   useEffect(() => {
@@ -155,18 +155,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
       console.log('Triggering data fetch for:', selectedSection.name, 'with date filter:', selectedDate || 'ALL DATES'); // Debug log
       fetchData();
     }
-  }, [selectedSectionId, selectedDate, selectedSection]);
-
-  // Initial data load - ensure we have section ready before fetching
-  useEffect(() => {
-    if (sections.length > 0 && selectedSectionId) {
-      const section = sections.find(s => s.id === selectedSectionId);
-      if (section) {
-        console.log('Initial data load for:', section.name, 'with date:', selectedDate || 'ALL DATES'); // Debug log
-        fetchData();
-      }
-    }
-  }, [sections, selectedSectionId]);
+  }, [selectedSectionId, selectedDate, selectedSection, fetchData]);
 
   const present = useMemo(() => records.filter(r => r.isPresent), [records]);
   const absent = useMemo(() => records.filter(r => !r.isPresent), [records]);
