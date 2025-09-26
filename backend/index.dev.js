@@ -21,6 +21,9 @@ app.use((req, res, next) => {
 // Routes
 const attendanceRoutes = require('./routes/attendance');
 app.use('/api/attendance', attendanceRoutes);
+// Attendance reports API
+const attendanceReportsRoutes = require('./routes/attendance-reports');
+app.use('/api/attendance-reports', attendanceReportsRoutes);
 // Scheduled lessons API
 const scheduledLessonsRoutes = require('./routes/scheduledLessons');
 app.use('/api/scheduled-lessons', scheduledLessonsRoutes);
