@@ -86,6 +86,16 @@ function StudentManagement() {
   const { sections, currentSection, setCurrentSection } = useSections();
   const { students, deleteStudent, isLoading, fetchStudents } = useStudents();
 
+
+  // دالة تعيين جميع الطلاب كغائبين
+  const handleMarkAllAbsent = () => {
+    const allAbsentStatus = sectionStudents.reduce((acc, s) => {
+      acc[s.id] = false; // false تعني غائب
+      return acc;
+    }, {} as Record<string, boolean>);
+    setAttendanceStatus(allAbsentStatus);
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -155,6 +165,9 @@ function StudentManagement() {
   // Tick every 30s to refresh countdowns
   useEffect(() => {
     const t = setInterval(() => setNowTick(Date.now()), 30000);
+              <Button onClick={handleMarkAllAbsent} variant="outlined" color="warning">
+                تعيين جميع الطلاب غائبين
+              </Button>
     return () => clearInterval(t);
   }, []);
 
