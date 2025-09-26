@@ -84,12 +84,18 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
   // Set default section to first section in list when sections load
   useEffect(() => {
     if (sections.length > 0 && selectedSectionId === '') {
+      console.log('Setting default section:', sections[0].name); // Debug log
       setSelectedSectionId(sections[0].id);
     }
-  }, [sections, selectedSectionId]);
+  }, [sections]);
 
   const fetchData = async () => {
     try {
+      // Don't fetch if section is not yet selected
+      if (!selectedSectionId) {
+        return;
+      }
+
       let url = 'http://localhost:3000/api/attendance';
       const params: string[] = [];
       
@@ -109,9 +115,11 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
         url += '?' + params.join('&');
       }
       
+      console.log('Fetching attendance data with URL:', url); // Debug log
       const response = await fetch(url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
+      console.log('Fetched records:', data.length, 'for section:', selectedSection?.name); // Debug log
       setRecords(data);
     } catch (error) {
       console.error('Error fetching attendance records:', error);
@@ -119,9 +127,24 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     }
   };
 
+  // Fetch data only when both section and date are ready
   useEffect(() => {
-    fetchData();
-  }, [selectedSectionId, selectedDate]);
+    if (selectedSectionId && selectedDate && selectedSection) {
+      console.log('Triggering data fetch for:', selectedSection.name, 'on', selectedDate); // Debug log
+      fetchData();
+    }
+  }, [selectedSectionId, selectedDate, selectedSection]);
+
+  // Initial data load - ensure we have both section and date before fetching
+  useEffect(() => {
+    if (sections.length > 0 && selectedDate && selectedSectionId) {
+      const section = sections.find(s => s.id === selectedSectionId);
+      if (section) {
+        console.log('Initial data load for:', section.name); // Debug log
+        fetchData();
+      }
+    }
+  }, [sections, selectedDate, selectedSectionId]);
 
   const present = useMemo(() => records.filter(r => r.isPresent), [records]);
   const absent = useMemo(() => records.filter(r => !r.isPresent), [records]);
