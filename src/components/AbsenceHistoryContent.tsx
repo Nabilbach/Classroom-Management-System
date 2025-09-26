@@ -94,7 +94,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     fetchAvailableDates();
   }, []);
 
-  // Smart section detection with localStorage persistence
+  // Simplified: Just follow the alert directly
   useEffect(() => {
     if (recommendedSectionId && sections.length > 0) {
       // الأولوية الأولى: إذا كان هناك قسم موصى به (حصة حالية)
@@ -321,18 +321,13 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     setSelectedStudentForDetails(record);
   };
 
-  // Handle manual section selection with localStorage persistence
+  // Handle manual section selection - simplified
   const handleSectionChange = (event: SelectChangeEvent) => {
     const newSectionId = event.target.value as string;
     setSelectedSectionId(newSectionId);
-    
-    // حفظ الاختيار اليدوي فقط إذا لم تكن هناك حصة حالية
-    if (!recommendedSectionId || !isTeachingTime) {
-      localStorage.setItem('lastSelectedSectionId', newSectionId);
-      console.log('💾 Manually saved section to localStorage:', newSectionId);
-    } else {
-      console.log('🎯 Manual selection during teaching time - not saving to localStorage');
-    }
+    // حفظ الاختيار دائماً (بساطة)
+    localStorage.setItem('lastSelectedSectionId', newSectionId);
+    console.log('💾 Section changed to:', newSectionId);
   };
 
   // دالة حذف جميع السجلات
