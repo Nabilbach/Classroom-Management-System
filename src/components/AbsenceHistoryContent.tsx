@@ -24,7 +24,9 @@ import {
 } from '@mui/material';
 import { Print as PrintIcon } from '@mui/icons-material';
 import { useSections } from '../contexts/SectionsContext';
+import { getLessonInfo, formatDateToArabic, type LessonInfo } from '../utils/lessonTimeUtils';
 import { useCurrentLesson } from '../hooks/useCurrentLesson';
+import StudentDetailModal from './students/StudentDetailModal';
 
 interface AttendanceRecord {
   id: number;
@@ -32,6 +34,7 @@ interface AttendanceRecord {
   sectionId: string;
   date: string;
   isPresent: boolean;
+  createdAt?: string; // لتحديد وقت إنشاء السجل
   student?: { id: number; firstName: string; lastName: string; classOrder?: number | null; pathwayNumber?: number | string | null };
   absences?: number;
 }
@@ -47,6 +50,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedSectionId, setSelectedSectionId] = useState<string>('');
   const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [selectedStudentForDetails, setSelectedStudentForDetails] = useState<AttendanceRecord | null>(null);
   const { sections } = useSections();
   const { recommendedSectionId, displayMessage, isTeachingTime } = useCurrentLesson();
 
@@ -236,16 +240,21 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
               border-collapse: collapse; 
               width: 100%; 
               margin-bottom: 15px;
+              font-size: 9px;
             }
             th, td { 
               border: 1px solid #000; 
-              padding: 5px; 
-              font-size: 10px;
+              padding: 4px 2px; 
+              font-size: 9px;
               text-align: center;
             }
             th { 
               background: #f0f0f0; 
               font-weight: bold;
+            }
+            .name-cell {
+              text-align: right !important;
+              padding-right: 5px !important;
             }
             .header-title {
               font-size: 16px;
@@ -294,6 +303,11 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
       console.error('Failed to delete day attendance:', e);
       alert('تعذر مسح السجل. حاول مرة أخرى.');
     }
+  };
+
+  // Handle double click to show student details
+  const handleStudentDoubleClick = (record: AttendanceRecord) => {
+    setSelectedStudentForDetails(record);
   };
 
   const isMobile = useMediaQuery('(max-width:600px)');
@@ -387,48 +401,82 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '10%', textAlign: 'center' }}>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '8%', textAlign: 'center' }}>
                       ر.ت
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '40%' }}>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '30%' }}>
                       الاسم الكامل
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '25%', textAlign: 'center' }}>
+                    {!selectedDate && (
+                      <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '15%', textAlign: 'center' }}>
+                        التاريخ
+                      </TableCell>
+                    )}
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '10%', textAlign: 'center' }}>
+                      الحصة
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '10%', textAlign: 'center' }}>
+                      الفترة
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '12%', textAlign: 'center' }}>
                       عدد الغيابات
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '25%', textAlign: 'center' }}>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '15%', textAlign: 'center' }}>
                       إجراء
                     </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {presentSorted.map((r, idx) => (
-                    <TableRow key={r.id} hover>
-                      <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
-                        {r.student?.classOrder ?? (idx + 1)}
-                      </TableCell>
-                      <TableCell>
-                        {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: 'center' }}>
-                        {r.absences ?? 0}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: 'center' }}>
-                        <Button 
-                          variant="outlined" 
-                          color="error" 
-                          size="small" 
-                          onClick={() => togglePresence(r, false)}
-                          sx={{ minWidth: 120 }}
-                        >
-                          إلغاء الحضور
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {presentSorted.map((r, idx) => {
+                    const lessonInfo = getLessonInfo(r.createdAt || r.date);
+                    return (
+                      <TableRow 
+                        key={r.id} 
+                        hover 
+                        onDoubleClick={() => handleStudentDoubleClick(r)}
+                        sx={{ cursor: 'pointer' }}
+                      >
+                        <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                          {r.student?.classOrder ?? (idx + 1)}
+                        </TableCell>
+                        <TableCell>
+                          {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
+                        </TableCell>
+                        {!selectedDate && (
+                          <TableCell sx={{ textAlign: 'center' }}>
+                            {formatDateToArabic(r.date)}
+                          </TableCell>
+                        )}
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          {lessonInfo ? lessonInfo.lessonNumber : '-'}
+                        </TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          <Chip 
+                            label={lessonInfo?.period || 'غير محدد'}
+                            size="small"
+                            color={lessonInfo?.period === 'صباحية' ? 'primary' : 'secondary'}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          {r.absences ?? 0}
+                        </TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          <Button 
+                            variant="outlined" 
+                            color="error" 
+                            size="small" 
+                            onClick={() => togglePresence(r, false)}
+                            sx={{ minWidth: 120 }}
+                          >
+                            إلغاء الحضور
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                   {presentSorted.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
+                      <TableCell colSpan={selectedDate ? 6 : 7} sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
                         لا يوجد طلاب حاضرون في هذا التاريخ
                       </TableCell>
                     </TableRow>
@@ -442,48 +490,82 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '10%', textAlign: 'center' }}>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '8%', textAlign: 'center' }}>
                       ر.ت
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '40%' }}>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '30%' }}>
                       الاسم الكامل
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '25%', textAlign: 'center' }}>
+                    {!selectedDate && (
+                      <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '15%', textAlign: 'center' }}>
+                        التاريخ
+                      </TableCell>
+                    )}
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '10%', textAlign: 'center' }}>
+                      الحصة
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '10%', textAlign: 'center' }}>
+                      الفترة
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '12%', textAlign: 'center' }}>
                       عدد الغيابات
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '25%', textAlign: 'center' }}>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '15%', textAlign: 'center' }}>
                       إجراء
                     </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {absentSorted.map((r, idx) => (
-                    <TableRow key={r.id} hover>
-                      <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
-                        {r.student?.classOrder ?? (idx + 1)}
-                      </TableCell>
-                      <TableCell>
-                        {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: 'center' }}>
-                        {r.absences ?? 0}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: 'center' }}>
-                        <Button 
-                          variant="outlined" 
-                          color="success" 
-                          size="small" 
-                          onClick={() => togglePresence(r, true)}
-                          sx={{ minWidth: 120 }}
-                        >
-                          إلغاء الغياب
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {absentSorted.map((r, idx) => {
+                    const lessonInfo = getLessonInfo(r.createdAt || r.date);
+                    return (
+                      <TableRow 
+                        key={r.id} 
+                        hover 
+                        onDoubleClick={() => handleStudentDoubleClick(r)}
+                        sx={{ cursor: 'pointer' }}
+                      >
+                        <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                          {r.student?.classOrder ?? (idx + 1)}
+                        </TableCell>
+                        <TableCell>
+                          {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
+                        </TableCell>
+                        {!selectedDate && (
+                          <TableCell sx={{ textAlign: 'center' }}>
+                            {formatDateToArabic(r.date)}
+                          </TableCell>
+                        )}
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          {lessonInfo ? lessonInfo.lessonNumber : '-'}
+                        </TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          <Chip 
+                            label={lessonInfo?.period || 'غير محدد'}
+                            size="small"
+                            color={lessonInfo?.period === 'صباحية' ? 'primary' : 'secondary'}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          {r.absences ?? 0}
+                        </TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          <Button 
+                            variant="outlined" 
+                            color="success" 
+                            size="small" 
+                            onClick={() => togglePresence(r, true)}
+                            sx={{ minWidth: 120 }}
+                          >
+                            إلغاء الغياب
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                   {absentSorted.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
+                      <TableCell colSpan={selectedDate ? 6 : 7} sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
                         لا يوجد طلاب غائبون في هذا التاريخ
                       </TableCell>
                     </TableRow>
@@ -510,26 +592,35 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
           <table>
             <thead>
               <tr>
-                <th style={{ width: '10%' }}>ر.ت</th>
-                <th style={{ width: '50%' }}>الاسم الكامل</th>
-                <th style={{ width: '20%' }}>عدد الغيابات</th>
-                <th style={{ width: '20%' }}>الحالة</th>
+                <th style={{ width: '8%' }}>ر.ت</th>
+                <th style={{ width: '25%' }}>الاسم الكامل</th>
+                {!selectedDate && <th style={{ width: '15%' }}>التاريخ</th>}
+                <th style={{ width: '10%' }}>الحصة</th>
+                <th style={{ width: '12%' }}>الفترة</th>
+                <th style={{ width: '15%' }}>عدد الغيابات</th>
+                <th style={{ width: '15%' }}>الحالة</th>
               </tr>
             </thead>
             <tbody>
-              {presentSorted.map((r, idx) => (
-                <tr key={`p-${r.id}`}>
-                  <td>{r.student?.classOrder ?? (idx + 1)}</td>
-                  <td className="name-cell">
-                    {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
-                  </td>
-                  <td>{r.absences ?? 0}</td>
-                  <td>حاضر</td>
-                </tr>
-              ))}
+              {presentSorted.map((r, idx) => {
+                const lessonInfo = getLessonInfo(r.createdAt || r.date);
+                return (
+                  <tr key={`p-${r.id}`}>
+                    <td>{r.student?.classOrder ?? (idx + 1)}</td>
+                    <td className="name-cell">
+                      {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
+                    </td>
+                    {!selectedDate && <td>{formatDateToArabic(r.date)}</td>}
+                    <td>{lessonInfo ? lessonInfo.lessonNumber : '-'}</td>
+                    <td>{lessonInfo?.period || 'غير محدد'}</td>
+                    <td>{r.absences ?? 0}</td>
+                    <td>حاضر</td>
+                  </tr>
+                );
+              })}
               {presentSorted.length === 0 && (
                 <tr>
-                  <td colSpan={4}>لا يوجد طلاب حاضرون</td>
+                  <td colSpan={selectedDate ? 6 : 7}>لا يوجد طلاب حاضرون</td>
                 </tr>
               )}
             </tbody>
@@ -541,26 +632,35 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
           <table>
             <thead>
               <tr>
-                <th style={{ width: '10%' }}>ر.ت</th>
-                <th style={{ width: '50%' }}>الاسم الكامل</th>
-                <th style={{ width: '20%' }}>عدد الغيابات</th>
-                <th style={{ width: '20%' }}>الحالة</th>
+                <th style={{ width: '8%' }}>ر.ت</th>
+                <th style={{ width: '25%' }}>الاسم الكامل</th>
+                {!selectedDate && <th style={{ width: '15%' }}>التاريخ</th>}
+                <th style={{ width: '10%' }}>الحصة</th>
+                <th style={{ width: '12%' }}>الفترة</th>
+                <th style={{ width: '15%' }}>عدد الغيابات</th>
+                <th style={{ width: '15%' }}>الحالة</th>
               </tr>
             </thead>
             <tbody>
-              {absentSorted.map((r, idx) => (
-                <tr key={`a-${r.id}`}>
-                  <td>{r.student?.classOrder ?? (idx + 1)}</td>
-                  <td className="name-cell">
-                    {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
-                  </td>
-                  <td>{r.absences ?? 0}</td>
-                  <td>غائب</td>
-                </tr>
-              ))}
+              {absentSorted.map((r, idx) => {
+                const lessonInfo = getLessonInfo(r.createdAt || r.date);
+                return (
+                  <tr key={`a-${r.id}`}>
+                    <td>{r.student?.classOrder ?? (idx + 1)}</td>
+                    <td className="name-cell">
+                      {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
+                    </td>
+                    {!selectedDate && <td>{formatDateToArabic(r.date)}</td>}
+                    <td>{lessonInfo ? lessonInfo.lessonNumber : '-'}</td>
+                    <td>{lessonInfo?.period || 'غير محدد'}</td>
+                    <td>{r.absences ?? 0}</td>
+                    <td>غائب</td>
+                  </tr>
+                );
+              })}
               {absentSorted.length === 0 && (
                 <tr>
-                  <td colSpan={4}>لا يوجد طلاب غائبون</td>
+                  <td colSpan={selectedDate ? 6 : 7}>لا يوجد طلاب غائبون</td>
                 </tr>
               )}
             </tbody>
@@ -587,6 +687,32 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
           طباعة
         </Button>
       </Box>
+
+      {/* Student Details Modal */}
+      {selectedStudentForDetails && (
+        <StudentDetailModal
+          student={selectedStudentForDetails.student ? {
+            id: selectedStudentForDetails.student.id,
+            firstName: selectedStudentForDetails.student.firstName,
+            lastName: selectedStudentForDetails.student.lastName,
+            classOrder: selectedStudentForDetails.student.classOrder,
+            pathwayNumber: selectedStudentForDetails.student.pathwayNumber,
+            sectionId: selectedStudentForDetails.sectionId,
+            birthDate: '', // Default values
+            gender: ''
+          } : null}
+          isOpen={!!selectedStudentForDetails}
+          onClose={() => setSelectedStudentForDetails(null)}
+          onEdit={() => {
+            // Edit functionality can be added later if needed
+            setSelectedStudentForDetails(null);
+          }}
+          onDelete={() => {
+            // Delete functionality can be added later if needed
+            setSelectedStudentForDetails(null);
+          }}
+        />
+      )}
     </Card>
   );
 };
