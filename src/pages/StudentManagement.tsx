@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Typography, Button, Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Typography, Button, Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions, Box, Chip } from '@mui/material';
 import FilterDrawer from '../components/students/FilterDrawer';
 import { Student } from '../types/student';
 import { useSections } from '../contexts/SectionsContext';
 import { useStudents } from '../contexts/StudentsContext';
+import { useCurrentLesson } from '../hooks/useCurrentLesson';
 import AddStudentForm from '../components/students/AddStudentForm';
 import EditStudentModal from '../components/students/EditStudentModal';
 import StudentCard from '../components/students/StudentCard';
@@ -85,7 +86,18 @@ const MemoizedStudentTable = React.memo(StudentTable);
 function StudentManagement() {
   const { sections, currentSection, setCurrentSection } = useSections();
   const { students, deleteStudent, isLoading, fetchStudents } = useStudents();
+  const { recommendedSectionId, displayMessage, isTeachingTime } = useCurrentLesson();
 
+  // تطبيق اختيار القسم الذكي
+  useEffect(() => {
+    if (recommendedSectionId && sections.length > 0 && !currentSection) {
+      const recommendedSection = sections.find(s => s.id === recommendedSectionId);
+      if (recommendedSection) {
+        console.log('🎯 تطبيق اختيار القسم الذكي:', recommendedSection.name);
+        setCurrentSection(recommendedSection);
+      }
+    }
+  }, [recommendedSectionId, sections, currentSection, setCurrentSection]);
 
   // دالة تعيين جميع الطلاب كغائبين
   const handleMarkAllAbsent = () => {
@@ -646,9 +658,28 @@ function StudentManagement() {
         {sections.length > 0 ? (
           <Card className="p-4 w-full responsive-container">
             <div className="flex justify-between items-center mb-4">
-              <Typography variant="h5" color="blue-gray" sx={{ fontWeight: 'bold' }}>
-                {currentSection ? `طلاب قسم ${currentSection.name}` : 'جميع التلاميذ'} ({finalFilteredStudents.length} طالب)
-              </Typography>
+              <div className="flex flex-col gap-2">
+                <Typography variant="h5" color="blue-gray" sx={{ fontWeight: 'bold' }}>
+                  {currentSection ? `طلاب قسم ${currentSection.name}` : 'جميع التلاميذ'} ({finalFilteredStudents.length} طالب)
+                </Typography>
+                {/* مؤشر الحصة الذكي */}
+                {recommendedSectionId && currentSection?.id === recommendedSectionId && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Chip 
+                      label={displayMessage}
+                      size="small"
+                      sx={{
+                        bgcolor: isTeachingTime ? 'success.light' : 'info.light',
+                        color: isTeachingTime ? 'success.dark' : 'info.dark',
+                        fontWeight: 'bold',
+                        '& .MuiChip-label': {
+                          fontSize: '0.75rem'
+                        }
+                      }}
+                    />
+                  </Box>
+                )}
+              </div>
             </div>
 
             {/* Filter controls moved to FilterDrawer */}

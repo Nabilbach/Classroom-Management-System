@@ -12,7 +12,6 @@ import {
   Paper,
   Tabs,
   Tab,
-
   FormControl,
   InputLabel,
   Select,
@@ -20,10 +19,12 @@ import {
   Card,
   CardContent,
   Divider,
+  Chip,
   useMediaQuery,
 } from '@mui/material';
 import { Print as PrintIcon } from '@mui/icons-material';
 import { useSections } from '../contexts/SectionsContext';
+import { useCurrentLesson } from '../hooks/useCurrentLesson';
 
 interface AttendanceRecord {
   id: number;
@@ -47,6 +48,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
   const [selectedSectionId, setSelectedSectionId] = useState<string>('');
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const { sections } = useSections();
+  const { recommendedSectionId, displayMessage, isTeachingTime } = useCurrentLesson();
 
   // Find selected section object
   const selectedSection = useMemo(() => sections.find(s => s.id === selectedSectionId), [sections, selectedSectionId]);
@@ -60,7 +62,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
   useEffect(() => {
     const fetchAvailableDates = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/attendance');
+                const response = await fetch('http://localhost:3000/api/schedule/current-lesson');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const allRecords: AttendanceRecord[] = await response.json();
         
@@ -81,13 +83,16 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     fetchAvailableDates();
   }, []);
 
-  // Set default section to first section in list when sections load
+  // Smart section detection using the hook
   useEffect(() => {
-    if (sections.length > 0 && selectedSectionId === '') {
-      console.log('Setting default section:', sections[0].name); // Debug log
+    if (recommendedSectionId && sections.length > 0 && selectedSectionId === '') {
+      console.log('🎯 Setting section based on current lesson analysis:', recommendedSectionId);
+      setSelectedSectionId(recommendedSectionId);
+    } else if (sections.length > 0 && selectedSectionId === '' && !recommendedSectionId) {
+      console.log('📝 Setting default section (fallback):', sections[0].name);
       setSelectedSectionId(sections[0].id);
     }
-  }, [sections]);
+  }, [recommendedSectionId, sections, selectedSectionId]);
 
   const fetchData = async () => {
     try {
@@ -350,11 +355,25 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
           </Box>
         </Box>
         <Divider sx={{ mb: 2 }} />
-        {/* Section and Date Info */}
+        {/* Section and Date Info with Current Lesson Indicator */}
         <Box sx={{ mb: 2, textAlign: 'center' }}>
           <Typography variant="subtitle1" color="text.secondary">
             {selectedSectionId === 'ALL' ? 'كل الأقسام' : (selectedSection?.name || 'قسم غير محدد')} - {selectedDate}
           </Typography>
+          {/* مؤشر الحصة الذكي المبسط */}
+          {recommendedSectionId && selectedSectionId === recommendedSectionId && (
+            <Box sx={{ mt: 1 }}>
+              <Chip 
+                label={displayMessage}
+                size="small"
+                sx={{
+                  bgcolor: isTeachingTime ? 'success.light' : 'info.light',
+                  color: isTeachingTime ? 'success.dark' : 'info.dark',
+                  fontWeight: 'bold'
+                }}
+              />
+            </Box>
+          )}
         </Box>
         {/* Tabs */}
         <Tabs value={activeTab} onChange={handleTabChange} centered sx={{ mb: 2 }}>
