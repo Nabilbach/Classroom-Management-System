@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Box,
-  Typography,
+  Typograp               console.log('📝 Setting default section and loading data:', defaultSection.name);
+        setSelectedSectionId(defaultSection.id);
+        localStorage.setItem('lastSelectedSectionId', defaultSection.id);
+        setTimeout(() => fetchData(), 100);nsole.log('💾 Restoring last selected section and loading data:', savedSectionId);
+        setSelectedSectionId(savedSectionId);
+        setTimeout(() => fetchData(), 100);,
   Button,
   Table,
   TableBody,
@@ -99,10 +104,11 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     if (recommendedSectionId && sections.length > 0) {
       // الأولوية الأولى: إذا كان هناك قسم موصى به (حصة حالية)
       if (selectedSectionId !== recommendedSectionId) {
-        console.log('🎯 Auto-updating section based on current lesson:', recommendedSectionId);
+        console.log('🎯 Auto-updating section and loading attendance data:', recommendedSectionId);
         setSelectedSectionId(recommendedSectionId);
-        // حفظ القسم الموصى به كآخر قسم مستخدم
         localStorage.setItem('lastSelectedSectionId', recommendedSectionId);
+        // تحميل البيانات فوراً للقسم الجديد
+        setTimeout(() => fetchData(), 100);
       }
     } else if (sections.length > 0 && selectedSectionId === '' && !recommendedSectionId) {
       // الأولوية الثانية: استرجاع آخر قسم محفوظ
