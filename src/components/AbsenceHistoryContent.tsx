@@ -427,7 +427,6 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                 <TableBody>
                   {presentSorted.map((r, idx) => {
                     const lessonInfo = getLessonInfo(r.createdAt || r.date);
-                    console.log('Present Record:', r); // للتصحيح
                     return (
                       <TableRow 
                         key={r.id} 

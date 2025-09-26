@@ -94,12 +94,19 @@ export const formatTimeToArabic = (time: string): string => {
 // دالة لتحويل التاريخ إلى تنسيق DD-MM-YYYY
 export const formatDateToArabic = (dateString: string): string => {
   try {
-    const date = new Date(dateString + 'T00:00:00');
+    if (!dateString) return 'لا يوجد تاريخ';
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return dateString; // إرجاع القيمة الأصلية إذا لم يكن تاريخاً صحيحاً
+    }
+    
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return `${day}-${month}-${year}`;
   } catch (error) {
-    return dateString;
+    console.error('خطأ في تنسيق التاريخ:', error, 'للقيمة:', dateString);
+    return dateString || 'خطأ في التاريخ';
   }
 };
