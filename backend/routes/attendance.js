@@ -161,6 +161,201 @@ router.delete('/', async (req, res) => {
   }
 });
 
+// GET /api/attendance/:id - Get a specific attendance record by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ message: 'Valid attendance record ID is required' });
+    }
+
+    const record = await Attendance.findByPk(id, {
+      include: [{
+        model: Student,
+        as: 'student',
+        attributes: [
+          'id',
+          ['first_name', 'firstName'],
+          ['last_name', 'lastName'],
+          ['class_order', 'classOrder'],
+          ['pathway_number', 'pathwayNumber']
+        ]
+      }, {
+        model: Section,
+        attributes: ['id', 'name', 'educationalLevel']
+      }]
+    });
+
+    if (!record) {
+      return res.status(404).json({ message: 'Attendance record not found' });
+    }
+
+    // Add absence count for the student
+    const absenceCount = await Attendance.count({
+      where: {
+        studentId: record.studentId,
+        isPresent: false
+      }
+    });
+
+    const recordWithAbsences = {
+      ...record.toJSON(),
+      absences: absenceCount
+    };
+
+    res.json(recordWithAbsences);
+  } catch (error) {
+    console.error('Error fetching attendance record by ID:', error);
+    res.status(500).json({ 
+      message: 'Error fetching attendance record', 
+      error: error.message 
+    });
+  }
+});
+
+// PUT /api/attendance/:id - Update a specific attendance record
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isPresent, sectionId, date } = req.body;
+
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ message: 'Valid attendance record ID is required' });
+    }
+
+    // Find the existing record
+    const record = await Attendance.findByPk(id);
+    if (!record) {
+      return res.status(404).json({ message: 'Attendance record not found' });
+    }
+
+    // Validate and prepare update data
+    const updateData = {};
+
+    if (isPresent !== undefined) {
+      updateData.isPresent = Boolean(isPresent);
+    }
+
+    if (sectionId !== undefined) {
+      let validSectionId = sectionId;
+      
+      // Resolve section by name if necessary
+      if (typeof sectionId === 'string' && isNaN(sectionId)) {
+        const section = await findSectionByName(sectionId);
+        if (!section) {
+          return res.status(400).json({ message: `Section "${sectionId}" not found` });
+        }
+        validSectionId = section.id;
+      }
+      updateData.sectionId = validSectionId;
+    }
+
+    if (date !== undefined) {
+      // Normalize date to YYYY-MM-DD format
+      const normalizedDate = date.slice(0, 10);
+      
+      // Check if another record exists for the same student on the new date
+      if (normalizedDate !== record.date) {
+        const existing = await Attendance.findOne({
+          where: { 
+            studentId: record.studentId, 
+            date: normalizedDate,
+            id: { [require('sequelize').Op.ne]: id } // Exclude current record
+          }
+        });
+        
+        if (existing) {
+          return res.status(409).json({ 
+            message: 'Attendance record already exists for this student on the specified date' 
+          });
+        }
+      }
+      updateData.date = normalizedDate;
+    }
+
+    // Update the record
+    await record.update(updateData);
+
+    // Fetch the updated record with associations
+    const updatedRecord = await Attendance.findByPk(id, {
+      include: [{
+        model: Student,
+        as: 'student',
+        attributes: [
+          'id',
+          ['first_name', 'firstName'],
+          ['last_name', 'lastName'],
+          ['class_order', 'classOrder'],
+          ['pathway_number', 'pathwayNumber']
+        ]
+      }, {
+        model: Section,
+        attributes: ['id', 'name', 'educationalLevel']
+      }]
+    });
+
+    // Add absence count
+    const absenceCount = await Attendance.count({
+      where: {
+        studentId: updatedRecord.studentId,
+        isPresent: false
+      }
+    });
+
+    const recordWithAbsences = {
+      ...updatedRecord.toJSON(),
+      absences: absenceCount
+    };
+
+    res.json({
+      message: 'Attendance record updated successfully',
+      record: recordWithAbsences
+    });
+
+  } catch (error) {
+    console.error('Error updating attendance record:', error);
+    res.status(500).json({ 
+      message: 'Error updating attendance record', 
+      error: error.message 
+    });
+  }
+});
+
+// DELETE /api/attendance/:id - Delete a specific attendance record
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ message: 'Valid attendance record ID is required' });
+    }
+
+    const record = await Attendance.findByPk(id);
+    if (!record) {
+      return res.status(404).json({ message: 'Attendance record not found' });
+    }
+
+    await record.destroy();
+    
+    res.json({ 
+      message: 'Attendance record deleted successfully',
+      deletedRecord: {
+        id: record.id,
+        studentId: record.studentId,
+        date: record.date,
+        isPresent: record.isPresent
+      }
+    });
+  } catch (error) {
+    console.error('Error deleting attendance record:', error);
+    res.status(500).json({ 
+      message: 'Error deleting attendance record', 
+      error: error.message 
+    });
+  }
+});
+
 // DELETE /api/attendance/all - Delete all attendance records
 router.delete('/all', async (req, res) => {
   try {
