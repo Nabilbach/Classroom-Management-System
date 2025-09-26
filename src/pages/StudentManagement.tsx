@@ -96,6 +96,15 @@ function StudentManagement() {
     setAttendanceStatus(allAbsentStatus);
   };
 
+  // دالة تعيين جميع الطلاب كحاضرين
+  const handleMarkAllPresent = () => {
+    const allPresentStatus = sectionStudents.reduce((acc, s) => {
+      acc[s.id] = true; // true تعني حاضر
+      return acc;
+    }, {} as Record<string, boolean>);
+    setAttendanceStatus(allPresentStatus);
+  };
+
   // دالة تعيين الكل كغائب ما عدا المستثنين
   const handleMarkAllAbsentExcept = () => {
     const status = sectionStudents.reduce((acc, s) => {
@@ -562,6 +571,9 @@ function StudentManagement() {
             <>
               <Button onClick={handleSaveAttendance} variant="contained" color="success">
                 حفظ الحضور
+              </Button>
+              <Button onClick={handleMarkAllPresent} variant="contained" color="success" sx={{ backgroundColor: '#4caf50', color: 'white', fontWeight: 'bold' }}>
+                ✅ الجميع حاضر
               </Button>
               <Button onClick={handleMarkAllAbsent} variant="contained" color="warning" sx={{ backgroundColor: '#ff9800', color: 'white', fontWeight: 'bold' }}>
                 🚫 الجميع غائب
