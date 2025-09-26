@@ -1,0 +1,174 @@
+{
+  "timestamp": "2025-09-26T11:14:05.827Z",
+  "evaluation": {
+    "scores": {
+      "studentManagement": 100,
+      "attendance": 89,
+      "backend": 0,
+      "dataModels": 73,
+      "ui": 71
+    },
+    "overallScore": 67,
+    "projectStatus": "متوسط التقدم"
+  },
+  "details": {
+    "studentFeatures": {
+      "attendance": {
+        "basicMode": true,
+        "bulkActions": true,
+        "exceptions": true,
+        "saveFunction": true,
+        "apiCall": true,
+        "individualToggle": true
+      },
+      "studentManagement": {
+        "addStudent": true,
+        "editStudent": true,
+        "deleteStudent": true,
+        "bulkDelete": true,
+        "excelUpload": true,
+        "search": true
+      },
+      "ui": {
+        "filterDrawer": true,
+        "sectionSelection": true,
+        "dragAndDrop": true,
+        "responsiveDesign": true,
+        "modals": true
+      }
+    },
+    "attendanceBackend": {
+      "routes": {
+        "postAttendance": true,
+        "getAttendance": true,
+        "deleteAttendance": true,
+        "updateAttendance": false
+      },
+      "functionality": {
+        "bulkSave": true,
+        "sectionResolution": true,
+        "errorHandling": true,
+        "validation": true,
+        "relationships": true
+      }
+    },
+    "models": {
+      "administrativeTimetableEntry": {
+        "hasSequelize": true,
+        "hasRelationships": false,
+        "hasValidation": true,
+        "isExported": true
+      },
+      "adminScheduleEntry": {
+        "hasSequelize": true,
+        "hasRelationships": false,
+        "hasValidation": true,
+        "isExported": true
+      },
+      "attendance": {
+        "hasSequelize": true,
+        "hasRelationships": false,
+        "hasValidation": true,
+        "isExported": true
+      },
+      "attendanceModel": {
+        "hasSequelize": true,
+        "hasRelationships": false,
+        "hasValidation": true,
+        "isExported": true
+      },
+      "index": {
+        "hasSequelize": false,
+        "hasRelationships": true,
+        "hasValidation": false,
+        "isExported": true
+      },
+      "lesson": {
+        "hasSequelize": true,
+        "hasRelationships": false,
+        "hasValidation": true,
+        "isExported": true
+      },
+      "lessonLog": {
+        "hasSequelize": true,
+        "hasRelationships": false,
+        "hasValidation": true,
+        "isExported": true
+      },
+      "lessonTemplate": {
+        "hasSequelize": true,
+        "hasRelationships": false,
+        "hasValidation": true,
+        "isExported": true
+      },
+      "scheduledLesson": {
+        "hasSequelize": true,
+        "hasRelationships": false,
+        "hasValidation": true,
+        "isExported": true
+      },
+      "section": {
+        "hasSequelize": true,
+        "hasRelationships": false,
+        "hasValidation": true,
+        "isExported": true
+      },
+      "student": {
+        "hasSequelize": true,
+        "hasRelationships": false,
+        "hasValidation": true,
+        "isExported": true
+      },
+      "studentAssessment": {
+        "hasSequelize": true,
+        "hasRelationships": false,
+        "hasValidation": true,
+        "isExported": true
+      },
+      "textbookEntry": {
+        "hasSequelize": true,
+        "hasRelationships": false,
+        "hasValidation": true,
+        "isExported": true
+      }
+    },
+    "components": {
+      "AbsenceHistoryContent.tsx": {
+        "hasProps": true,
+        "usesHooks": true,
+        "hasMaterialUI": true,
+        "isExported": true
+      },
+      "AttendanceTracker.tsx": {
+        "hasProps": true,
+        "usesHooks": true,
+        "hasMaterialUI": true,
+        "isExported": true
+      },
+      "students/StudentCard.tsx": {
+        "hasProps": true,
+        "usesHooks": true,
+        "hasMaterialUI": true,
+        "isExported": true
+      },
+      "students/StudentCardSkeleton.tsx": {
+        "hasProps": false,
+        "usesHooks": false,
+        "hasMaterialUI": true,
+        "isExported": true
+      },
+      "students/StudentTable.tsx": {
+        "hasProps": false,
+        "usesHooks": false,
+        "hasMaterialUI": false,
+        "isExported": true
+      },
+      "students/StudentTableSkeleton.tsx": {
+        "hasProps": false,
+        "usesHooks": false,
+        "hasMaterialUI": true,
+        "isExported": true
+      }
+    }
+  }
+}
