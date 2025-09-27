@@ -441,6 +441,10 @@ app.use('/api/admin-schedule', adminScheduleRoutes);
 const textbookRoutes = require('./routes/textbook');
 app.use('/api/textbook', textbookRoutes);
 
+// Routes for Student Transfer (نقل التلاميذ)
+const studentTransferRoutes = require('./routes/studentTransfer');
+app.use('/api/student-transfer', studentTransferRoutes);
+
 // Routes for Student Assessments
 app.post('/api/students/:studentId/assessment', async (req, res) => {
   try {
