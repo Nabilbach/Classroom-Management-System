@@ -6,11 +6,42 @@ const Lesson = sequelize.define('Lesson', {
     type: DataTypes.STRING,
     primaryKey: true,
   },
-  title: {
+  templateId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  sectionId: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  // Add other fields as necessary based on your lessons.json structure
+  date: {
+    type: DataTypes.DATEONLY,
+    allowNull: false,
+  },
+  startTime: {
+    type: DataTypes.TIME,
+    allowNull: true,
+  },
+  endTime: {
+    type: DataTypes.TIME,
+    allowNull: true,
+  },
+  status: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  actualContent: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  homework: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  }
 });
 
 module.exports = Lesson;

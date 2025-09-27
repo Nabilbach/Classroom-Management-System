@@ -10,7 +10,14 @@ const LessonLog = sequelize.define('LessonLog', {
     type: DataTypes.DATE,
     allowNull: false,
   },
-  // Add other fields as necessary based on your lessonLogs.json structure
+  lessonId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  sectionId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  }
 });
 
 module.exports = LessonLog;

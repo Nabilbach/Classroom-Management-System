@@ -46,7 +46,22 @@ const getCurrentScore = async (studentId) => {
 // Routes for Lessons
 app.get('/api/lessons', async (req, res) => {
   try {
-    const lessons = await db.Lesson.findAll();
+    const lessons = await db.Lesson.findAll({
+      attributes: [
+        'id', 
+        'templateId', 
+        'sectionId', 
+        'date', 
+        'startTime', 
+        'endTime', 
+        'status', 
+        'actualContent', 
+        'homework', 
+        'notes',
+        'createdAt',
+        'updatedAt'
+      ]
+    });
     res.json(lessons);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving lessons', error: error.message, stack: error.stack });
