@@ -7,10 +7,15 @@
     "dev": "vite",
     "dev:backend": "cd backend && node index.dev.js",
     "dev:frontend": "vite --port 5174",
-    "prod:backend": "cd backend && node index.js", 
+    "prod:backend": "cd backend && node index.js",
     "prod:frontend": "vite --port 5173",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "backup:start": "node services_manager.js start",
+    "backup:status": "node services_manager.js status",
+    "backup:immediate": "node services_manager.js immediate",
+    "backup:monitor": "node backup_monitoring_service.js stats",
+    "backup:config": "node automated_backup_service.cjs status"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -39,6 +44,7 @@
     "react-icons": "^5.5.0",
     "react-router-dom": "^6.17.0",
     "react-to-print": "^3.1.1",
+    "recharts": "^3.2.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

@@ -150,19 +150,28 @@ router.get('/', async (req, res) => {
 router.delete('/', async (req, res) => {
   try {
     let { date, sectionId } = req.query;
-    if (!date || !sectionId) {
-      return res.status(400).json({ message: 'Both date and sectionId are required' });
+    if (!date) {
+      return res.status(400).json({ message: 'date is required' });
     }
 
-    // Resolve section by name if necessary
-    if (sectionId && isNaN(sectionId)) {
-      const section = await findSectionByName(sectionId);
-      if (!section) return res.status(400).json({ message: `Section "${sectionId}" not found` });
-      sectionId = section.id;
+    const whereClause = { date };
+
+    // Only filter by section if sectionId is provided
+    if (sectionId) {
+      // Resolve section by name if necessary
+      if (isNaN(sectionId)) {
+        const section = await findSectionByName(sectionId);
+        if (!section) return res.status(400).json({ message: `Section "${sectionId}" not found` });
+        sectionId = section.id;
+      }
+      whereClause.sectionId = sectionId;
     }
 
-    const deletedCount = await Attendance.destroy({ where: { date, sectionId } });
-    return res.json({ message: 'Attendance records deleted', deletedCount });
+    const deletedCount = await Attendance.destroy({ where: whereClause });
+    return res.json({ 
+      message: sectionId ? 'Attendance records deleted for section' : 'Attendance records deleted for all sections', 
+      deletedCount 
+    });
   } catch (error) {
     console.error('Error deleting day attendance:', error);
     res.status(500).json({ message: 'Failed to delete attendance for the day' });

@@ -4,6 +4,7 @@ import FilterDrawer from '../components/students/FilterDrawer';
 import { Student } from '../types/student';
 import { useSections } from '../contexts/SectionsContext';
 import { useStudents } from '../contexts/StudentsContext';
+import { useCurrentLesson } from '../hooks/useCurrentLesson';
 import AddStudentForm from '../components/students/AddStudentForm';
 import EditStudentModal from '../components/students/EditStudentModal';
 import StudentCard from '../components/students/StudentCard';
