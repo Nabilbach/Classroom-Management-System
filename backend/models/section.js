@@ -9,26 +9,6 @@ const Section = sequelize.define('Section', {
   name: {
     type: DataTypes.STRING,
     allowNull: false,
-  },
-  educationalLevel: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  specialization: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  roomNumber: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  teacherName: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  courseName: {
-    type: DataTypes.STRING,
-    allowNull: true,
   }
 });
 
