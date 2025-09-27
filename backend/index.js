@@ -437,6 +437,10 @@ app.patch('/api/students/reorder', async (req, res) => {
 const adminScheduleRoutes = require('./routes/adminSchedule');
 app.use('/api/admin-schedule', adminScheduleRoutes);
 
+// Routes for Current Lesson Detection
+const currentLessonRoutes = require('./routes/currentLesson');
+app.use('/api/schedule', currentLessonRoutes);
+
 // Routes for Textbook Entries
 const textbookRoutes = require('./routes/textbook');
 app.use('/api/textbook', textbookRoutes);
