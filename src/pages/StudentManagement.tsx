@@ -85,21 +85,16 @@ const MemoizedStudentTable = React.memo(StudentTable);
 
 function StudentManagement() {
   const { sections, currentSection, setCurrentSection } = useSections();
-  const { students, deleteStudent, isLoading, fetchStudents } = useStudents();
+  const { students, deleteStudent, isLoading, fetchStudents, updateStudentLocal } = useStudents();
   const { recommendedSectionId, displayMessage, isTeachingTime } = useCurrentLesson();
-  // If the user explicitly chose "All students" we suppress automatic default/ recommended
-  // section selection so the UI doesn't immediately jump back to a section.
-  const [userSelectedAll, setUserSelectedAll] = useState(false);
 
   // تطبيق اختيار القسم الذكي
   useEffect(() => {
-    if (recommendedSectionId && sections.length > 0 && !currentSection && !userSelectedAll) {
+    if (recommendedSectionId && sections.length > 0 && !currentSection) {
       const recommendedSection = sections.find(s => s.id === recommendedSectionId);
       if (recommendedSection) {
         console.log('🎯 تطبيق اختيار القسم الذكي:', recommendedSection.name);
         setCurrentSection(recommendedSection);
-        // clear the "user selected all" guard since we're programmatically choosing a section
-        setUserSelectedAll(false);
       }
     }
   }, [recommendedSectionId, sections, currentSection, setCurrentSection]);
@@ -177,8 +172,6 @@ function StudentManagement() {
   const [attendanceStatus, setAttendanceStatus] = useState<Record<string, boolean>>({});
   const [showAbsentListModal, setShowAbsentListModal] = useState(false);
   const [absentStudents, setAbsentStudents] = useState<Student[]>([]);
-  // Attendance recorded state for the current section/date
-  const [attendanceRecorded, setAttendanceRecorded] = useState<boolean | null>(null);
 
   // نافذة اختيار الطلاب المستثنين
   const [excludeModalOpen, setExcludeModalOpen] = useState(false);
@@ -295,12 +288,10 @@ function StudentManagement() {
   }, [todayScheduleSorted, nowTick, sections]);
 
   useEffect(() => {
-    // Only auto-select the first section when there is no current section
-    // and the user hasn't explicitly chosen "All students".
-    if (sections.length > 0 && !currentSection && !userSelectedAll) {
+    if (sections.length > 0 && !currentSection) {
       setCurrentSection(sections[0]);
     }
-  }, [sections, setCurrentSection, currentSection, userSelectedAll]);
+  }, [sections, setCurrentSection]);
 
   const sectionStudents = useMemo(() => {
     // Helper to get index in local order map (if any)
@@ -362,32 +353,6 @@ function StudentManagement() {
     };
     load();
   }, [currentSection, students]);
-
-  // Check whether attendance for the current section/date is already recorded
-  useEffect(() => {
-    let cancelled = false;
-    const check = async () => {
-      if (!currentSection) {
-        setAttendanceRecorded(null);
-        return;
-      }
-      const date = new Date().toISOString().split('T')[0];
-      try {
-        const resp = await fetch(`http://localhost:3000/api/attendance?date=${date}&sectionId=${encodeURIComponent(String(currentSection.id))}`);
-        if (!resp.ok) {
-          if (!cancelled) setAttendanceRecorded(null);
-          return;
-        }
-        const data = await resp.json();
-        if (!cancelled) setAttendanceRecorded(Array.isArray(data) ? data.length > 0 : null);
-      } catch (e) {
-        console.warn('Failed to check attendance recorded status', e);
-        if (!cancelled) setAttendanceRecorded(null);
-      }
-    };
-    check();
-    return () => { cancelled = true; };
-  }, [currentSection, fetchStudents]);
 
   const openFollowupDialog = async () => {
     if (!currentSection) return;
@@ -453,7 +418,13 @@ function StudentManagement() {
     fetchStudents();
   }, [fetchStudents]);
 
-  // Quick-select student from the widget is handled inside QuickEvaluation when needed
+  // Quick-select student from the widget: open QuickEvaluation modal and set selectedStudent
+  const handleQuickSelectStudent = (id: number) => {
+    const found = students.find(s => Number(s.id) === Number(id)) || null;
+    setSelectedStudent(found as any);
+    if (!isAssessmentModalOpen) setIsAssessmentModalOpen(true);
+    // If already open, QuickEvaluation will react to the changed studentId prop
+  };
 
   const isNumericSearch = (term: string): boolean => /^\d+$/.test(term);
   const isPathwaySearch = (term: string): boolean => term.toUpperCase().startsWith('H');
@@ -615,9 +586,6 @@ function StudentManagement() {
       // Update local student data
       fetchStudents(); // Refresh after attendance update
 
-      // mark attendance as recorded for this section/date
-      setAttendanceRecorded(true);
-
       const absent = sectionStudents.filter(s => !attendanceStatus[s.id]);
       setAbsentStudents(absent);
       setShowAbsentListModal(true);
@@ -631,32 +599,7 @@ function StudentManagement() {
 
   return (
   <div dir="rtl" style={{ paddingTop: 0, background: '#f8f9fa' }}>
-    {/* Styles to enlarge/action buttons inside the students area */}
-    <style>{`
-      /* enlarge general MUI buttons inside the students area */
-      .actions-scale .MuiButton-root {
-        font-size: 0.95rem;
-        padding: 8px 14px;
-        min-width: 64px;
-        border-radius: 8px;
-      }
-      /* slightly smaller padding for small-size buttons */
-      .actions-scale .MuiButton-sizeSmall {
-        padding: 6px 10px;
-      }
-      /* reduce visual clutter for icon-only or tight buttons */
-      .actions-scale .MuiButton-root.icon-only {
-        padding: 6px 8px;
-        min-width: unset;
-      }
-      /* if your student table uses a specific actions column, this helps spacing */
-      .actions-scale .student-actions > * {
-        margin-inline-start: 8px;
-      }
-    `}</style>
-
-    <div className="actions-scale">
-    {/* Sticky action bar */}
+  {/* Sticky action bar */}
       <div className="flex flex-wrap justify-between items-center mb-2 sticky top-0 z-20 bg-white shadow-sm py-1 px-2" style={{ borderBottom: '1px solid #eee', marginRight: 0 }}>
         <Typography variant="h4" color="blue-gray" sx={{ fontWeight: 'bold' }}>إدارة الطلاب</Typography>
         <div className="flex flex-wrap gap-2 overflow-x-auto" style={{ maxWidth: '100%' }}>
@@ -729,30 +672,11 @@ function StudentManagement() {
 
   {/* Sticky section chips bar */}
   <div className="flex gap-2 mb-4 overflow-x-auto pb-2 sticky top-[56px] z-10 bg-white border-b border-gray-100 chips-scrollbar w-full" style={{ minHeight: '48px' }}>
-        <Button
-          variant={!currentSection ? "contained" : "outlined"}
-          onClick={() => {
-            setCurrentSection(null);
-            // User explicitly chose All students; suppress automatic recommended selection
-            setUserSelectedAll(true);
-          }}
-          className="flex-shrink-0"
-          sx={{ fontWeight: 'bold' }}
-        >
+        <Button variant={!currentSection ? "contained" : "outlined"} onClick={() => setCurrentSection(null)} className="flex-shrink-0" sx={{ fontWeight: 'bold' }}>
           جميع التلاميذ
         </Button>
         {sections.map((section) => (
-          <Button
-            key={section.id}
-            variant={currentSection?.id === section.id ? "contained" : "outlined"}
-            onClick={() => {
-              setCurrentSection(section);
-              // Clear the 'user selected all' guard when the user explicitly picks a section
-              setUserSelectedAll(false);
-            }}
-            className="flex-shrink-0"
-            sx={{ fontWeight: 'bold' }}
-          >
+          <Button key={section.id} variant={currentSection?.id === section.id ? "contained" : "outlined"} onClick={() => setCurrentSection(section)} className="flex-shrink-0" sx={{ fontWeight: 'bold' }}>
             {section.name}
           </Button>
         ))}
@@ -783,23 +707,23 @@ function StudentManagement() {
                 <Typography variant="h5" color="blue-gray" sx={{ fontWeight: 'bold' }}>
                   {currentSection ? `طلاب قسم ${currentSection.name}` : 'جميع التلاميذ'} ({finalFilteredStudents.length} طالب)
                 </Typography>
-                {/* Attendance recorded status (always shown for the current view) */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  {attendanceRecorded !== null ? (
-                    <Chip
-                      label={attendanceRecorded ? 'حالة الغياب: مسجل' : 'حالة الغياب: غير مسجل'}
+                {/* مؤشر الحصة الذكي */}
+                {recommendedSectionId && currentSection?.id === recommendedSectionId && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Chip 
+                      label={displayMessage}
                       size="small"
                       sx={{
-                        bgcolor: attendanceRecorded ? 'success.light' : '#ffe6e6',
-                        color: attendanceRecorded ? 'success.dark' : '#b91c1c',
+                        bgcolor: isTeachingTime ? 'success.light' : 'info.light',
+                        color: isTeachingTime ? 'success.dark' : 'info.dark',
                         fontWeight: 'bold',
-                        '& .MuiChip-label': { fontSize: '0.75rem' }
+                        '& .MuiChip-label': {
+                          fontSize: '0.75rem'
+                        }
                       }}
                     />
-                  ) : (
-                    <Chip label={'حالة الغياب: ...'} size="small" sx={{ fontWeight: 'bold', '& .MuiChip-label': { fontSize: '0.75rem' } }} />
-                  )}
-                </Box>
+                  </Box>
+                )}
               </div>
             </div>
 
@@ -1001,7 +925,6 @@ function StudentManagement() {
 
       <BackToTopButton />
     </div>
-  </div>
   );
 }
 

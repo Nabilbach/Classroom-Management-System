@@ -232,24 +232,38 @@ app.get('/api/students', async (req, res) => {
     const where = section_id ? { sectionId: section_id } : {};
     const students = await db.Student.findAll({ where });
 
-    // Get all scores at once instead of individual queries
+    // Get latest assessments for the returned students and compute helpful fields
     const studentIds = students.map(student => student.id);
-    const scores = await db.StudentAssessment.findAll({
+    const assessments = await db.StudentAssessment.findAll({
       where: { studentId: studentIds },
-      order: [['date', 'DESC']],
-      group: ['studentId']
+      order: [['date', 'DESC']]
     });
 
     const scoreMap = {};
-    scores.forEach(assessment => {
-      if (!scoreMap[assessment.studentId]) {
-        scoreMap[assessment.studentId] = assessment.new_score;
+    const lastAssessmentDateMap = {};
+    const totalXpMap = {};
+
+    assessments.forEach(assessment => {
+      const sid = assessment.studentId;
+      // only set if not set yet (because assessments are ordered by date desc)
+      if (!scoreMap[sid]) {
+        const ns = Number(assessment.new_score);
+        scoreMap[sid] = Number.isNaN(ns) ? 0 : ns;
+        lastAssessmentDateMap[sid] = assessment.date;
+        // Prefer snapshot total_xp if assessment stored it (frontend can send it), otherwise map new_score (0..20) to XP.
+        if (assessment.total_xp != null) {
+          totalXpMap[sid] = Number.isFinite(Number(assessment.total_xp)) ? Math.round(Number(assessment.total_xp)) : 0;
+        } else {
+          totalXpMap[sid] = Number.isNaN(ns) ? 0 : Math.round(ns * 25);
+        }
       }
     });
 
     const studentsWithScores = students.map(student => ({
       ...student.toJSON(),
-      score: scoreMap[student.id] || 0
+      score: scoreMap[student.id] || 0,
+      lastAssessmentDate: lastAssessmentDateMap[student.id] || null,
+      total_xp: totalXpMap[student.id] || 0,
     }));
 
     res.json(studentsWithScores);
@@ -310,6 +324,103 @@ app.post('/api/students', async (req, res) => {
       return res.status(400).json({ message: 'Invalid sectionId. Please choose an existing section.', error: error.message, stack: error.stack });
     }
     res.status(500).json({ message: 'Error creating student', error: error.message, stack: error.stack });
+  }
+});
+
+// FollowUps: create and list
+app.post('/api/students/:studentId/followups', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { type, description } = req.body;
+    if (!type) return res.status(400).json({ message: 'type is required' });
+
+    const f = await db.FollowUp.create({ studentId, type, description: description || null, status: 'open' });
+    res.status(201).json(f);
+  } catch (error) {
+    console.error('Error creating followup:', error);
+    res.status(500).json({ message: 'Error creating followup', error: error.message, stack: error.stack });
+  }
+});
+
+app.get('/api/students/:studentId/followups', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { status } = req.query;
+    const where = { studentId };
+    if (status) where.status = status;
+    const items = await db.FollowUp.findAll({ where, order: [['createdAt', 'DESC']] });
+    res.json(items);
+  } catch (error) {
+    console.error('Error fetching followups:', error);
+    res.status(500).json({ message: 'Error fetching followups', error: error.message, stack: error.stack });
+  }
+});
+
+// Endpoint: return count of open followups for a section
+app.get('/api/sections/:sectionId/followups-count', async (req, res) => {
+  try {
+    const { sectionId } = req.params;
+    // find students in section
+    const students = await db.Student.findAll({ where: { sectionId } });
+    const studentIds = students.map(s => s.id);
+    if (studentIds.length === 0) return res.json({ count: 0 });
+    const count = await db.FollowUp.count({ where: { studentId: studentIds, status: 'open' } });
+    res.json({ count });
+  } catch (error) {
+    console.error('Error fetching section followup counts:', error);
+    res.status(500).json({ message: 'Error fetching followup counts', error: error.message, stack: error.stack });
+  }
+});
+
+// Return students in a section who have open followups, with counts
+app.get('/api/sections/:sectionId/followups-students', async (req, res) => {
+  try {
+    const { sectionId } = req.params;
+    // find students in section
+    const students = await db.Student.findAll({ where: { sectionId } });
+    const studentIds = students.map(s => s.id);
+    if (studentIds.length === 0) return res.json([]);
+
+    // Count open followups grouped by studentId
+    const counts = await db.FollowUp.findAll({
+      attributes: ['studentId', [db.sequelize.fn('COUNT', db.sequelize.col('id')), 'count']],
+      where: { studentId: studentIds, status: 'open' },
+      group: ['studentId']
+    });
+
+    const countMap = {};
+    counts.forEach(r => {
+      const obj = r.toJSON();
+      countMap[obj.studentId] = Number(obj.count || 0);
+    });
+
+    const result = students
+      .map(s => ({ id: s.id, firstName: s.firstName, lastName: s.lastName, followupCount: countMap[s.id] || 0 }))
+      .filter(s => s.followupCount > 0)
+      .sort((a, b) => b.followupCount - a.followupCount);
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching followup students for section:', error);
+    res.status(500).json({ message: 'Error fetching followup students', error: error.message, stack: error.stack });
+  }
+});
+
+// Update a followup (e.g., close it)
+app.patch('/api/followups/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body || {};
+    const [updated] = await db.FollowUp.update(updates, { where: { id } });
+    if (updated) {
+      const fu = await db.FollowUp.findByPk(id);
+      res.json(fu);
+    } else {
+      res.status(404).json({ message: 'FollowUp not found' });
+    }
+  } catch (error) {
+    console.error('Error updating followup:', error);
+    res.status(500).json({ message: 'Error updating followup', error: error.message, stack: error.stack });
   }
 });
 
@@ -468,7 +579,7 @@ app.use('/api/student-transfer', studentTransferRoutes);
 app.post('/api/students/:studentId/assessment', async (req, res) => {
   try {
     const { studentId } = req.params;
-    const { new_score, notes, scores } = req.body;
+    const { new_score, notes, scores, total_xp, student_level } = req.body;
 
     const old_score = await getCurrentScore(studentId);
     const score_change = new_score - old_score;
@@ -480,12 +591,38 @@ app.post('/api/students/:studentId/assessment', async (req, res) => {
       new_score,
       score_change,
       notes,
-      scores: scores && typeof scores === 'object' ? JSON.stringify(scores) : (typeof scores === 'string' ? scores : null),
+      scores: scores || null,
+      total_xp: typeof total_xp === 'number' ? Math.round(total_xp) : null,
+      student_level: typeof student_level === 'number' ? student_level : null,
     });
 
     res.status(201).json(newAssessment);
   } catch (error) {
     res.status(500).json({ message: 'Error creating assessment', error: error.message, stack: error.stack });
+  }
+});
+
+// Delete all assessments for a student (used to clear XP/history)
+app.delete('/api/students/:studentId/assessments', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const deleted = await db.StudentAssessment.destroy({ where: { studentId } });
+    res.json({ deletedCount: deleted });
+  } catch (error) {
+    console.error('Error deleting assessments for student:', error);
+    res.status(500).json({ message: 'Error deleting assessments', error: error.message, stack: error.stack });
+  }
+});
+
+// POST-based reset endpoint (some clients / proxies block DELETE). Same behavior as DELETE above.
+app.post('/api/students/:studentId/assessments/reset', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const deleted = await db.StudentAssessment.destroy({ where: { studentId } });
+    res.json({ deletedCount: deleted });
+  } catch (error) {
+    console.error('Error resetting assessments for student:', error);
+    res.status(500).json({ message: 'Error resetting assessments', error: error.message, stack: error.stack });
   }
 });
 
@@ -496,177 +633,9 @@ app.get('/api/students/:studentId/assessments', async (req, res) => {
       where: { studentId },
       order: [[ 'date', 'DESC' ]],
     });
-    const normalized = (Array.isArray(assessments) ? assessments : []).map(a => {
-      const obj = a.toJSON ? a.toJSON() : a;
-      if (obj && obj.scores && typeof obj.scores === 'string') {
-        try { obj.scores = JSON.parse(obj.scores); } catch (e) { /* leave as string */ }
-      }
-      return obj;
-    });
-    res.json(normalized);
+    res.json(assessments);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving assessments', error: error.message, stack: error.stack });
-  }
-});
-
-// Bulk delete assessments for a student: accepts { ids: [ ... ] }
-app.post('/api/students/:studentId/assessments/delete-bulk', async (req, res) => {
-  try {
-    const { studentId } = req.params;
-    const ids = Array.isArray(req.body && req.body.ids) ? req.body.ids : [];
-    if (!ids || ids.length === 0) return res.status(400).json({ message: 'Missing ids array in request body' });
-
-    // Find which ids actually exist and belong to the student
-    const existing = await db.StudentAssessment.findAll({ where: { id: ids, studentId } });
-    const existingIds = existing.map(a => a.id);
-
-    if (existingIds.length === 0) return res.json({ deletedCount: 0, deletedIds: [] });
-
-    const deleted = await db.StudentAssessment.destroy({ where: { id: existingIds } });
-    res.json({ deletedCount: Number(deleted || 0), deletedIds: existingIds });
-  } catch (error) {
-    console.error('Error in bulk delete student assessments:', error);
-    res.status(500).json({ message: 'Error deleting assessments', error: error.message, stack: error.stack });
-  }
-});
-
-// Reset all assessments for a student (convenience endpoint used by QuickEvaluation)
-app.post('/api/students/:studentId/assessments/reset', async (req, res) => {
-  try {
-    const { studentId } = req.params;
-    const assessments = await db.StudentAssessment.findAll({ where: { studentId } });
-    if (!Array.isArray(assessments) || assessments.length === 0) return res.json({ deletedCount: 0, deletedIds: [] });
-    const ids = assessments.map(a => a.id);
-    const deleted = await db.StudentAssessment.destroy({ where: { id: ids } });
-    res.json({ deletedCount: Number(deleted || 0), deletedIds: ids });
-  } catch (error) {
-    console.error('Error resetting assessments for student:', error);
-    res.status(500).json({ message: 'Error resetting assessments', error: error.message, stack: error.stack });
-  }
-});
-
-// Global bulk delete endpoint: accepts { ids: [ ... ] }
-app.post('/api/assessments/bulk-delete', async (req, res) => {
-  try {
-    const ids = Array.isArray(req.body && req.body.ids) ? req.body.ids : [];
-    if (!ids || ids.length === 0) return res.status(400).json({ message: 'Missing ids array in request body' });
-
-    const existing = await db.StudentAssessment.findAll({ where: { id: ids } });
-    const existingIds = existing.map(a => a.id);
-    if (existingIds.length === 0) return res.json({ deletedCount: 0, deletedIds: [] });
-
-    const deleted = await db.StudentAssessment.destroy({ where: { id: existingIds } });
-    res.json({ deletedCount: Number(deleted || 0), deletedIds: existingIds });
-  } catch (error) {
-    console.error('Error in global bulk delete assessments:', error);
-    res.status(500).json({ message: 'Error deleting assessments', error: error.message, stack: error.stack });
-  }
-});
-
-// FollowUp routes
-app.get('/api/students/:studentId/followups', async (req, res) => {
-  try {
-    const { studentId } = req.params;
-    const replacements = [studentId ?? null];
-    const [rows] = await db.sequelize.query('SELECT id, student_id as studentId, section_id as sectionId, type, notes, is_open as isOpen, createdAt, updatedAt FROM FollowUps WHERE student_id = ? ORDER BY createdAt DESC', { replacements });
-    res.json(rows);
-  } catch (error) {
-    console.error('Error retrieving followups for student:', error);
-    res.status(500).json({ message: 'Error retrieving followups', error: error.message, stack: error.stack });
-  }
-});
-
-app.post('/api/students/:studentId/followups', async (req, res) => {
-  try {
-    const { studentId } = req.params;
-    const { type } = req.body || {};
-    // accept either notes or description from frontend
-    const notes = (req.body && (req.body.notes ?? req.body.description)) ?? null;
-    const student = await db.Student.findByPk(studentId);
-    if (!student) return res.status(404).json({ message: 'Student not found' });
-
-    // Normalize values so replacements array doesn't contain `undefined` (which Sequelize rejects)
-  const sectionId = student.sectionId != null ? student.sectionId : null;
-  const typeSafe = type != null ? type : null;
-  const notesSafe = notes != null ? notes : null;
-
-    const now = new Date().toISOString();
-    // sanitize replacements: Sequelize throws if a positional replacement is undefined
-    const replacements = [studentId ?? null, sectionId ?? null, typeSafe ?? null, notesSafe ?? null, now, now];
-    await db.sequelize.query('INSERT INTO FollowUps (student_id, section_id, type, notes, is_open, createdAt, updatedAt) VALUES (?, ?, ?, ?, 1, ?, ?);', { replacements });
-    // Fetch created row id
-    const [[{ lastId }]] = await db.sequelize.query('SELECT last_insert_rowid() as lastId');
-    const [rows] = await db.sequelize.query('SELECT id, student_id as studentId, section_id as sectionId, type, notes, is_open as isOpen, createdAt, updatedAt FROM FollowUps WHERE id = ?', { replacements: [lastId ?? null] });
-    res.status(201).json(rows[0] || null);
-  } catch (error) {
-    console.error('Error creating followup:', error);
-    res.status(500).json({ message: 'Error creating followup', error: error.message, stack: error.stack });
-  }
-});
-
-// Close or update followup by id (compatible with frontend PATCH /api/followups/:id)
-app.patch('/api/followups/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    // support body like { status: 'closed' } or { is_open: 0 }
-    const { status, is_open } = req.body || {};
-    let openFlag = null;
-    if (typeof is_open !== 'undefined') openFlag = Number(is_open) ? 1 : 0;
-    else if (typeof status === 'string') openFlag = status.toLowerCase() === 'closed' ? 0 : 1;
-    else openFlag = null;
-
-    if (openFlag === null) return res.status(400).json({ message: 'Invalid payload' });
-
-    await db.sequelize.query('UPDATE FollowUps SET is_open = ? WHERE id = ?', { replacements: [openFlag, id] });
-    const [rows] = await db.sequelize.query('SELECT id, student_id as studentId, section_id as sectionId, type, notes, is_open as isOpen, createdAt, updatedAt FROM FollowUps WHERE id = ?', { replacements: [id] });
-    if (!rows || rows.length === 0) return res.status(404).json({ message: 'Followup not found' });
-    res.json(rows[0]);
-  } catch (error) {
-    console.error('Error updating followup:', error);
-    res.status(500).json({ message: 'Error updating followup', error: error.message, stack: error.stack });
-  }
-});
-
-app.patch('/api/students/:studentId/followups/:id/close', async (req, res) => {
-  try {
-    const { studentId, id } = req.params;
-    const replacements = [id ?? null, studentId ?? null];
-    const [result] = await db.sequelize.query('UPDATE FollowUps SET is_open = 0 WHERE id = ? AND student_id = ?', { replacements });
-    const [rows] = await db.sequelize.query('SELECT id, student_id as studentId, section_id as sectionId, type, notes, is_open as isOpen, createdAt, updatedAt FROM FollowUps WHERE id = ?', { replacements: [id ?? null] });
-    if (!rows || rows.length === 0) return res.status(404).json({ message: 'Followup not found' });
-    res.json(rows[0]);
-  } catch (error) {
-    console.error('Error closing followup:', error);
-    res.status(500).json({ message: 'Error closing followup', error: error.message, stack: error.stack });
-  }
-});
-
-app.get('/api/sections/:sectionId/followups-count', async (req, res) => {
-  try {
-    const { sectionId } = req.params;
-    const replacements = [sectionId ?? null];
-    const [[{ count }]] = await db.sequelize.query('SELECT COUNT(1) as count FROM FollowUps WHERE section_id = ? AND is_open = 1', { replacements });
-    res.json({ count: Number(count || 0) });
-  } catch (error) {
-    console.error('Error getting followup count for section:', error);
-    res.status(500).json({ message: 'Error getting followup count', error: error.message, stack: error.stack });
-  }
-});
-
-app.get('/api/sections/:sectionId/followups-students', async (req, res) => {
-  try {
-    const { sectionId } = req.params;
-    // Return students in that section who have open followups with counts
-    const replacements = [sectionId ?? null];
-    const [rows] = await db.sequelize.query('SELECT student_id as studentId, COUNT(1) as followupCount FROM FollowUps WHERE section_id = ? AND is_open = 1 GROUP BY student_id', { replacements });
-    const ids = rows.map(r => r.studentId).filter(Boolean);
-    if (ids.length === 0) return res.json([]);
-    const students = await db.Student.findAll({ where: { id: ids } });
-    const result = students.map(s => ({ id: s.id, firstName: s.firstName, lastName: s.lastName, followupCount: (rows.find(r => Number(r.studentId) === Number(s.id)) || {}).followupCount || 0 }));
-    res.json(result);
-  } catch (error) {
-    console.error('Error getting followup students for section:', error);
-    res.status(500).json({ message: 'Error getting followup students', error: error.message, stack: error.stack });
   }
 });
 
@@ -755,51 +724,48 @@ const ensureAttendanceIndexes = async () => {
   }
 };
 
-// Ensure FollowUps table exists and has expected columns
-const ensureFollowupSchema = async () => {
-  try {
-    const [cols] = await db.sequelize.query("PRAGMA table_info('FollowUps');");
-    const existing = Array.isArray(cols) ? cols.map(c => c.name) : [];
-    if (existing.length === 0) {
-      // table doesn't exist, create it
-      await db.sequelize.query(`
-        CREATE TABLE IF NOT EXISTS "FollowUps" (
-          "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-          "student_id" INTEGER,
-          "section_id" VARCHAR(255),
-          "type" VARCHAR(255),
-          "notes" TEXT,
-          "is_open" TINYINT(1) DEFAULT 1,
-          "createdAt" DATETIME,
-          "updatedAt" DATETIME
-        );
-      `);
-      return;
-    }
-
-    // Add missing columns if any
-    const addIfMissing = async (colName, colDef) => {
-      if (!existing.includes(colName)) {
-        await db.sequelize.query(`ALTER TABLE "FollowUps" ADD COLUMN "${colName}" ${colDef};`);
-      }
-    };
-
-  await addIfMissing('student_id', 'INTEGER');
-  await addIfMissing('section_id', 'VARCHAR(255)');
-  await addIfMissing('type', 'VARCHAR(255)');
-  await addIfMissing('notes', 'TEXT');
-  await addIfMissing('is_open', 'TINYINT(1) DEFAULT 1');
-  } catch (e) {
-    console.warn('ensureFollowupSchema warning:', e?.message || e);
-  }
-};
-
 // Start the server
 preMigrateCleanup()
   // Use sync to create tables if they don't exist
   .then(() => db.sequelize.sync({ force: false })) // Don't force recreate, just sync
+  .then(async () => {
+    // Instead of sequelize.sync({ alter: true }) which may attempt destructive
+    // operations on SQLite and trigger FK constraint errors, perform targeted
+    // migrations for the StudentAssessments table by adding missing columns.
+    const ensureAssessmentColumns = async () => {
+      try {
+        // Get existing columns for StudentAssessments
+        const [cols] = await db.sequelize.query("PRAGMA table_info('StudentAssessments');");
+        const existing = Array.isArray(cols) ? cols.map(c => c.name) : [];
+
+        const queries = [];
+        if (!existing.includes('scores')) {
+          // store JSON as TEXT in SQLite
+          queries.push("ALTER TABLE StudentAssessments ADD COLUMN scores TEXT;");
+        }
+        if (!existing.includes('total_xp')) {
+          queries.push("ALTER TABLE StudentAssessments ADD COLUMN total_xp INTEGER;");
+        }
+        if (!existing.includes('student_level')) {
+          queries.push("ALTER TABLE StudentAssessments ADD COLUMN student_level INTEGER;");
+        }
+
+        for (const q of queries) {
+          try {
+            await db.sequelize.query(q);
+            console.log('Applied migration:', q);
+          } catch (e) {
+            console.warn('Failed to apply migration query:', q, e.message || e);
+          }
+        }
+      } catch (e) {
+        console.warn('ensureAssessmentColumns warning:', e?.message || e);
+      }
+    };
+
+    await ensureAssessmentColumns();
+  })
   .then(() => ensureAttendanceIndexes())
-  .then(() => ensureFollowupSchema())
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Backend server running on http://localhost:${PORT}`);
