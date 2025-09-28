@@ -12,6 +12,17 @@ export interface Student {
   absences?: number;
   isPresent?: boolean;
   lastAssessment?: string;
+  lastAssessmentDate?: string;
+  // New assessment-related fields
+  assessments?: Array<{
+    date: string;
+    scores: Record<string, any>;
+    notes?: string;
+  }>;
+  // XP / leveling
+  total_xp?: number;
+  xp?: number;
+  student_level?: number;
   // Legacy properties for compatibility
   trackNumber?: string;
   dateOfBirth?: string;

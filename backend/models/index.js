@@ -10,6 +10,7 @@ const AdministrativeTimetableEntry = require('./administrativeTimetableEntry');
 const AdminScheduleEntry = require('./adminScheduleEntry');
 const Attendance = require('./attendance');
 const TextbookEntry = require('./textbookEntry');
+const FollowUp = require('./followUp');
 
 // Define associations
 Section.hasMany(Lesson, { foreignKey: 'sectionId' });
@@ -26,6 +27,10 @@ Student.belongsTo(Section, { foreignKey: 'sectionId' });
 
 Student.hasMany(StudentAssessment, { foreignKey: 'studentId' });
 StudentAssessment.belongsTo(Student, { foreignKey: 'studentId' });
+
+// FollowUp association
+Student.hasMany(FollowUp, { foreignKey: 'studentId' });
+FollowUp.belongsTo(Student, { foreignKey: 'studentId' });
 
 // Attendance associations
 Student.hasMany(Attendance, { foreignKey: 'studentId' });
@@ -48,6 +53,7 @@ const db = {
   AdminScheduleEntry,
   Attendance,
   TextbookEntry,
+  FollowUp,
 };
 
 module.exports = db;

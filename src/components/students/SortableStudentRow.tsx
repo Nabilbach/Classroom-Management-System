@@ -6,6 +6,8 @@ import { FaEdit, FaTrash, FaInfoCircle, FaGripVertical, FaStar } from 'react-ico
 import { Student } from '../../types/student';
 
 interface SortableStudentRowProps {
+  lastAssessmentDate?: string;
+  xp?: number;
   student: Student;
   onEdit: (student: Student) => void;
   onDelete: (studentId: number) => void;
@@ -18,7 +20,7 @@ interface SortableStudentRowProps {
   onToggleAttendance?: (studentId: string, isPresent: boolean) => void;
 }
 
-function SortableStudentRow({ student, onEdit, onDelete, onDetail, onAssess, rowIndex: _rowIndex, isAttendanceMode, attendanceStatus, onToggleAttendance }: SortableStudentRowProps) {
+function SortableStudentRow({ student, lastAssessmentDate, xp, onEdit, onDelete, onDetail, onAssess, rowIndex: _rowIndex, isAttendanceMode, attendanceStatus, onToggleAttendance }: SortableStudentRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: student.id });
 
   const style = {
@@ -45,6 +47,8 @@ function SortableStudentRow({ student, onEdit, onDelete, onDetail, onAssess, row
       <td className="px-4 py-3 text-sm">{student.firstName}</td>
       <td className="px-4 py-3 text-sm">{student.gender}</td>
       <td className="px-4 py-3 text-sm">{student.birthDate}</td>
+      <td className="px-4 py-3 text-sm">{lastAssessmentDate || '-'}</td>
+      <td className="px-4 py-3 text-sm">{xp ?? 0}</td>
       <td className="px-4 py-3 text-sm">
         {isAttendanceMode ? (
           <div className="flex gap-2">
