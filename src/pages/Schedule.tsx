@@ -15,6 +15,8 @@ import {
   Card,
   CardContent,
 } from '@mui/material';
+import CalendarEventsManager from '../components/CalendarEventsManager';
+import AddEditSessionModal from '../components/AddEditSessionModal';
 import { useSnackbar } from 'notistack';
 import { useSections } from '../contexts/SectionsContext';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, isSameDay, parseISO, isValid, isWithinInterval, isAfter, isBefore } from 'date-fns';
@@ -724,17 +726,17 @@ function Schedule() {
   const sectionColorMap = useMemo(() => {
     const map = new Map<string, string>();
     // ألوان هادئة ومريحة للعين
+    // ألوان قوية وواضحة بدون الأصفر
     const colors = [
-      'bg-blue-100 text-blue-800',     // أزرق فاتح
-      'bg-green-100 text-green-800',   // أخضر فاتح
-      'bg-purple-100 text-purple-800', // بنفسجي فاتح
-      'bg-orange-100 text-orange-800', // برتقالي فاتح
-      'bg-pink-100 text-pink-800',     // وردي فاتح
-      'bg-teal-100 text-teal-800',     // تيل فاتح
-      'bg-indigo-100 text-indigo-800', // نيلي فاتح
-      'bg-yellow-100 text-yellow-800', // أصفر فاتح
-      'bg-red-100 text-red-800',       // أحمر فاتح
-      'bg-gray-100 text-gray-800'      // رمادي فاتح
+      'bg-blue-600 text-white',     // أزرق قوي
+      'bg-green-600 text-white',    // أخضر قوي
+      'bg-purple-700 text-white',   // بنفسجي قوي
+      'bg-orange-600 text-white',   // برتقالي قوي
+      'bg-pink-500 text-white',     // وردي قوي
+      'bg-teal-600 text-white',     // تيل قوي
+      'bg-indigo-700 text-white',   // نيلي قوي
+      'bg-red-600 text-white',      // أحمر قوي
+      'bg-gray-700 text-white'      // رمادي قوي
     ];
     availableSections.forEach((section, index) => {
       map.set(section.id, colors[index % colors.length]);
@@ -898,45 +900,12 @@ function Schedule() {
           }}
         >
           <div className="p-2 font-bold text-center border-b border-r border-gray-300" style={{ fontWeight: 'bold' }}></div>
-          {getWeekDates.map(({ dayName, formattedDate, date }) => {
-            const dayEvents = getEventsForDate(date);
-            return (
-              <div key={dayName} className="p-2 font-bold text-center border-b border-gray-300 space-y-1" style={{ fontWeight: 'bold' }}>
-                <div className="text-base" style={{ fontWeight: 'bold' }}>{dayName}</div>
-                <div className="text-xs text-gray-600">{formattedDate}</div>
-                
-                {/* Display Events */}
-                {dayEvents.map((event) => {
-                  const isMultiDay = event.endDate && event.endDate !== event.date;
-                  const isStartDay = event.date === format(date, 'yyyy-MM-dd');
-                  const isEndDay = event.endDate === format(date, 'yyyy-MM-dd');
-                  
-                  return (
-                    <div
-                      key={event.id}
-                      onClick={() => handleEventClick(event)}
-                      className={`text-xs px-2 py-1 rounded cursor-pointer hover:opacity-80 text-white font-medium relative ${
-                        isMultiDay ? 'border-l-4 border-r-4' : ''
-                      }`}
-                      style={{ 
-                        backgroundColor: event.color || '#1976d2',
-                        borderColor: isMultiDay ? 'rgba(255,255,255,0.8)' : 'transparent'
-                      }}
-                    >
-                      {event.title}
-                      {isMultiDay && (
-                        <div className="text-xs opacity-75 mt-1">
-                          {isStartDay && isEndDay ? '📅 يوم واحد' :
-                           isStartDay ? '🏁 بداية' :
-                           isEndDay ? '🏁 نهاية' : '➖ متواصل'}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
+          {/* عرض الأحداث الأسبوعية باستخدام المكون الجديد */}
+          <CalendarEventsManager
+            calendarEvents={calendarEvents}
+            currentWeekStart={currentWeekStart}
+            onEventClick={handleEventClick}
+          />
 
           {TIME_SLOTS.map(timeSlot => (
             <React.Fragment key={timeSlot}>
@@ -991,48 +960,29 @@ function Schedule() {
       </div>
 
       {/* Modals */}
-      <Dialog open={isAddEditModalOpen} onClose={() => setIsAddEditModalOpen(false)} maxWidth="xs" fullWidth dir="rtl">
-        <DialogTitle sx={{ fontWeight: 'bold' }}>{editingSession ? 'تعديل حصة' : 'إضافة حصة جديدة'}</DialogTitle>
-        <DialogContent dividers>
-          {currentTimeSlot && (
-            <div className="flex flex-col gap-4">
-              <Select label="اليوم" value={currentDay} onChange={(e) => setCurrentDay(e.target.value as string)} fullWidth>
-                {DAYS.map(day => (<MenuItem key={day} value={day}>{day}</MenuItem>))}
-              </Select>
-              <Select label="الوقت" value={currentTimeSlot} onChange={(e) => setCurrentTimeSlot(e.target.value as string)} fullWidth>
-                {TIME_SLOTS.map(timeSlot => (<MenuItem key={timeSlot} value={timeSlot}>{formatTimeRange(timeSlot, 1)}</MenuItem>))}
-              </Select>
-              <Select label="القسم" value={newSessionSectionId} onChange={(e) => setNewSessionSectionId(e.target.value as string)} fullWidth disabled={availableSections.length === 0}>
-                {Array.isArray(availableSections) && availableSections.length > 0 ? (
-                  availableSections.map(section => (<MenuItem key={section.id} value={section.id}>{section.name}</MenuItem>))
-                ) : (
-                  <MenuItem disabled>لا يوجد أقسام متاحة</MenuItem>
-                )}
-              </Select>
-              <TextField label="المادة" value={newSessionSubject} onChange={(e) => setNewSessionSubject(e.target.value)} fullWidth />
-              <TextField label="الأستاذ" value={newSessionTeacher} onChange={(e) => setNewSessionTeacher(e.target.value)} fullWidth />
-              <TextField label="رقم القاعة" value={newSessionClassroom} onChange={(e) => setNewSessionClassroom(e.target.value)} fullWidth />
-              <TextField 
-                label="المدة (بالساعات)" 
-                type="number" 
-                value={newSessionDuration} 
-                onChange={(e) => setNewSessionDuration(Number(e.target.value))} 
-                inputProps={{ min: 1, max: 4 }}
-                fullWidth 
-              />
-              <div className="flex gap-4">
-                <label><Checkbox checked={newSessionType === 'official'} onChange={() => setNewSessionType('official')} /> رسمية</label>
-                <label><Checkbox checked={newSessionType === 'extra'} onChange={() => setNewSessionType('extra')} /> إضافية</label>
-                <label><Checkbox checked={newSessionType === 'compensatory'} onChange={() => setNewSessionType('compensatory')} /> تعويضية</label>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button variant="text" color="error" onClick={() => setIsAddEditModalOpen(false)} className="mr-1">إلغاء</Button>
-          <Button variant="contained" color="success" onClick={handleAddEditSessionSubmit}>{editingSession ? 'تعديل' : 'إضافة'}</Button>
-        </DialogActions>
-      </Dialog>
+      <AddEditSessionModal
+        open={isAddEditModalOpen}
+        onClose={() => setIsAddEditModalOpen(false)}
+        editingSession={editingSession}
+        currentDay={currentDay}
+        setCurrentDay={setCurrentDay}
+        currentTimeSlot={currentTimeSlot}
+        setCurrentTimeSlot={setCurrentTimeSlot}
+        newSessionSectionId={newSessionSectionId}
+        setNewSessionSectionId={setNewSessionSectionId}
+        availableSections={availableSections}
+        newSessionSubject={newSessionSubject}
+        setNewSessionSubject={setNewSessionSubject}
+        newSessionTeacher={newSessionTeacher}
+        setNewSessionTeacher={setNewSessionTeacher}
+        newSessionClassroom={newSessionClassroom}
+        setNewSessionClassroom={setNewSessionClassroom}
+        newSessionDuration={newSessionDuration}
+        setNewSessionDuration={setNewSessionDuration}
+        newSessionType={newSessionType}
+        setNewSessionType={setNewSessionType}
+        handleAddEditSessionSubmit={handleAddEditSessionSubmit}
+      />
 
       <Dialog open={isAbsenceModalOpen} onClose={() => setIsAbsenceModalOpen(false)} maxWidth="xs" fullWidth dir="rtl">
         <DialogTitle sx={{ fontWeight: 'bold' }}>تسجيل غياب</DialogTitle>
