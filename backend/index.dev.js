@@ -5,7 +5,7 @@ const SequelizeLib = require('sequelize');
 const { Op } = require('sequelize');
 
 const app = express();
-const PORT = process.env.PORT || 3001; // Different port for development
+const PORT = process.env.PORT || 3001; // Development port
 
 // Middleware
 app.use(cors());
@@ -219,23 +219,22 @@ app.get('/api/students', async (req, res) => {
     const { section_id } = req.query;
     const where = section_id ? { sectionId: section_id } : {};
     const students = await db.Student.findAll({ where });
-    // Get latest assessment per student
-    const studentIds = students.map(student => student.id).filter(Boolean);
-    let assessments = [];
+
+    // Fetch latest assessments for these students in a single query and build a map
+    const studentIds = students.map(s => s.id).filter(Boolean);
+    let latestMap = {};
     if (studentIds.length > 0) {
-      assessments = await db.StudentAssessment.findAll({
+      const assessments = await db.StudentAssessment.findAll({
         where: { studentId: { [Op.in]: studentIds } },
         order: [['date', 'DESC']],
       });
-    }
-
-    const latestMap = {};
-    for (const a of assessments) {
-      if (!latestMap[a.studentId]) latestMap[a.studentId] = a.toJSON ? a.toJSON() : a;
+      for (const a of assessments) {
+        if (!latestMap[a.studentId]) latestMap[a.studentId] = a.toJSON ? a.toJSON() : a;
+      }
     }
 
     const studentsWithScores = students.map(student => {
-      const base = student.toJSON();
+      const base = student.toJSON ? student.toJSON() : student;
       const latest = latestMap[student.id];
       let lastAssessmentDate = null;
       let score = 0;
