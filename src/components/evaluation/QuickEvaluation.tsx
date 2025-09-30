@@ -1,5 +1,6 @@
                                                                                                                                                                       import { useState, useEffect } from 'react';
 import { useSnackbar } from 'notistack';
+import { formatDateShort } from '../../utils/formatDate';
 import { Paper, Box, Typography, Button, TextField, Slider, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -910,7 +911,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
             <div key={a.id || idx} className="p-2 border rounded bg-white">
               <div className="flex justify-between items-center">
                 <div className="font-semibold">{a.new_score !== null && a.new_score !== undefined ? `الدرجة: ${a.new_score}` : 'درجة غير متوفرة'}</div>
-                <div className="text-xs text-gray-500">{a.date ? new Date(a.date).toLocaleString('ar-EG') : 'تاريخ غير معروف'}</div>
+                <div className="text-xs text-gray-500">{a.date ? formatDateShort(a.date) : 'تاريخ غير معروف'}</div>
               </div>
               {a.notes && <div className="text-sm text-gray-700 mt-1">{a.notes}</div>}
               {a.scores && <div className="text-xs text-gray-500 mt-1">تفاصيل: {JSON.stringify(a.scores)}</div>}
@@ -986,7 +987,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
               </Button>
             </Box>
             {lastAssessmentDate && (
-              <div className="mt-2 text-xs text-gray-500">يسمح حتى تاريخ آخر تقييم: {new Date(lastAssessmentDate).toLocaleString('ar-EG')}</div>
+              <div className="mt-2 text-xs text-gray-500">يسمح حتى تاريخ آخر تقييم: {formatDateShort(lastAssessmentDate)}</div>
             )}
           </Box>
         </Paper>

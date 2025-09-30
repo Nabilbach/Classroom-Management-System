@@ -219,28 +219,48 @@ app.get('/api/students', async (req, res) => {
     const { section_id } = req.query;
     const where = section_id ? { sectionId: section_id } : {};
     const students = await db.Student.findAll({ where });
-
-    // Get all scores at once instead of individual queries
+    // Get latest assessment per student
     const studentIds = students.map(student => student.id).filter(Boolean);
-    let scores = [];
+    let assessments = [];
     if (studentIds.length > 0) {
-      scores = await db.StudentAssessment.findAll({
+      assessments = await db.StudentAssessment.findAll({
         where: { studentId: { [Op.in]: studentIds } },
         order: [['date', 'DESC']],
       });
     }
 
-    const scoreMap = {};
-    scores.forEach(assessment => {
-      if (!scoreMap[assessment.studentId]) {
-        scoreMap[assessment.studentId] = assessment.new_score;
-      }
-    });
+    const latestMap = {};
+    for (const a of assessments) {
+      if (!latestMap[a.studentId]) latestMap[a.studentId] = a.toJSON ? a.toJSON() : a;
+    }
 
-    const studentsWithScores = students.map(student => ({
-      ...student.toJSON(),
-      score: scoreMap[student.id] || 0
-    }));
+    const studentsWithScores = students.map(student => {
+      const base = student.toJSON();
+      const latest = latestMap[student.id];
+      let lastAssessmentDate = null;
+      let score = 0;
+      let total_xp = 0;
+      if (latest) {
+        lastAssessmentDate = latest.date || null;
+        score = typeof latest.new_score !== 'undefined' ? Number(latest.new_score) : 0;
+        let parsed = null;
+        if (latest.scores && typeof latest.scores === 'string') {
+          try { parsed = JSON.parse(latest.scores); } catch (e) { parsed = null; }
+        } else if (latest.scores && typeof latest.scores === 'object') {
+          parsed = latest.scores;
+        }
+        if (parsed) {
+          const sliderSum = (parsed.behavior_score ?? 0) + (parsed.participation_score ?? 0) + (parsed.notebook_score ?? 0) + (parsed.attendance_score ?? 0) + (parsed.portfolio_score ?? 0);
+          const sliderXP = sliderSum * 10;
+          const quranXP = (parsed.quran_memorization ?? 0) * 10;
+          const bonusXP = (parsed.bonus_points ?? 0) * 5;
+          total_xp = sliderXP + quranXP + bonusXP;
+        } else {
+          total_xp = Number(latest.new_score) || 0;
+        }
+      }
+      return { ...base, score, lastAssessmentDate, total_xp };
+    });
 
     res.json(studentsWithScores);
   } catch (error) {

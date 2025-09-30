@@ -1,8 +1,9 @@
-import { useState, useEffect, ChangeEvent, KeyboardEvent, useMemo } from 'react';
+import { useState, useEffect, ChangeEvent, KeyboardEvent } from 'react';
 import { Typography, IconButton, Input } from "@material-tailwind/react";
 import { FaEdit, FaTrash, FaInfoCircle, FaStar } from 'react-icons/fa';
 import { Student } from '../../types/student';
 import { useSettings } from '../../contexts/SettingsContext';
+import { formatDateShort } from '../../utils/formatDate';
 
 // Final merged version of the Student Card
 
@@ -67,8 +68,9 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
     }
   };
 
+  const followUpCount = (student as any).followUpCount ?? 0;
   return (
-    <div className={`rounded-xl shadow-lg p-4 border text-right flex flex-col h-full ${student.followUpCount && student.followUpCount > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'}`} dir="rtl">
+    <div className={`rounded-xl shadow-lg p-4 border text-right flex flex-col h-full ${followUpCount > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'}`} dir="rtl">
       
       {/* Header: Badge and Editable Number */}
       <div className="flex justify-between items-start mb-2">
@@ -81,17 +83,17 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
         >
           {isEditingNumber ? (
               <Input 
-              type="number" 
-              value={numberValue} 
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setNumberValue(Number(e.target.value))} 
-              onBlur={handleNumberUpdate} 
-              onKeyDown={handleKeyDown} 
-              autoFocus 
-              className="!w-12 text-center p-0 bg-transparent border-none focus:ring-0"
-              labelProps={{ className: "hidden" }}
-              containerProps={{ className: "min-w-0" }}
-                crossOrigin={undefined}
-            />
+                type="number" 
+                value={numberValue} 
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setNumberValue(Number(e.target.value))} 
+                onBlur={handleNumberUpdate} 
+                onKeyDown={handleKeyDown} 
+                autoFocus 
+                className="!w-12 text-center p-0 bg-transparent border-none focus:ring-0"
+                labelProps={{ className: "hidden" }}
+                containerProps={{ className: "min-w-0" }}
+                crossOrigin={"anonymous"}
+              />
           ) : (
             <>
               <Typography variant="small" color="blue-gray" className="font-semibold">
@@ -121,7 +123,7 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
         </div>
         <div className="text-right">
           <div className="text-sm font-medium">آخر تقييم</div>
-          <div className="text-xs text-gray-500">{student.lastAssessmentDate || (student.assessments && student.assessments.length > 0 ? student.assessments[student.assessments.length - 1].date : '-')}</div>
+          <div className="text-xs text-gray-500">{student.lastAssessmentDate ? formatDateShort(student.lastAssessmentDate) : (student.assessments && student.assessments.length > 0 ? formatDateShort(student.assessments[student.assessments.length - 1].date) : '-')}</div>
         </div>
       </div>
 
