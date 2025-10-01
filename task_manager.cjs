@@ -184,8 +184,8 @@ ${task.steps.map((step, i) => `${i + 1}. [ ] ${step}`).join('\n')}
 - **التأثير**: ${task.impact}
 
 ---
-تاريخ البداية: ${new Date().toLocaleDateString('ar-EG')}
-تاريخ الإكمال المتوقع: ${new Date(Date.now() + 24*60*60*1000).toLocaleDateString('ar-EG')}
+تاريخ البداية: ${new Date().toISOString().slice(0,10)}
+تاريخ الإكمال المتوقع: ${new Date(Date.now() + 24*60*60*1000).toISOString().slice(0,10)}
 `;
 
   const fileName = `WORK_PLAN_${taskNum}_${task.name.replace(/\s+/g, '_')}.md`;

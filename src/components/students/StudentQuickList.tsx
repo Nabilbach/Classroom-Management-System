@@ -1,40 +1,50 @@
 import React from 'react';
+import { Button } from '@mui/material';
+import { Student } from '../../types/student';
 
 interface Props {
-  students: any[];
+  students: Student[];
+  currentStudentId?: string | number;
   onSelectStudent: (id: number) => void;
-  currentStudentId?: number | string | null;
-  collapsible?: boolean;
 }
 
-const StudentQuickList: React.FC<Props> = ({ students, onSelectStudent, currentStudentId = null, collapsible = true }) => {
+const StudentQuickList: React.FC<Props> = ({ students, currentStudentId, onSelectStudent }) => {
   return (
-    <div className="bg-white border rounded p-2 shadow-sm" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="font-bold text-sm">أرقام الطلاب</div>
-        {collapsible && <div className="text-xs text-gray-500">قابل للطي</div>}
-      </div>
-
-      <div className="flex-1 overflow-auto">
-        <div className="grid grid-cols-3 gap-2">
-          {students.map((s) => {
-            const id = s.id;
-            const label = s.classOrder || s.pathwayNumber || s.id;
-            const selected = String(currentStudentId) === String(id);
-            return (
-              <button
-                key={id}
-                onClick={() => onSelectStudent(Number(id))}
-                className={`py-2 rounded text-sm border ${selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 hover:bg-blue-50'} `}
-                title={`${s.firstName || ''} ${s.lastName || ''}`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <div className="mt-2 text-xs text-gray-500">اضغط للانتقال بسرعة إلى طالب</div>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))',
+        gap: 8,
+        alignItems: 'stretch',
+        padding: '8px 6px',
+        width: '100%',
+      }}
+    >
+      {students.map((s) => {
+        const isActive = String(s.id) === String(currentStudentId);
+        return (
+          <Button
+            key={s.id}
+            variant={isActive ? 'contained' : 'outlined'}
+            size="small"
+            onClick={() => onSelectStudent(Number(s.id))}
+            style={{
+              width: '100%',
+              height: 48,
+              borderRadius: 10,
+              padding: '6px 8px',
+              fontWeight: '700',
+              fontSize: '0.95rem',
+              textTransform: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {s.classOrder}
+          </Button>
+        );
+      })}
     </div>
   );
 };

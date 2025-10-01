@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Typography, Button, Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions, Box, Chip } from '@mui/material';
-import FilterDrawer from '../components/students/FilterDrawer';
+import { Typography, Button, Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions, Box, Chip, TextField, MenuItem, Radio, FormControlLabel, RadioGroup } from '@mui/material';
 import { Student } from '../types/student';
 import { useSections } from '../contexts/SectionsContext';
 import { useStudents } from '../contexts/StudentsContext';
@@ -27,9 +26,10 @@ interface AbsentStudentsModalProps {
   onClose: () => void;
   absentStudents: Student[];
   sectionName: string;
+  onCancelAbsence?: (studentId: number) => void;
 }
 
-const AbsentStudentsModal: React.FC<AbsentStudentsModalProps> = ({ isOpen, onClose, absentStudents, sectionName }) => {
+const AbsentStudentsModal: React.FC<AbsentStudentsModalProps> = ({ isOpen, onClose, absentStudents, sectionName, onCancelAbsence }) => {
   const printContent = () => {
     const printableContent = document.getElementById('printable-absent-list');
     const printWindow = window.open('', '', 'height=600,width=800');
@@ -47,18 +47,19 @@ const AbsentStudentsModal: React.FC<AbsentStudentsModalProps> = ({ isOpen, onClo
   return (
     <Dialog open={isOpen} onClose={onClose} maxWidth="md" fullWidth dir="rtl">
       <DialogTitle sx={{ fontWeight: 'bold' }}>
-        قائمة الغائبين ({absentStudents.length}) - {sectionName} - {new Date().toLocaleDateString('ar-EG')}
+        قائمة الغائبين ({absentStudents.length}) - {sectionName} - {new Date().toISOString().slice(0,10)}
       </DialogTitle>
       <DialogContent dividers>
         <div id="printable-absent-list">
           <Typography variant="h6" align="center" gutterBottom sx={{ fontWeight: 'bold' }}>
-            قائمة الغائبين لقسم {sectionName} - تاريخ: {new Date().toLocaleDateString('ar-EG')}
+            قائمة الغائبين لقسم {sectionName} - تاريخ: {new Date().toISOString().slice(0,10)}
           </Typography>
           <table style={{ width: '100%', textAlign: 'right', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
                 <th style={{ padding: '8px', border: '1px solid #ddd', backgroundColor: '#f2f2f2', fontWeight: 'bold' }}>رقم الطالب في القسم</th>
                 <th style={{ padding: '8px', border: '1px solid #ddd', backgroundColor: '#f2f2f2', fontWeight: 'bold' }}>الاسم الكامل</th>
+                <th style={{ padding: '8px', border: '1px solid #ddd', backgroundColor: '#f2f2f2', fontWeight: 'bold' }}>إجراء</th>
               </tr>
             </thead>
             <tbody>
@@ -66,6 +67,11 @@ const AbsentStudentsModal: React.FC<AbsentStudentsModalProps> = ({ isOpen, onClo
                 <tr key={student.id}>
                   <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{student.classOrder}</td>
                   <td style={{ padding: '8px', border: '1px solid #ddd' }}>{`${student.firstName} ${student.lastName}`}</td>
+                  <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                    <Button size="small" variant="contained" color="success" onClick={() => onCancelAbsence && onCancelAbsence(student.id)}>
+                      إلغاء الغياب
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -85,16 +91,22 @@ const MemoizedStudentTable = React.memo(StudentTable);
 
 function StudentManagement() {
   const { sections, currentSection, setCurrentSection } = useSections();
-  const { students, deleteStudent, isLoading, fetchStudents, updateStudentLocal } = useStudents();
-  const { recommendedSectionId, displayMessage, isTeachingTime } = useCurrentLesson();
+  const { students, deleteStudent, isLoading, fetchStudents } = useStudents();
+  // prefix unused variables with underscore to avoid unused variable diagnostics
+  const { recommendedSectionId, displayMessage: _displayMessage, isTeachingTime: _isTeachingTime } = useCurrentLesson();
+  // If the user explicitly chose "All students" we suppress automatic default/ recommended
+  // section selection so the UI doesn't immediately jump back to a section.
+  const [userSelectedAll, setUserSelectedAll] = useState(false);
 
   // تطبيق اختيار القسم الذكي
   useEffect(() => {
-    if (recommendedSectionId && sections.length > 0 && !currentSection) {
+    if (recommendedSectionId && sections.length > 0 && !currentSection && !userSelectedAll) {
       const recommendedSection = sections.find(s => s.id === recommendedSectionId);
       if (recommendedSection) {
         console.log('🎯 تطبيق اختيار القسم الذكي:', recommendedSection.name);
         setCurrentSection(recommendedSection);
+        // clear the "user selected all" guard since we're programmatically choosing a section
+        setUserSelectedAll(false);
       }
     }
   }, [recommendedSectionId, sections, currentSection, setCurrentSection]);
@@ -165,13 +177,14 @@ function StudentManagement() {
   const [scoreRangeFilter, setScoreRangeFilter] = useState<string>('الكل');
   const [assessmentStatusFilter, setAssessmentStatusFilter] = useState<string>('الكل');
   const [warningStatusFilter, setWarningStatusFilter] = useState<string>('الكل');
-  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
 
   // Attendance State
   const [isAttendanceMode, setIsAttendanceMode] = useState(false);
   const [attendanceStatus, setAttendanceStatus] = useState<Record<string, boolean>>({});
   const [showAbsentListModal, setShowAbsentListModal] = useState(false);
   const [absentStudents, setAbsentStudents] = useState<Student[]>([]);
+  // Attendance recorded state for the current section/date
+  const [attendanceRecorded, setAttendanceRecorded] = useState<boolean | null>(null);
 
   // نافذة اختيار الطلاب المستثنين
   const [excludeModalOpen, setExcludeModalOpen] = useState(false);
@@ -288,10 +301,12 @@ function StudentManagement() {
   }, [todayScheduleSorted, nowTick, sections]);
 
   useEffect(() => {
-    if (sections.length > 0 && !currentSection) {
+    // Only auto-select the first section when there is no current section
+    // and the user hasn't explicitly chosen "All students".
+    if (sections.length > 0 && !currentSection && !userSelectedAll) {
       setCurrentSection(sections[0]);
     }
-  }, [sections, setCurrentSection]);
+  }, [sections, setCurrentSection, currentSection, userSelectedAll]);
 
   const sectionStudents = useMemo(() => {
     // Helper to get index in local order map (if any)
@@ -353,6 +368,32 @@ function StudentManagement() {
     };
     load();
   }, [currentSection, students]);
+
+  // Check whether attendance for the current section/date is already recorded
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      if (!currentSection) {
+        setAttendanceRecorded(null);
+        return;
+      }
+      const date = new Date().toISOString().split('T')[0];
+      try {
+        const resp = await fetch(`http://localhost:3000/api/attendance?date=${date}&sectionId=${encodeURIComponent(String(currentSection.id))}`);
+        if (!resp.ok) {
+          if (!cancelled) setAttendanceRecorded(null);
+          return;
+        }
+        const data = await resp.json();
+        if (!cancelled) setAttendanceRecorded(Array.isArray(data) ? data.length > 0 : null);
+      } catch (e) {
+        console.warn('Failed to check attendance recorded status', e);
+        if (!cancelled) setAttendanceRecorded(null);
+      }
+    };
+    check();
+    return () => { cancelled = true; };
+  }, [currentSection, fetchStudents]);
 
   const openFollowupDialog = async () => {
     if (!currentSection) return;
@@ -418,13 +459,7 @@ function StudentManagement() {
     fetchStudents();
   }, [fetchStudents]);
 
-  // Quick-select student from the widget: open QuickEvaluation modal and set selectedStudent
-  const handleQuickSelectStudent = (id: number) => {
-    const found = students.find(s => Number(s.id) === Number(id)) || null;
-    setSelectedStudent(found as any);
-    if (!isAssessmentModalOpen) setIsAssessmentModalOpen(true);
-    // If already open, QuickEvaluation will react to the changed studentId prop
-  };
+  // Quick-select student from the widget is handled inside QuickEvaluation when needed
 
   const isNumericSearch = (term: string): boolean => /^\d+$/.test(term);
   const isPathwaySearch = (term: string): boolean => term.toUpperCase().startsWith('H');
@@ -586,6 +621,9 @@ function StudentManagement() {
       // Update local student data
       fetchStudents(); // Refresh after attendance update
 
+      // mark attendance as recorded for this section/date
+      setAttendanceRecorded(true);
+
       const absent = sectionStudents.filter(s => !attendanceStatus[s.id]);
       setAbsentStudents(absent);
       setShowAbsentListModal(true);
@@ -597,13 +635,68 @@ function StudentManagement() {
     }
   };
 
+  // Cancel a single student's absence (mark present) from the absent list
+  const handleCancelAbsence = async (studentId: number) => {
+    if (!currentSection) return;
+    const payload = {
+      attendance: [
+        {
+          studentId: String(studentId),
+          isPresent: true,
+          sectionId: currentSection.id,
+          date: new Date().toISOString().split('T')[0],
+        }
+      ]
+    };
+
+    try {
+      const resp = await fetch('http://localhost:3000/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) throw new Error('Failed to update attendance');
+
+      // Refresh students and absent list
+      await fetchStudents();
+      setAbsentStudents((prev) => prev.filter(s => s.id !== studentId));
+    } catch (e) {
+      console.error('Failed to cancel absence for student', studentId, e);
+      alert('فشل في إلغاء الغياب. حاول مرة أخرى.');
+    }
+  };
+
   return (
   <div dir="rtl" style={{ paddingTop: 0, background: '#f8f9fa' }}>
-  {/* Sticky action bar */}
+    {/* Styles to enlarge/action buttons inside the students area */}
+    <style>{`
+      /* enlarge general MUI buttons inside the students area */
+      .actions-scale .MuiButton-root {
+        font-size: 0.95rem;
+        padding: 8px 14px;
+        min-width: 64px;
+        border-radius: 8px;
+      }
+      /* slightly smaller padding for small-size buttons */
+      .actions-scale .MuiButton-sizeSmall {
+        padding: 6px 10px;
+      }
+      /* reduce visual clutter for icon-only or tight buttons */
+      .actions-scale .MuiButton-root.icon-only {
+        padding: 6px 8px;
+        min-width: unset;
+      }
+      /* if your student table uses a specific actions column, this helps spacing */
+      .actions-scale .student-actions > * {
+        margin-inline-start: 8px;
+      }
+    `}</style>
+
+    <div className="actions-scale">
+    {/* Sticky action bar */}
       <div className="flex flex-wrap justify-between items-center mb-2 sticky top-0 z-20 bg-white shadow-sm py-1 px-2" style={{ borderBottom: '1px solid #eee', marginRight: 0 }}>
         <Typography variant="h4" color="blue-gray" sx={{ fontWeight: 'bold' }}>إدارة الطلاب</Typography>
         <div className="flex flex-wrap gap-2 overflow-x-auto" style={{ maxWidth: '100%' }}>
-          <Button onClick={() => setIsFilterDrawerOpen(true)} variant="outlined" color="primary">الفلاتر</Button>
           {!isAttendanceMode ? (
             <>
               <Button onClick={handleEnterAttendanceMode} variant="contained" color="secondary" startIcon={<PencilSquareIcon className="h-5 w-5" />}>
@@ -645,19 +738,6 @@ function StudentManagement() {
             </>
           )}
         </div>
-        <FilterDrawer
-          open={isFilterDrawerOpen}
-          onClose={() => setIsFilterDrawerOpen(false)}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          scoreRangeFilter={scoreRangeFilter}
-          setScoreRangeFilter={setScoreRangeFilter}
-          assessmentStatusFilter={assessmentStatusFilter}
-          setAssessmentStatusFilter={setAssessmentStatusFilter}
-          warningStatusFilter={warningStatusFilter}
-          setWarningStatusFilter={setWarningStatusFilter}
-          onClear={handleClearFilters}
-        />
       </div>
           {/* spacer for layout (the quick-select widget is shown inside the evaluation modal now) */}
           <div className="mb-4" />
@@ -672,11 +752,30 @@ function StudentManagement() {
 
   {/* Sticky section chips bar */}
   <div className="flex gap-2 mb-4 overflow-x-auto pb-2 sticky top-[56px] z-10 bg-white border-b border-gray-100 chips-scrollbar w-full" style={{ minHeight: '48px' }}>
-        <Button variant={!currentSection ? "contained" : "outlined"} onClick={() => setCurrentSection(null)} className="flex-shrink-0" sx={{ fontWeight: 'bold' }}>
+        <Button
+          variant={!currentSection ? "contained" : "outlined"}
+          onClick={() => {
+            setCurrentSection(null);
+            // User explicitly chose All students; suppress automatic recommended selection
+            setUserSelectedAll(true);
+          }}
+          className="flex-shrink-0"
+          sx={{ fontWeight: 'bold' }}
+        >
           جميع التلاميذ
         </Button>
         {sections.map((section) => (
-          <Button key={section.id} variant={currentSection?.id === section.id ? "contained" : "outlined"} onClick={() => setCurrentSection(section)} className="flex-shrink-0" sx={{ fontWeight: 'bold' }}>
+          <Button
+            key={section.id}
+            variant={currentSection?.id === section.id ? "contained" : "outlined"}
+            onClick={() => {
+              setCurrentSection(section);
+              // Clear the 'user selected all' guard when the user explicitly picks a section
+              setUserSelectedAll(false);
+            }}
+            className="flex-shrink-0"
+            sx={{ fontWeight: 'bold' }}
+          >
             {section.name}
           </Button>
         ))}
@@ -707,27 +806,60 @@ function StudentManagement() {
                 <Typography variant="h5" color="blue-gray" sx={{ fontWeight: 'bold' }}>
                   {currentSection ? `طلاب قسم ${currentSection.name}` : 'جميع التلاميذ'} ({finalFilteredStudents.length} طالب)
                 </Typography>
-                {/* مؤشر الحصة الذكي */}
-                {recommendedSectionId && currentSection?.id === recommendedSectionId && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Chip 
-                      label={displayMessage}
+                {/* Attendance recorded status (always shown for the current view) */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {attendanceRecorded !== null ? (
+                    <Chip
+                      label={attendanceRecorded ? 'حالة الغياب: مسجل' : 'حالة الغياب: غير مسجل'}
                       size="small"
                       sx={{
-                        bgcolor: isTeachingTime ? 'success.light' : 'info.light',
-                        color: isTeachingTime ? 'success.dark' : 'info.dark',
+                        bgcolor: attendanceRecorded ? 'success.light' : '#ffe6e6',
+                        color: attendanceRecorded ? 'success.dark' : '#b91c1c',
                         fontWeight: 'bold',
-                        '& .MuiChip-label': {
-                          fontSize: '0.75rem'
-                        }
+                        '& .MuiChip-label': { fontSize: '0.75rem' }
                       }}
                     />
-                  </Box>
-                )}
+                  ) : (
+                    <Chip label={'حالة الغياب: ...'} size="small" sx={{ fontWeight: 'bold', '& .MuiChip-label': { fontSize: '0.75rem' } }} />
+                  )}
+                </Box>
               </div>
             </div>
 
-            {/* Filter controls moved to FilterDrawer */}
+            {/* Inline filter controls */}
+            <div className="w-full mb-4 bg-white p-3 rounded-md border" dir="rtl">
+              <div className="flex flex-col md:flex-row md:items-end md:gap-4">
+                <TextField type="text" label="ابحث بالاسم، رقم التلميذ، أو رقم التتبع (H...)" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} fullWidth margin="dense" />
+                <TextField select label="تصفية حسب المعدل" value={scoreRangeFilter} onChange={e => setScoreRangeFilter(e.target.value)} margin="dense" sx={{ minWidth: 160 }}>
+                  <MenuItem value="الكل">الكل</MenuItem>
+                  <MenuItem value="0-4">من 0 إلى 4</MenuItem>
+                  <MenuItem value="4-6">من 4 إلى 6</MenuItem>
+                  <MenuItem value="6-8">من 6 إلى 8</MenuItem>
+                  <MenuItem value="8-10">من 8 إلى 10</MenuItem>
+                </TextField>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: 12, marginBottom: 6 }}>حالة التقييم</div>
+                    <RadioGroup row value={assessmentStatusFilter} onChange={(e) => setAssessmentStatusFilter(e.target.value)}>
+                      <FormControlLabel value="الكل" control={<Radio />} label="الكل" />
+                      <FormControlLabel value="مقيم" control={<Radio />} label="مقيم" />
+                      <FormControlLabel value="غير مقيم" control={<Radio />} label="غير مقيم" />
+                    </RadioGroup>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, marginBottom: 6 }}>حالة الإنذار</div>
+                    <RadioGroup row value={warningStatusFilter} onChange={(e) => setWarningStatusFilter(e.target.value)}>
+                      <FormControlLabel value="الكل" control={<Radio />} label="الكل" />
+                      <FormControlLabel value="مع إنذار" control={<Radio />} label="مع إنذار" />
+                      <FormControlLabel value="بدون إنذار" control={<Radio />} label="بدون إنذار" />
+                    </RadioGroup>
+                  </div>
+                </div>
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                  <Button variant="outlined" onClick={handleClearFilters}>مسح الفلاتر</Button>
+                </div>
+              </div>
+            </div>
 
             <div className="flex justify-end gap-2 mb-4">
               <Button variant={viewMode === 'table' ? "contained" : "outlined"} onClick={() => setViewMode('table')} size="small" sx={{ fontWeight: 'bold' }}>عرض الجدول</Button>
@@ -786,7 +918,7 @@ function StudentManagement() {
   <EditStudentModal isOpen={isEditModalOpen} onClose={() => { setIsEditModalOpen(false); setEditingStudent(null); }} student={editingStudent as any} />
   <StudentDetailModal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} student={selectedStudent as any} onAssess={handleAssessStudent as any} />
   {/* استبدال نافذة التقييم البسيطة بنافذة التقييم المتقدمة */}
-  <Dialog open={isAssessmentModalOpen} onClose={() => setIsAssessmentModalOpen(false)} maxWidth="md" fullWidth>
+  <Dialog data-testid="quick-eval-dialog" open={isAssessmentModalOpen} onClose={() => setIsAssessmentModalOpen(false)} maxWidth="xl" fullWidth={false} sx={{ minWidth: '1100px' }}>
     <QuickEvaluation
       studentId={selectedStudent ? String(selectedStudent.id) : ''}
       studentName={selectedStudent ? `${selectedStudent.firstName} ${selectedStudent.lastName}` : ''}
@@ -811,7 +943,7 @@ function StudentManagement() {
     />
   </Dialog>
       <ExcelUploadModal isOpen={isExcelUploadModalOpen} onClose={() => setIsExcelUploadModalOpen(false)} />
-      <AbsentStudentsModal isOpen={showAbsentListModal} onClose={() => setShowAbsentListModal(false)} absentStudents={absentStudents} sectionName={currentSection?.name || ''} />
+  <AbsentStudentsModal isOpen={showAbsentListModal} onClose={() => setShowAbsentListModal(false)} absentStudents={absentStudents} sectionName={currentSection?.name || ''} onCancelAbsence={handleCancelAbsence} />
 
       {/* Absence History Modal */}
       <Dialog 
@@ -925,6 +1057,7 @@ function StudentManagement() {
 
       <BackToTopButton />
     </div>
+  </div>
   );
 }
 

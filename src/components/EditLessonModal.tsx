@@ -264,7 +264,7 @@ const EditLessonModal: React.FC<EditLessonModalProps> = ({ lesson, onClose, onSa
   const handleStageCompletion = (index: number) => {
     const newStages = [...lessonStages];
     newStages[index].isCompleted = !newStages[index].isCompleted;
-    newStages[index].completionDate = newStages[index].isCompleted ? new Date().toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: '2-digit', numberingSystem: 'latn' }) : undefined;
+  newStages[index].completionDate = newStages[index].isCompleted ? new Date().toISOString().slice(0,10) : undefined;
     setLessonStages(newStages);
   };
 

@@ -249,7 +249,7 @@ function StudentEvaluationBoard() {
                 </div>
 
                 {evaluation ? (
-                  <div className="space-y-3">
+                <div className="space-y-3">
                     {/* XP والمستوى */}
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">نقاط الخبرة</span>
@@ -303,7 +303,7 @@ function StudentEvaluationBoard() {
 
                     {/* آخر تحديث */}
                     <Typography variant="small" color="gray" className="text-center">
-                      آخر تحديث: {new Date(evaluation.last_updated).toLocaleDateString('ar-SA')}
+                      آخر تحديث: {new Date(evaluation.last_updated).toISOString().slice(0,10)}
                     </Typography>
 
                     <Button

@@ -283,7 +283,7 @@ function Schedule() {
               </tbody>
             </table>
             <p style="text-align: center; margin-top: 30px; color: #666;">
-              تم طباعة الجدول في: ${new Date().toLocaleDateString('ar-SA')}
+              تم طباعة الجدول في: ${new Date().toISOString().slice(0,10)}
             </p>
           </body>
         </html>
@@ -1141,7 +1141,7 @@ function Schedule() {
                     🗓️ حدث متعدد الأيام
                   </Typography>
                   <Typography variant="body2" className="text-blue-700 mt-1">
-                    من {newEventDate.toLocaleDateString('ar-SA')} إلى {newEventEndDate.toLocaleDateString('ar-SA')}
+                    من {newEventDate.toISOString().slice(0,10)} إلى {newEventEndDate.toISOString().slice(0,10)}
                   </Typography>
                   <Typography variant="caption" className="text-blue-600">
                     المدة: {Math.ceil((newEventEndDate.getTime() - newEventDate.getTime()) / (1000 * 60 * 60 * 24)) + 1} أيام

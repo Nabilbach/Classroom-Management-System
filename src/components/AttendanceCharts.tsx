@@ -61,9 +61,9 @@ const AttendanceCharts: React.FC = () => {
       const weeklyData: WeeklyTrendData[] = [];
       
       for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
+  const date = new Date();
+  date.setDate(date.getDate() - i);
+  const dateStr = date.toISOString().split('T')[0];
         
         const sectionParam = selectedSection !== 'all' ? `&sectionId=${selectedSection}` : '';
         const response = await fetch(`/api/attendance?date=${dateStr}${sectionParam}`);
@@ -73,9 +73,10 @@ const AttendanceCharts: React.FC = () => {
         const present = data.filter((record: any) => record.isPresent).length;
         const rate = total > 0 ? Math.round((present / total) * 100) : 0;
         
+        const weekdayNames = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
         weeklyData.push({
           date: dateStr,
-          dayOfWeek: date.toLocaleDateString('ar-EG', { weekday: 'short' }),
+          dayOfWeek: weekdayNames[date.getDay()] || dateStr,
           present,
           total,
           rate

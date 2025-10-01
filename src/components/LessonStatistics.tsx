@@ -174,7 +174,7 @@ const LessonStatistics: React.FC<LessonStatisticsProps> = ({ scheduledLessons })
                 </Box>
                 
                 <Typography variant="caption" color="text.secondary">
-                  تواريخ الحصص: {lesson.sessions.map(s => new Date(s.date).toLocaleDateString('ar-EG')).join(', ')}
+                  تواريخ الحصص: {lesson.sessions.map(s => new Date(s.date).toISOString().slice(0,10)).join(', ')}
                 </Typography>
               </CardContent>
             </Card>
