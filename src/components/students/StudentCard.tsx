@@ -2,6 +2,8 @@ import { useState, useEffect, ChangeEvent, KeyboardEvent } from 'react';
 import { Typography, IconButton, Input } from "@material-tailwind/react";
 import { FaEdit, FaTrash, FaInfoCircle, FaStar } from 'react-icons/fa';
 import { Student } from '../../types/student';
+import { useSettings } from '../../contexts/SettingsContext';
+import { formatDateShort } from '../../utils/formatDate';
 
 // Final merged version of the Student Card
 
@@ -18,6 +20,7 @@ interface StudentCardProps {
 }
 
 const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNumber, isAttendanceMode, attendanceStatus, onToggleAttendance }: StudentCardProps) => {
+  const { assessmentElements } = useSettings();
 
   // --- State for Editable Number ---
   const [isEditingNumber, setIsEditingNumber] = useState(false);
@@ -65,8 +68,9 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
     }
   };
 
+  const followUpCount = (student as any).followUpCount ?? 0;
   return (
-    <div className="bg-white rounded-xl shadow-lg p-4 border border-gray-200 text-right flex flex-col h-full" dir="rtl">
+    <div className={`rounded-xl shadow-lg p-4 border text-right flex flex-col h-full ${followUpCount > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'}`} dir="rtl">
       
       {/* Header: Badge and Editable Number */}
       <div className="flex justify-between items-start mb-2">
@@ -79,17 +83,17 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
         >
           {isEditingNumber ? (
               <Input 
-              type="number" 
-              value={numberValue} 
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setNumberValue(Number(e.target.value))} 
-              onBlur={handleNumberUpdate} 
-              onKeyDown={handleKeyDown} 
-              autoFocus 
-              className="!w-12 text-center p-0 bg-transparent border-none focus:ring-0"
-              labelProps={{ className: "hidden" }}
-              containerProps={{ className: "min-w-0" }}
-                crossOrigin={undefined}
-            />
+                type="number" 
+                value={numberValue} 
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setNumberValue(Number(e.target.value))} 
+                onBlur={handleNumberUpdate} 
+                onKeyDown={handleKeyDown} 
+                autoFocus 
+                className="!w-12 text-center p-0 bg-transparent border-none focus:ring-0"
+                labelProps={{ className: "hidden" }}
+                containerProps={{ className: "min-w-0" }}
+                crossOrigin={"anonymous"}
+              />
           ) : (
             <>
               <Typography variant="small" color="blue-gray" className="font-semibold">
@@ -107,6 +111,39 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
       <div className="text-center mb-4">
         <h3 className="text-xl font-bold text-gray-800">{student.firstName} {student.lastName}</h3>
       </div>
+
+      {/* XP & Last Assessment */}
+      <div className="flex justify-between items-center mb-3 text-sm text-gray-700">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-yellow-600 font-semibold">💎</span>
+          <div>
+            <div className="text-sm font-bold">{(student.total_xp ?? student.xp) ?? 0} XP</div>
+            <div className="text-xs text-gray-500">نقاط الخبرة</div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-sm font-medium">آخر تقييم</div>
+          <div className="text-xs text-gray-500">{student.lastAssessmentDate ? formatDateShort(student.lastAssessmentDate) : (student.assessments && student.assessments.length > 0 ? formatDateShort(student.assessments[student.assessments.length - 1].date) : '-')}</div>
+        </div>
+      </div>
+
+      {/* Compact visual of latest assessment elements */}
+      {assessmentElements && assessmentElements.length > 0 && (
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {assessmentElements.slice(0, 8).map(el => {
+            const latest = student.assessments && student.assessments.length > 0 ? student.assessments[student.assessments.length - 1] : undefined;
+            const val = latest ? (latest.scores ? latest.scores[el.id] : undefined) : undefined;
+            return (
+              <div key={el.id} className="p-2 bg-gray-50 rounded text-center text-xs border">
+                <div className="font-semibold text-gray-700">{el.name}</div>
+                <div className="mt-1 text-sm text-gray-600">
+                  {el.type === 'quick_icon' ? (val ? <span className="text-lg">{val}</span> : <span>-</span>) : (val !== undefined && val !== '' ? String(val) : <span className="text-gray-400">—</span>)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Average Bar */}
       <div className="mb-4">
@@ -155,6 +192,60 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
           </div>
         ) : (
           <>
+            {/* Quick follow-up buttons (notebook / book) */}
+            <div className="flex flex-col items-center">
+              <button
+                className="text-xs px-2 py-1 bg-yellow-100 rounded text-yellow-800 border border-yellow-200"
+                onClick={async () => {
+                  try {
+                    await fetch(`http://localhost:3000/api/students/${student.id}/followups`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ type: 'notebook', description: 'متابعة سريعة: دفتر' })
+                    });
+                    // Optimistic local update: increment followUpCount if present
+                    if (typeof (student as any).followUpCount === 'number') (student as any).followUpCount = (student as any).followUpCount + 1;
+                    else (student as any).followUpCount = 1;
+                    // Force re-render by small state trick is not available here; parent will refresh when needed.
+                    // Optionally show a visual feedback: simple alert
+                    // eslint-disable-next-line no-alert
+                    alert('تم تسجيل متابعة: دفتر');
+                  } catch (e) {
+                    console.error('Failed to create followup', e);
+                    // eslint-disable-next-line no-alert
+                    alert('فشل تسجيل المتابعة');
+                  }
+                }}
+              >
+                دفتر
+              </button>
+              <Typography variant="small" className="text-xs text-gray-600">متابعة</Typography>
+            </div>
+            <div className="flex flex-col items-center">
+              <button
+                className="text-xs px-2 py-1 bg-yellow-100 rounded text-yellow-800 border border-yellow-200"
+                onClick={async () => {
+                  try {
+                    await fetch(`http://localhost:3000/api/students/${student.id}/followups`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ type: 'book', description: 'متابعة سريعة: كتاب' })
+                    });
+                    if (typeof (student as any).followUpCount === 'number') (student as any).followUpCount = (student as any).followUpCount + 1;
+                    else (student as any).followUpCount = 1;
+                    // eslint-disable-next-line no-alert
+                    alert('تم تسجيل متابعة: كتاب');
+                  } catch (e) {
+                    console.error('Failed to create followup', e);
+                    // eslint-disable-next-line no-alert
+                    alert('فشل تسجيل المتابعة');
+                  }
+                }}
+              >
+                كتاب
+              </button>
+              <Typography variant="small" className="text-xs text-gray-600">متابعة</Typography>
+            </div>
             <div className="flex flex-col items-center">
               <IconButton variant="text" onClick={() => onAssess(student)} className="hover:bg-yellow-100">
                 <FaStar className="text-yellow-600" />

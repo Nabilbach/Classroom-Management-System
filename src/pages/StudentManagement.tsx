@@ -11,7 +11,7 @@ import StudentCard from '../components/students/StudentCard';
 import StudentTable from '../components/students/StudentTable';
 import StudentDetailModal from '../components/students/StudentDetailModal';
 import BackToTopButton from '../components/BackToTopButton';
-import AssessmentModal from '../components/students/AssessmentModal';
+import QuickEvaluation from '../components/evaluation/QuickEvaluation';
 import StudentTableSkeleton from '../components/students/StudentTableSkeleton';
 import StudentCardSkeleton from '../components/students/StudentCardSkeleton';
 import ExcelUploadModal from '../components/students/ExcelUploadModal';
@@ -85,7 +85,7 @@ const MemoizedStudentTable = React.memo(StudentTable);
 
 function StudentManagement() {
   const { sections, currentSection, setCurrentSection } = useSections();
-  const { students, deleteStudent, isLoading, fetchStudents } = useStudents();
+  const { students, deleteStudent, isLoading, fetchStudents, updateStudentLocal } = useStudents();
   const { recommendedSectionId, displayMessage, isTeachingTime } = useCurrentLesson();
 
   // متتبع آخر اختيار يدوي للمستخدم وحالة تحميل الصفحة
@@ -385,6 +385,41 @@ function StudentManagement() {
     return { averageScore, topStudents, needsAttention, weeklyAssessments };
   }, [sectionStudents, currentSection]);
   
+  // Follow-up count for current section (simple quick count)
+  const [sectionFollowupCount, setSectionFollowupCount] = useState<number>(0);
+  const [followupDialogOpen, setFollowupDialogOpen] = useState(false);
+  const [followupStudents, setFollowupStudents] = useState<Array<{id:number, firstName:string, lastName:string, followupCount:number}>>([]);
+  useEffect(() => {
+    const load = async () => {
+      if (!currentSection) { setSectionFollowupCount(0); return; }
+      try {
+        const resp = await fetch(`http://localhost:3000/api/sections/${currentSection.id}/followups-count`);
+        if (!resp.ok) { setSectionFollowupCount(0); return; }
+        const data = await resp.json();
+        setSectionFollowupCount(data.count || 0);
+      } catch (e) {
+        console.warn('Failed to load followup count', e);
+        setSectionFollowupCount(0);
+      }
+    };
+    load();
+  }, [currentSection, students]);
+
+  const openFollowupDialog = async () => {
+    if (!currentSection) return;
+    try {
+      const resp = await fetch(`http://localhost:3000/api/sections/${currentSection.id}/followups-students`);
+      if (!resp.ok) { setFollowupStudents([]); setFollowupDialogOpen(true); return; }
+      const data = await resp.json();
+      setFollowupStudents(Array.isArray(data) ? data : []);
+      setFollowupDialogOpen(true);
+    } catch (e) {
+      console.warn('Failed to load followup students', e);
+      setFollowupStudents([]);
+      setFollowupDialogOpen(true);
+    }
+  };
+  
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -433,6 +468,14 @@ function StudentManagement() {
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
+
+  // Quick-select student from the widget: open QuickEvaluation modal and set selectedStudent
+  const handleQuickSelectStudent = (id: number) => {
+    const found = students.find(s => Number(s.id) === Number(id)) || null;
+    setSelectedStudent(found as any);
+    if (!isAssessmentModalOpen) setIsAssessmentModalOpen(true);
+    // If already open, QuickEvaluation will react to the changed studentId prop
+  };
 
   const isNumericSearch = (term: string): boolean => /^\d+$/.test(term);
   const isPathwaySearch = (term: string): boolean => term.toUpperCase().startsWith('H');
@@ -667,10 +710,12 @@ function StudentManagement() {
           onClear={handleClearFilters}
         />
       </div>
+          {/* spacer for layout (the quick-select widget is shown inside the evaluation modal now) */}
+          <div className="mb-4" />
 
       {/* Statistic Cards */}
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 mt-2">
-                <Card className="bg-blue-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">متوسط الدرجات</Typography><ChartBarIcon className="h-5 w-5 text-blue-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{averageScore.toFixed(1)}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">من 20 نقطة</Typography></CardContent></Card>
+                <Card onClick={openFollowupDialog} className="bg-blue-50 p-4 cursor-pointer hover:shadow-lg"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">يحتاج متابعة</Typography><ChartBarIcon className="h-5 w-5 text-blue-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{sectionFollowupCount}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">عدد المتابعات المفتوحة · معدل القسم: {Number(averageScore).toFixed(1)}</Typography></CardContent></Card>
                 <Card className="bg-green-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">المتفوقون</Typography><UserGroupIcon className="h-5 w-5 text-green-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{topStudents}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">18+ نقطة</Typography></CardContent></Card>
                 <Card className="bg-yellow-50 p-4 border border-yellow-200"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">يحتاج متابعة</Typography><ExclamationCircleIcon className="h-5 w-5 text-yellow-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{needsAttention}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">أقل من 10 نقاط</Typography></CardContent></Card>
                 <Card className="bg-indigo-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">تقييمات هذا الأسبوع</Typography><CalendarDaysIcon className="h-5 w-5 text-indigo-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{weeklyAssessments}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">طالب تم تقييمه</Typography></CardContent></Card>
@@ -879,7 +924,31 @@ function StudentManagement() {
       <AddStudentForm isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
   <EditStudentModal isOpen={isEditModalOpen} onClose={() => { setIsEditModalOpen(false); setEditingStudent(null); }} student={editingStudent as any} />
   <StudentDetailModal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} student={selectedStudent as any} onAssess={handleAssessStudent as any} />
-  <AssessmentModal isOpen={isAssessmentModalOpen} onClose={() => setIsAssessmentModalOpen(false)} studentId={selectedStudent ? String(selectedStudent.id) : undefined} />
+  {/* استبدال نافذة التقييم البسيطة بنافذة التقييم المتقدمة */}
+  <Dialog open={isAssessmentModalOpen} onClose={() => setIsAssessmentModalOpen(false)} maxWidth="md" fullWidth>
+    <QuickEvaluation
+      studentId={selectedStudent ? String(selectedStudent.id) : ''}
+      studentName={selectedStudent ? `${selectedStudent.firstName} ${selectedStudent.lastName}` : ''}
+      onClose={() => setIsAssessmentModalOpen(false)}
+      sectionStudents={sectionStudents}
+      onSwitchStudent={(id: number) => {
+        // switch the modal to another student id without closing it
+        const found = students.find(s => Number(s.id) === Number(id)) || null;
+        setSelectedStudent(found as any);
+      }}
+      onSave={async (updatedEvaluation) => {
+        console.log('QuickEvaluation.onSave called for student', selectedStudent?.id, { updatedEvaluation });
+        // Refresh students from server so the new evaluation / XP appears in lists and cards
+        try {
+              // Always refetch to ensure full sync (covers save, reset, or other actions)
+              await fetchStudents();
+          // Optionally keep the modal closed (QuickEvaluation already calls onClose)
+        } catch (e) {
+          console.warn('Failed to refresh students after saving evaluation', e);
+        }
+      }}
+    />
+  </Dialog>
       <ExcelUploadModal isOpen={isExcelUploadModalOpen} onClose={() => setIsExcelUploadModalOpen(false)} />
       <AbsentStudentsModal isOpen={showAbsentListModal} onClose={() => setShowAbsentListModal(false)} absentStudents={absentStudents} sectionName={currentSection?.name || ''} />
 
@@ -961,6 +1030,35 @@ function StudentManagement() {
           <Button onClick={() => { setExcludeModalOpen(false); setExcludedIds([]); setExcludeType(null); }} variant="outlined" color="error">
             إلغاء
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Followups dialog */}
+      <Dialog open={followupDialogOpen} onClose={() => setFollowupDialogOpen(false)} maxWidth="sm" fullWidth dir="rtl">
+        <DialogTitle>طلاب يحتاجون متابعة ({followupStudents.length})</DialogTitle>
+        <DialogContent dividers>
+          {followupStudents.length === 0 && <Typography>لا توجد متابعات مفتوحة في هذا القسم.</Typography>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {followupStudents.map((s) => (
+              <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 8, border: '1px solid #eee', borderRadius: 6 }}>
+                <div>
+                  <div style={{ fontWeight: 'bold' }}>{s.firstName} {s.lastName}</div>
+                  <div style={{ fontSize: 12, color: '#666' }}>{s.followupCount} متابعة مفتوحة</div>
+                </div>
+                <div>
+                  <Button variant="contained" size="small" onClick={() => {
+                    // open QuickEvaluation for this student
+                    setSelectedStudent({ id: s.id, firstName: s.firstName, lastName: s.lastName } as any);
+                    setIsAssessmentModalOpen(true);
+                    setFollowupDialogOpen(false);
+                  }}>فتح التقييم</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFollowupDialogOpen(false)}>إغلاق</Button>
         </DialogActions>
       </Dialog>
 
