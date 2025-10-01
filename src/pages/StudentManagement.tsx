@@ -88,16 +88,67 @@ function StudentManagement() {
   const { students, deleteStudent, isLoading, fetchStudents, updateStudentLocal } = useStudents();
   const { recommendedSectionId, displayMessage, isTeachingTime } = useCurrentLesson();
 
-  // تطبيق اختيار القسم الذكي
+  // متتبع آخر اختيار يدوي للمستخدم وحالة تحميل الصفحة
+  const [lastManualSelection, setLastManualSelection] = useState<{ sectionId: string; timestamp: number } | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // تطبيق اختيار القسم الذكي المرن - فقط عند تحميل الصفحة أو الانتقال
   useEffect(() => {
-    if (recommendedSectionId && sections.length > 0 && !currentSection) {
+    // تطبيق الفلترة الذكية فقط في الحالات التالية:
+    // 1. عند تحميل الصفحة لأول مرة (لا يوجد قسم محدد)
+    // 2. عند العودة للصفحة من صفحة أخرى (hasPageLoaded = false)
+    
+    if (recommendedSectionId && sections.length > 0) {
       const recommendedSection = sections.find(s => s.id === recommendedSectionId);
+      
       if (recommendedSection) {
-        console.log('🎯 تطبيق اختيار القسم الذكي:', recommendedSection.name);
-        setCurrentSection(recommendedSection);
+        // تطبيق الفلترة الذكية فقط إذا:
+        // - لا يوجد قسم محدد حالياً، أو
+        // - لم يتم اختيار قسم يدوياً خلال آخر 30 ثانية (للسماح بالانتقال بين الصفحات)
+        
+        const now = Date.now();
+        const hasRecentManualSelection = lastManualSelection && 
+          (now - lastManualSelection.timestamp) < 2 * 60 * 1000; // دقيقتان
+        
+        // تطبيق الفلترة الذكية فقط في الحالات التالية:
+        // 1. التحميل الأولي للصفحة
+        // 2. لا يوجد قسم محدد حالياً
+        // 3. لا يوجد اختيار يدوي حديث
+        const shouldApplySmartFilter = isInitialLoad || 
+                                      !currentSection || 
+                                      !hasRecentManualSelection;
+        
+        if (shouldApplySmartFilter) {
+          console.log('🎯 فلترة ذكية عند تحميل الصفحة:', recommendedSection.name);
+          console.log('� وقت الحصة:', isTeachingTime ? 'حصة فعلية' : 'خارج أوقات الحصص');
+          setCurrentSection(recommendedSection);
+        }
+      }
+      
+      // تعطيل التحميل الأولي بعد المعالجة الأولى
+      if (isInitialLoad) {
+        setIsInitialLoad(false);
       }
     }
-  }, [recommendedSectionId, sections, currentSection, setCurrentSection]);
+  }, [recommendedSectionId, sections, currentSection, setCurrentSection, isTeachingTime, isInitialLoad, lastManualSelection]);
+
+  // تطبيق فلترة ذكية إضافية عند تحميل الصفحة
+  useEffect(() => {
+    // عند تحميل الصفحة أول مرة، إذا لم يكن هناك قسم محدد، اختر القسم المقترح أو الأول
+    if (sections.length > 0 && !currentSection) {
+      if (recommendedSectionId) {
+        const recommendedSection = sections.find(s => s.id === recommendedSectionId);
+        if (recommendedSection) {
+          console.log('🔄 تحديد القسم عند تحميل الصفحة (مقترح):', recommendedSection.name);
+          setCurrentSection(recommendedSection);
+          return;
+        }
+      }
+      // إذا لم يوجد قسم مقترح، اختر الأول
+      console.log('🔄 تحديد القسم عند تحميل الصفحة (افتراضي):', sections[0].name);
+      setCurrentSection(sections[0]);
+    }
+  }, [sections, currentSection, setCurrentSection, recommendedSectionId]);
 
   // دالة تعيين جميع الطلاب كغائبين
   const handleMarkAllAbsent = () => {
@@ -672,14 +723,73 @@ function StudentManagement() {
 
   {/* Sticky section chips bar */}
   <div className="flex gap-2 mb-4 overflow-x-auto pb-2 sticky top-[56px] z-10 bg-white border-b border-gray-100 chips-scrollbar w-full" style={{ minHeight: '48px' }}>
-        <Button variant={!currentSection ? "contained" : "outlined"} onClick={() => setCurrentSection(null)} className="flex-shrink-0" sx={{ fontWeight: 'bold' }}>
+        <Button 
+          variant={!currentSection ? "contained" : "outlined"} 
+          onClick={() => {
+            // تسجيل الاختيار اليدوي لجميع التلاميذ
+            setLastManualSelection({
+              sectionId: 'all',
+              timestamp: Date.now()
+            });
+            setCurrentSection(null);
+            console.log('👆 اختيار يدوي: جميع التلاميذ - الفلترة الذكية معطلة لدقيقتين');
+          }} 
+          className="flex-shrink-0" 
+          sx={{ fontWeight: 'bold' }}
+        >
           جميع التلاميذ
         </Button>
-        {sections.map((section) => (
-          <Button key={section.id} variant={currentSection?.id === section.id ? "contained" : "outlined"} onClick={() => setCurrentSection(section)} className="flex-shrink-0" sx={{ fontWeight: 'bold' }}>
-            {section.name}
-          </Button>
-        ))}
+        {sections.map((section) => {
+          const isCurrentSection = currentSection?.id === section.id;
+          const isRecommendedSection = recommendedSectionId === section.id;
+          const isActiveLesson = isRecommendedSection && isTeachingTime;
+          
+          return (
+            <Button 
+              key={section.id} 
+              variant={isCurrentSection ? "contained" : "outlined"} 
+              onClick={() => {
+                // تسجيل الاختيار اليدوي
+                setLastManualSelection({
+                  sectionId: section.id,
+                  timestamp: Date.now()
+                });
+                setCurrentSection(section);
+                console.log('👆 اختيار يدوي للقسم:', section.name, '- الفلترة الذكية معطلة لدقيقتين');
+              }} 
+              className="flex-shrink-0" 
+              sx={{ 
+                fontWeight: 'bold',
+                position: 'relative',
+                bgcolor: isCurrentSection && isActiveLesson ? 'success.main' : 
+                        isCurrentSection ? 'primary.main' : 'transparent',
+                color: isCurrentSection && isActiveLesson ? 'white' : 
+                       isCurrentSection ? 'white' : 'primary.main',
+                borderColor: isActiveLesson && !isCurrentSection ? 'success.main' : 'primary.main',
+                '&:hover': {
+                  bgcolor: isActiveLesson ? 'success.dark' : 'primary.dark'
+                }
+              }}
+            >
+              {isActiveLesson && !isCurrentSection && (
+                <Box 
+                  sx={{ 
+                    position: 'absolute', 
+                    top: -2, 
+                    right: -2, 
+                    width: 8, 
+                    height: 8, 
+                    borderRadius: '50%', 
+                    bgcolor: 'success.main',
+                    animation: 'pulse 2s infinite'
+                  }} 
+                />
+              )}
+              {section.name}
+              {isActiveLesson && isCurrentSection && ' 🔴'}
+            </Button>
+          );
+        })}
       </div>
 
       {/* Schedule Alert Banner under tabs */}
@@ -707,21 +817,50 @@ function StudentManagement() {
                 <Typography variant="h5" color="blue-gray" sx={{ fontWeight: 'bold' }}>
                   {currentSection ? `طلاب قسم ${currentSection.name}` : 'جميع التلاميذ'} ({finalFilteredStudents.length} طالب)
                 </Typography>
-                {/* مؤشر الحصة الذكي */}
+                {/* مؤشر الحصة الذكي المحسن */}
                 {recommendedSectionId && currentSection?.id === recommendedSectionId && (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Chip 
-                      label={displayMessage}
-                      size="small"
-                      sx={{
-                        bgcolor: isTeachingTime ? 'success.light' : 'info.light',
-                        color: isTeachingTime ? 'success.dark' : 'info.dark',
-                        fontWeight: 'bold',
-                        '& .MuiChip-label': {
-                          fontSize: '0.75rem'
-                        }
-                      }}
-                    />
+                    {isTeachingTime ? (
+                      // حصة فعلية جارية
+                      <Chip 
+                        icon={<Box sx={{ 
+                          width: 8, 
+                          height: 8, 
+                          borderRadius: '50%', 
+                          bgcolor: 'success.main',
+                          animation: 'pulse 2s infinite'
+                        }} />}
+                        label={`🔴 حصة جارية: ${displayMessage}`}
+                        color="success"
+                        variant="filled"
+                        sx={{
+                          fontWeight: 'bold',
+                          '& .MuiChip-label': {
+                            fontSize: '0.8rem'
+                          },
+                          animation: 'pulse 2s infinite'
+                        }}
+                      />
+                    ) : (
+                      // حصة قادمة أو قسم مقترح
+                      <Chip 
+                        icon={<Box sx={{ 
+                          width: 8, 
+                          height: 8, 
+                          borderRadius: '50%', 
+                          bgcolor: 'info.main'
+                        }} />}
+                        label={`📋 ${displayMessage}`}
+                        color="info"
+                        variant="outlined"
+                        sx={{
+                          fontWeight: 'bold',
+                          '& .MuiChip-label': {
+                            fontSize: '0.8rem'
+                          }
+                        }}
+                      />
+                    )}
                   </Box>
                 )}
               </div>
