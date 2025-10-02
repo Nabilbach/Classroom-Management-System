@@ -343,10 +343,8 @@ class ComprehensiveDataProtectionSystem {
         try {
             await this.connect();
             
-            // خطوة 1: استعادة البيانات المفقودة
-            await this.restoreMissingData();
-            
-            // خطوة 2: إضافة آليات الحماية
+    // خطوة 1: استعادة البيانات المفقودة
+    await this.restoreMissingData();            // خطوة 2: إضافة آليات الحماية
             await this.addProtectionTriggers();
             
             // خطوة 3: نظام المراقبة

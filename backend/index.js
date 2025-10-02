@@ -1,6 +1,16 @@
 const express = require('express');
 const cors = require('cors');
 const db = require('./models');
+
+// --- BEGIN DIAGNOSTIC CODE ---
+const dbPath = db.sequelize.options.storage;
+console.log(`
+************************************************************
+*** DIAGNOSTIC: DATABASE FILE IN USE: ${dbPath} ***
+************************************************************
+`);
+// --- END DIAGNOSTIC CODE ---
+
 const SequelizeLib = require('sequelize');
 const { Op } = require('sequelize');
 
