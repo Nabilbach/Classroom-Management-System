@@ -4,7 +4,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@material-tailwind/react";
 import { FaEdit, FaTrash, FaInfoCircle, FaGripVertical, FaStar } from 'react-icons/fa';
 import { Student } from '../../types/student';
-import { formatDateShort } from '../../utils/formatDate';
 
 interface SortableStudentRowProps {
   lastAssessmentDate?: string;
@@ -48,7 +47,7 @@ function SortableStudentRow({ student, lastAssessmentDate, xp, onEdit, onDelete,
       <td className="px-4 py-3 text-sm">{student.firstName}</td>
       <td className="px-4 py-3 text-sm">{student.gender}</td>
       <td className="px-4 py-3 text-sm">{student.birthDate}</td>
-  <td className="px-4 py-3 text-sm">{lastAssessmentDate ? formatDateShort(lastAssessmentDate) : '-'}</td>
+      <td className="px-4 py-3 text-sm">{lastAssessmentDate || '-'}</td>
       <td className="px-4 py-3 text-sm">{xp ?? 0}</td>
       <td className="px-4 py-3 text-sm">
         {isAttendanceMode ? (

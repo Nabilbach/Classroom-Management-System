@@ -38,12 +38,7 @@ export const StudentsProvider = ({ children }: StudentsProviderProps) => {
   const fetchStudents = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/students`, {
-        cache: 'no-store', // Disables caching entirely
-        headers: {
-          'Cache-Control': 'no-store',
-        },
-      });
+      const response = await fetch(`${API_URL}/students`);
       if (!response.ok) {
         throw new Error('Failed to fetch students');
       }

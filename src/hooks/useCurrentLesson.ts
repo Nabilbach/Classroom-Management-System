@@ -29,7 +29,7 @@ export const useCurrentLesson = () => {
         if (sections.length > 0) {
           setCurrentLessonInfo({
             currentTime: new Date().toTimeString().slice(0, 5),
-      currentDay: ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'][new Date().getDay()],
+            currentDay: new Date().toLocaleDateString('ar-MA', { weekday: 'long' }),
             isTeachingTime: false,
             recommendedSectionId: sections[0].id,
             displayMessage: `📝 القسم الافتراضي - ${sections[0].name}`

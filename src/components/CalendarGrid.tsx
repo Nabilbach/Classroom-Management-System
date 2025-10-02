@@ -397,28 +397,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
     });
   }, [scheduledLessons, currentWeekStart]);
 
-  // Defensive normalization: ensure assignedSections is always an array of strings.
-  // Some historical data or localStorage fallbacks may store this as a JSON string.
-  const normalizedScheduledLessons = useMemo(() => {
-    return (filteredScheduledLessons || []).map(lesson => {
-      let assigned: any = (lesson as any).assignedSections;
-      if (!assigned) assigned = [];
-      if (typeof assigned === 'string') {
-        try {
-          assigned = JSON.parse(assigned);
-        } catch (e) {
-          // If parsing fails, treat the whole string as a single id
-          assigned = [assigned];
-        }
-      }
-      if (!Array.isArray(assigned)) {
-        assigned = [String(assigned)];
-      }
-      assigned = assigned.map((s: any) => String(s));
-      return { ...(lesson as any), assignedSections: assigned } as ScheduledLesson;
-    });
-  }, [filteredScheduledLessons]);
-
   const dayMapping = {
     'الاثنين': 'Monday',
     'الثلاثاء': 'Tuesday',
@@ -474,7 +452,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
                       const dateString = format(dayDate, 'yyyy-MM-dd');
                       const cellId = `${dateString}-${section.id}`;
                       const isDraggedOver = dragOverCell === cellId;
-                      const cellLessons: AdaptedLesson[] = normalizedScheduledLessons
+                      const cellLessons: AdaptedLesson[] = filteredScheduledLessons
                         .filter(lesson => lesson && lesson.assignedSections && lesson.assignedSections.includes(section.id) && lesson.date === dateString)
                         .map(lesson => migrateLessonToAdapted(lesson as any))
                         .filter((l): l is AdaptedLesson => Boolean(l));

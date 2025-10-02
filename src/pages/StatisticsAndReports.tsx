@@ -210,7 +210,7 @@ const StatisticsAndReports: React.FC = () => {
     // إضافة معلومات إضافية
     doc.setFont('Times', 'normal');
     doc.setFontSize(12);
-  doc.text(`التاريخ: ${new Date().toISOString().slice(0,10)}`, 50, 70);
+    doc.text(`التاريخ: ${new Date().toLocaleDateString('ar-EG')}`, 50, 70);
     if (selectedSection !== 'all') {
       const section = sections.find(s => s.id === selectedSection);
       doc.text(`القسم: ${section?.name || ''}`, 300, 70);

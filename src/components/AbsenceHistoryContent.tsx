@@ -58,7 +58,7 @@ interface AbsenceHistoryContentProps {
 const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [_isLoadingRecords, setIsLoadingRecords] = useState<boolean>(false);
+  const [isLoadingRecords, setIsLoadingRecords] = useState<boolean>(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedSectionId, setSelectedSectionId] = useState<string>('');
   const [availableDates, setAvailableDates] = useState<string[]>([]);
@@ -409,8 +409,13 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
               >
                 <MenuItem value="">جميع التواريخ</MenuItem>
                 {availableDates.map(date => (
-                    <MenuItem key={date} value={date}>
-                      {new Date(date + 'T00:00:00').toISOString().slice(0,10)}
+                  <MenuItem key={date} value={date}>
+                    {new Date(date + 'T00:00:00').toLocaleDateString('ar-MA', {
+                      year: 'numeric',
+                      month: 'long', 
+                      day: 'numeric',
+                      weekday: 'long'
+                    })}
                   </MenuItem>
                 ))}
               </Select>

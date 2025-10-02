@@ -249,7 +249,7 @@ router.get('/weekly-trend', async (req, res) => {
       
       weeklyData.push({
         date: dateStr,
-  dayOfWeek: ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'][date.getDay()],
+        dayOfWeek: date.toLocaleDateString('ar-EG', { weekday: 'short' }),
         present: dayAttendance,
         total: dayTotal,
         rate: dayTotal > 0 ? Math.round((dayAttendance / dayTotal) * 100) : 0
@@ -325,7 +325,7 @@ router.get('/student-analysis/:studentId', async (req, res) => {
       attendanceHistory: attendanceHistory.map(record => ({
         date: record.date,
         isPresent: record.isPresent,
-  dayOfWeek: ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'][new Date(record.date).getDay()]
+        dayOfWeek: new Date(record.date).toLocaleDateString('ar-EG', { weekday: 'long' })
       })),
       absencePatterns
     });

@@ -114,7 +114,7 @@ function StudentProfile() {
           <List>
             {assessments.map((assessment) => (
               <ListItem key={assessment.id}>
-                {new Date(assessment.date).toISOString().slice(0,10)}: 
+                {new Date(assessment.date).toLocaleDateString()}: 
                 Score changed from {assessment.old_score} to {assessment.new_score} (Change: {assessment.score_change}). 
                 Notes: {assessment.notes}
               </ListItem>

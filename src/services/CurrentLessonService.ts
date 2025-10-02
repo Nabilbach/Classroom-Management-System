@@ -47,7 +47,7 @@ class CurrentLessonService {
     
     // استخدام الكاش إذا كان حديث
     if (this.cachedInfo && (now - this.lastFetchTime) < this.CACHE_DURATION) {
-      return this.cachedInfo;
+      return this.cachedInfo!;
     }
 
     try {
@@ -90,7 +90,7 @@ class CurrentLessonService {
       // إرجاع قيم افتراضية في حالة الخطأ
       return {
         currentTime: new Date().toTimeString().slice(0, 5),
-  currentDay: ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'][new Date().getDay()],
+        currentDay: new Date().toLocaleDateString('ar-MA', { weekday: 'long' }),
         isTeachingTime: false,
         recommendedSectionId: '',
         displayMessage: '🔄 يتم التحديث...'

@@ -189,7 +189,7 @@ function generateStatusReport(analysis, updatedTasks) {
   const report = `# 📊 تقرير الوضع الحالي المحدث
 
 ## 🎯 النظرة العامة
-- **تاريخ التحديث**: ${new Date().toISOString().slice(0,10)}
+- **تاريخ التحديث**: ${new Date().toLocaleDateString('ar-EG')}
 - **النتيجة الإجمالية**: ${analysis.evaluation.overallScore}%
 - **حالة المشروع**: ${analysis.evaluation.projectStatus}
 

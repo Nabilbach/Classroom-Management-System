@@ -1,16 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const db = require('./models');
-
-// --- BEGIN DIAGNOSTIC CODE ---
-const dbPath = db.sequelize.options.storage;
-console.log(`
-************************************************************
-*** DIAGNOSTIC: DATABASE FILE IN USE: ${dbPath} ***
-************************************************************
-`);
-// --- END DIAGNOSTIC CODE ---
-
 const SequelizeLib = require('sequelize');
 const { Op } = require('sequelize');
 
@@ -37,9 +27,6 @@ app.use('/api/scheduled-lessons', scheduledLessonsRoutes);
 // Section statistics API
 const sectionStatsRoutes = require('./routes/sectionStats');
 app.use('/api/sections/stats', sectionStatsRoutes);
-// Backup status API
-const backupStatusRoutes = require('./routes/backupStatus');
-app.use('/api/backup-status', backupStatusRoutes);
 
 // Helper function to get the current score for a student
 const getCurrentScore = async (studentId) => {
@@ -238,90 +225,34 @@ app.delete('/api/sections/:id/students', async (req, res) => {
   }
 });
 
-// Get all students in a specific section
-app.get('/api/students/section/:sectionId', async (req, res) => {
-  try {
-    const { sectionId } = req.params;
-    const students = await db.Student.findAll({ where: { sectionId } });
-    res.json(students);
-  } catch (error) {
-    console.error(`Error retrieving students for section ${req.params.sectionId}:`, error);
-    res.status(500).json({ message: 'Error retrieving students for section', error: error.message, stack: error.stack });
-  }
-});
-
 // Routes for Students
 app.get('/api/students', async (req, res) => {
   try {
     const { section_id } = req.query;
     const where = section_id ? { sectionId: section_id } : {};
     const students = await db.Student.findAll({ where });
-      // Get latest assessment per student (one query). We want last date, last new_score and scores JSON
-      const studentIds = students.map(student => student.id);
-      let assessments = [];
-      try {
-        assessments = await db.StudentAssessment.findAll({
-          where: { studentId: studentIds },
-          order: [['date', 'DESC']],
-        });
-      } catch (e) {
-        // Some older DB backups may not have the `scores` column; if so, fallback to a raw query
-        const msg = (e && e.message) ? String(e.message) : '';
-        if (/no such column: scores/i.test(msg)) {
-          try {
-            const placeholders = studentIds.map(() => '?').join(',');
-            const sql = `SELECT id, date, old_score, new_score, score_change, notes, createdAt, updatedAt, studentId FROM StudentAssessments WHERE studentId IN (${placeholders}) ORDER BY date DESC`;
-            const [rows] = await db.sequelize.query(sql, { replacements: studentIds });
-            assessments = rows;
-          } catch (e2) {
-            console.warn('Fallback assessment query failed:', e2 && e2.message ? e2.message : e2);
-            assessments = [];
-          }
-        } else {
-          // rethrow other errors
-          throw e;
-        }
+
+    // Get all scores at once instead of individual queries
+    const studentIds = students.map(student => student.id);
+    const scores = await db.StudentAssessment.findAll({
+      where: { studentId: studentIds },
+      order: [['date', 'DESC']],
+      group: ['studentId']
+    });
+
+    const scoreMap = {};
+    scores.forEach(assessment => {
+      if (!scoreMap[assessment.studentId]) {
+        scoreMap[assessment.studentId] = assessment.new_score;
       }
+    });
 
-      // Build a map keyed by studentId to the most recent assessment
-      const latestMap = {};
-      for (const a of assessments) {
-        if (!latestMap[a.studentId]) latestMap[a.studentId] = a.toJSON ? a.toJSON() : a;
-      }
+    const studentsWithScores = students.map(student => ({
+      ...student.toJSON(),
+      score: scoreMap[student.id] || 0
+    }));
 
-      const studentsWithScores = students.map(student => {
-        const base = student.toJSON();
-        const latest = latestMap[student.id];
-        let lastAssessmentDate = null;
-        let score = 0;
-        let total_xp = 0;
-        if (latest) {
-          lastAssessmentDate = latest.date || null;
-          score = typeof latest.new_score !== 'undefined' ? Number(latest.new_score) : 0;
-          // try to parse scores JSON to compute total_xp if present
-          let parsed = null;
-          if (latest.scores && typeof latest.scores === 'string') {
-            try { parsed = JSON.parse(latest.scores); } catch (e) { parsed = null; }
-          } else if (latest.scores && typeof latest.scores === 'object') {
-            parsed = latest.scores;
-          }
-          if (parsed) {
-            // compute total xp similarly to frontend: sliders*10 + quran*10 + bonus*5
-            const sliderSum = (parsed.behavior_score ?? 0) + (parsed.participation_score ?? 0) + (parsed.notebook_score ?? 0) + (parsed.attendance_score ?? 0) + (parsed.portfolio_score ?? 0);
-            const sliderXP = sliderSum * 10;
-            const quranXP = (parsed.quran_memorization ?? 0) * 10;
-            const bonusXP = (parsed.bonus_points ?? 0) * 5;
-            total_xp = sliderXP + quranXP + bonusXP;
-          } else {
-            // fallback: use new_score as proxy for total_xp
-            total_xp = Number(latest.new_score) || 0;
-          }
-        }
-
-        return { ...base, score, lastAssessmentDate, total_xp };
-      });
-
-      res.json(studentsWithScores);
+    res.json(studentsWithScores);
   } catch (error) {
     console.error('Error retrieving students:', error);
     res.status(500).json({ message: 'Error retrieving students', error: error.message, stack: error.stack });
@@ -537,7 +468,7 @@ app.use('/api/student-transfer', studentTransferRoutes);
 app.post('/api/students/:studentId/assessment', async (req, res) => {
   try {
     const { studentId } = req.params;
-    const { new_score, notes, scores } = req.body;
+    const { new_score, notes } = req.body;
 
     const old_score = await getCurrentScore(studentId);
     const score_change = new_score - old_score;
@@ -549,7 +480,6 @@ app.post('/api/students/:studentId/assessment', async (req, res) => {
       new_score,
       score_change,
       notes,
-      scores: scores && typeof scores === 'object' ? JSON.stringify(scores) : (typeof scores === 'string' ? scores : null),
     });
 
     res.status(201).json(newAssessment);
@@ -565,70 +495,9 @@ app.get('/api/students/:studentId/assessments', async (req, res) => {
       where: { studentId },
       order: [[ 'date', 'DESC' ]],
     });
-    const normalized = (Array.isArray(assessments) ? assessments : []).map(a => {
-      const obj = a.toJSON ? a.toJSON() : a;
-      if (obj && obj.scores && typeof obj.scores === 'string') {
-        try { obj.scores = JSON.parse(obj.scores); } catch (e) { /* leave as string */ }
-      }
-      return obj;
-    });
-    res.json(normalized);
+    res.json(assessments);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving assessments', error: error.message, stack: error.stack });
-  }
-});
-
-// Bulk delete assessments for a student: accepts { ids: [ ... ] }
-app.post('/api/students/:studentId/assessments/delete-bulk', async (req, res) => {
-  try {
-    const { studentId } = req.params;
-    const ids = Array.isArray(req.body && req.body.ids) ? req.body.ids : [];
-    if (!ids || ids.length === 0) return res.status(400).json({ message: 'Missing ids array in request body' });
-
-    // Find which ids actually exist and belong to the student
-    const existing = await db.StudentAssessment.findAll({ where: { id: ids, studentId } });
-    const existingIds = existing.map(a => a.id);
-
-    if (existingIds.length === 0) return res.json({ deletedCount: 0, deletedIds: [] });
-
-    const deleted = await db.StudentAssessment.destroy({ where: { id: existingIds } });
-    res.json({ deletedCount: Number(deleted || 0), deletedIds: existingIds });
-  } catch (error) {
-    console.error('Error in bulk delete student assessments:', error);
-    res.status(500).json({ message: 'Error deleting assessments', error: error.message, stack: error.stack });
-  }
-});
-
-// Reset all assessments for a student (convenience endpoint used by QuickEvaluation)
-app.post('/api/students/:studentId/assessments/reset', async (req, res) => {
-  try {
-    const { studentId } = req.params;
-    const assessments = await db.StudentAssessment.findAll({ where: { studentId } });
-    if (!Array.isArray(assessments) || assessments.length === 0) return res.json({ deletedCount: 0, deletedIds: [] });
-    const ids = assessments.map(a => a.id);
-    const deleted = await db.StudentAssessment.destroy({ where: { id: ids } });
-    res.json({ deletedCount: Number(deleted || 0), deletedIds: ids });
-  } catch (error) {
-    console.error('Error resetting assessments for student:', error);
-    res.status(500).json({ message: 'Error resetting assessments', error: error.message, stack: error.stack });
-  }
-});
-
-// Global bulk delete endpoint: accepts { ids: [ ... ] }
-app.post('/api/assessments/bulk-delete', async (req, res) => {
-  try {
-    const ids = Array.isArray(req.body && req.body.ids) ? req.body.ids : [];
-    if (!ids || ids.length === 0) return res.status(400).json({ message: 'Missing ids array in request body' });
-
-    const existing = await db.StudentAssessment.findAll({ where: { id: ids } });
-    const existingIds = existing.map(a => a.id);
-    if (existingIds.length === 0) return res.json({ deletedCount: 0, deletedIds: [] });
-
-    const deleted = await db.StudentAssessment.destroy({ where: { id: existingIds } });
-    res.json({ deletedCount: Number(deleted || 0), deletedIds: existingIds });
-  } catch (error) {
-    console.error('Error in global bulk delete assessments:', error);
-    res.status(500).json({ message: 'Error deleting assessments', error: error.message, stack: error.stack });
   }
 });
 
@@ -858,50 +727,8 @@ const ensureFollowupSchema = async () => {
   await addIfMissing('type', 'VARCHAR(255)');
   await addIfMissing('notes', 'TEXT');
   await addIfMissing('is_open', 'TINYINT(1) DEFAULT 1');
-  // Ensure timestamps exist for ordering/selection
-  await addIfMissing('createdAt', 'DATETIME');
-  await addIfMissing('updatedAt', 'DATETIME');
   } catch (e) {
     console.warn('ensureFollowupSchema warning:', e?.message || e);
-  }
-};
-
-// Ensure StudentAssessments table exists and contains expected columns (including `scores`)
-const ensureStudentAssessmentSchema = async () => {
-  try {
-    const [cols] = await db.sequelize.query("PRAGMA table_info('StudentAssessments');");
-    const existing = Array.isArray(cols) ? cols.map(c => c.name) : [];
-
-    if (existing.length === 0) {
-      // Table missing entirely, create with a safe schema including `scores` as TEXT
-      await db.sequelize.query(`
-        CREATE TABLE IF NOT EXISTS "StudentAssessments" (
-          "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-          "studentId" INTEGER,
-          "date" DATETIME,
-          "old_score" INTEGER,
-          "new_score" INTEGER,
-          "score_change" INTEGER,
-          "scores" TEXT,
-          "notes" TEXT,
-          "createdAt" DATETIME,
-          "updatedAt" DATETIME
-        );
-      `);
-      return;
-    }
-
-    // Add missing `scores` column if absent
-    if (!existing.includes('scores')) {
-      try {
-        await db.sequelize.query('ALTER TABLE "StudentAssessments" ADD COLUMN "scores" TEXT;');
-        console.log('Added missing column `scores` to StudentAssessments');
-      } catch (e) {
-        console.warn('Failed to add scores column to StudentAssessments:', e?.message || e);
-      }
-    }
-  } catch (e) {
-    console.warn('ensureStudentAssessmentSchema warning:', e?.message || e);
   }
 };
 
@@ -911,7 +738,6 @@ preMigrateCleanup()
   .then(() => db.sequelize.sync({ force: false })) // Don't force recreate, just sync
   .then(() => ensureAttendanceIndexes())
   .then(() => ensureFollowupSchema())
-  .then(() => ensureStudentAssessmentSchema())
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Backend server running on http://localhost:${PORT}`);

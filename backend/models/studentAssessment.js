@@ -23,11 +23,6 @@ const StudentAssessment = sequelize.define('StudentAssessment', {
     type: DataTypes.DECIMAL,
     allowNull: false,
   },
-  // Detailed per-criterion scores stored as JSON text for compatibility across DB engines
-  scores: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
   notes: {
     type: DataTypes.STRING,
   },

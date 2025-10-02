@@ -1,10 +1,9 @@
 Task Name,Description,Status,Priority,Assignee,Due Date,Estimate (hours),Tags,List
 نظام قوالب الدروس,تطوير نظام إنشاء وإدارة قوالب الدروس,In Progress,High,نبيل باش,2025-10-15,20,"lessons,templates,curriculum",Curriculum Management
 ربط القوالب بالمناهج,ربط قوالب الدروس بالمناهج الدراسية المختلفة,To Do,High,نبيل باش,2025-10-20,16,"curriculum,integration,relationships",Curriculum Management
-جدولة الحصص,تطوير نظام جدولة الحصص اليومية والأسبوعية,Completed,High,نبيل باش,2025-10-25,24,"scheduling,timetable,calendar",Curriculum Management
-تطوير إشعارات تعارض الحصص,تطوير ميزة إرسال إشعار عند تعارض حصة دراسية مع حدث آخر (تأكد من قواعد التعارض، تكامل التقويم، وخيارات التجاوز),In Progress,High,نبيل باش,2025-10-20,12,"scheduling,notifications,conflict",Curriculum Management
-تخصيص المحتوى,تخصيص محتوى الدروس حسب المستوى التعليمي,Completed,Medium,نبيل باش,2025-11-01,14,"content-customization,levels",Curriculum Management
-تتبع حالة الدروس,نظام تتبع حالة الدروس (مخطط/جاري/مكتمل),Completed,Medium,نبيل باش,2025-11-05,12,"lesson-status,tracking",Curriculum Management
+جدولة الحصص,تطوير نظام جدولة الحصص اليومية والأسبوعية,To Do,High,نبيل باش,2025-10-25,24,"scheduling,timetable,calendar",Curriculum Management
+تخصيص المحتوى,تخصيص محتوى الدروس حسب المستوى التعليمي,To Do,Medium,نبيل باش,2025-11-01,14,"content-customization,levels",Curriculum Management
+تتبع حالة الدروس,نظام تتبع حالة الدروس (مخطط/جاري/مكتمل),To Do,Medium,نبيل باش,2025-11-05,12,"lesson-status,tracking",Curriculum Management
 نظام إدخال الدرجات,تطوير واجهات إدخال وإدارة درجات الطلاب,To Do,High,نبيل باش,2025-11-10,20,"grades,scoring,assessment",Academic System
 حساب المعدلات التلقائي,تطبيق نظام حساب المعدلات والنسب تلقائياً,To Do,High,نبيل باش,2025-11-15,14,"averages,calculations,automation",Academic System
 تقارير الأداء الأكاديمي,إنشاء تقارير شاملة لأداء الطلاب الأكاديمي,To Do,Medium,نبيل باش,2025-11-20,18,"academic-reports,performance,analytics",Academic System
@@ -15,4 +14,3 @@ Task Name,Description,Status,Priority,Assignee,Due Date,Estimate (hours),Tags,Li
 تقارير مخصصة,نظام إنشاء تقارير مخصصة حسب الفترة والمعايير,To Do,Medium,نبيل باش,2025-12-15,14,"custom-reports,filters,parameters",Reporting System
 إحصائيات مقارنة,تقارير مقارنة الأداء بين الأقسام والفترات,To Do,Low,نبيل باش,2025-12-20,12,"comparative-analysis,statistics",Reporting System
 تقارير أولياء الأمور,تطوير تقارير خاصة لأولياء أمور الطلاب,To Do,Low,نبيل باش,2025-12-25,10,"parent-reports,communication",Reporting System
-نموذج تجريبي لتسجيل الحضور والغياب (Prototype),عزل واجهة ونقطة نهاية لاختبار تسجيل الحضور/الغياب: اختيار قسم/تاريخ، تبديل حاضر/غائب، حفظ دفعي، عرض قائمة الغائبين مع زر إلغاء الغياب، طباعة وتصدير CSV، تهيئة بيئة تجريبية داخل المؤسسة.,To Do,High,نبيل باش,2025-10-07,16,"attendance,prototype,pilot",Pilot Projects
