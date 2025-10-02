@@ -31,6 +31,7 @@ router.get('/:id', async (req, res) => {
 // POST a new admin schedule entry
 router.post('/', async (req, res) => {
   try {
+    console.log('🔧 [AdminSchedule] POST payload:', req.body);
     const { id, day, startTime, duration, sectionId, subject, teacher, classroom, sessionType } = req.body;
     const newEntry = await AdminScheduleEntry.create({
       id: id || Date.now().toString(), // Use provided ID or generate a new one
@@ -46,6 +47,7 @@ router.post('/', async (req, res) => {
 // PUT (update) an admin schedule entry
 router.put('/:id', async (req, res) => {
   try {
+    console.log(`🔧 [AdminSchedule] PUT id=${req.params.id} payload:`, req.body);
     const [updated] = await AdminScheduleEntry.update(req.body, {
       where: { id: req.params.id }
     });
@@ -78,6 +80,7 @@ router.delete('/all', async (req, res) => {
 // DELETE an admin schedule entry
 router.delete('/:id', async (req, res) => {
   try {
+    console.log(`🔧 [AdminSchedule] DELETE id=${req.params.id}`);
     const deleted = await AdminScheduleEntry.destroy({
       where: { id: req.params.id }
     });

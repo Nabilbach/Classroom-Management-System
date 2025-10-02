@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import BackupStatusIndicator from './BackupStatusIndicator';
 
 const AppLayout: React.FC = () => {
   const location = useLocation();
@@ -15,6 +16,7 @@ const AppLayout: React.FC = () => {
 
   return (
     <div dir="rtl" className="relative h-screen bg-gray-50 flex overflow-hidden">
+      <BackupStatusIndicator />
       {/* The Sidebar is fixed on the right */}
       <div className="fixed top-0 right-0 h-full z-30">
         <Sidebar

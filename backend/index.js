@@ -27,6 +27,9 @@ app.use('/api/scheduled-lessons', scheduledLessonsRoutes);
 // Section statistics API
 const sectionStatsRoutes = require('./routes/sectionStats');
 app.use('/api/sections/stats', sectionStatsRoutes);
+// Backup status API
+const backupStatusRoutes = require('./routes/backupStatus');
+app.use('/api/backup-status', backupStatusRoutes);
 
 // Helper function to get the current score for a student
 const getCurrentScore = async (studentId) => {
@@ -225,6 +228,18 @@ app.delete('/api/sections/:id/students', async (req, res) => {
   }
 });
 
+// Get all students in a specific section
+app.get('/api/students/section/:sectionId', async (req, res) => {
+  try {
+    const { sectionId } = req.params;
+    const students = await db.Student.findAll({ where: { sectionId } });
+    res.json(students);
+  } catch (error) {
+    console.error(`Error retrieving students for section ${req.params.sectionId}:`, error);
+    res.status(500).json({ message: 'Error retrieving students for section', error: error.message, stack: error.stack });
+  }
+});
+
 // Routes for Students
 app.get('/api/students', async (req, res) => {
   try {
@@ -233,10 +248,30 @@ app.get('/api/students', async (req, res) => {
     const students = await db.Student.findAll({ where });
       // Get latest assessment per student (one query). We want last date, last new_score and scores JSON
       const studentIds = students.map(student => student.id);
-      const assessments = await db.StudentAssessment.findAll({
-        where: { studentId: studentIds },
-        order: [['date', 'DESC']],
-      });
+      let assessments = [];
+      try {
+        assessments = await db.StudentAssessment.findAll({
+          where: { studentId: studentIds },
+          order: [['date', 'DESC']],
+        });
+      } catch (e) {
+        // Some older DB backups may not have the `scores` column; if so, fallback to a raw query
+        const msg = (e && e.message) ? String(e.message) : '';
+        if (/no such column: scores/i.test(msg)) {
+          try {
+            const placeholders = studentIds.map(() => '?').join(',');
+            const sql = `SELECT id, date, old_score, new_score, score_change, notes, createdAt, updatedAt, studentId FROM StudentAssessments WHERE studentId IN (${placeholders}) ORDER BY date DESC`;
+            const [rows] = await db.sequelize.query(sql, { replacements: studentIds });
+            assessments = rows;
+          } catch (e2) {
+            console.warn('Fallback assessment query failed:', e2 && e2.message ? e2.message : e2);
+            assessments = [];
+          }
+        } else {
+          // rethrow other errors
+          throw e;
+        }
+      }
 
       // Build a map keyed by studentId to the most recent assessment
       const latestMap = {};
@@ -813,8 +848,50 @@ const ensureFollowupSchema = async () => {
   await addIfMissing('type', 'VARCHAR(255)');
   await addIfMissing('notes', 'TEXT');
   await addIfMissing('is_open', 'TINYINT(1) DEFAULT 1');
+  // Ensure timestamps exist for ordering/selection
+  await addIfMissing('createdAt', 'DATETIME');
+  await addIfMissing('updatedAt', 'DATETIME');
   } catch (e) {
     console.warn('ensureFollowupSchema warning:', e?.message || e);
+  }
+};
+
+// Ensure StudentAssessments table exists and contains expected columns (including `scores`)
+const ensureStudentAssessmentSchema = async () => {
+  try {
+    const [cols] = await db.sequelize.query("PRAGMA table_info('StudentAssessments');");
+    const existing = Array.isArray(cols) ? cols.map(c => c.name) : [];
+
+    if (existing.length === 0) {
+      // Table missing entirely, create with a safe schema including `scores` as TEXT
+      await db.sequelize.query(`
+        CREATE TABLE IF NOT EXISTS "StudentAssessments" (
+          "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+          "studentId" INTEGER,
+          "date" DATETIME,
+          "old_score" INTEGER,
+          "new_score" INTEGER,
+          "score_change" INTEGER,
+          "scores" TEXT,
+          "notes" TEXT,
+          "createdAt" DATETIME,
+          "updatedAt" DATETIME
+        );
+      `);
+      return;
+    }
+
+    // Add missing `scores` column if absent
+    if (!existing.includes('scores')) {
+      try {
+        await db.sequelize.query('ALTER TABLE "StudentAssessments" ADD COLUMN "scores" TEXT;');
+        console.log('Added missing column `scores` to StudentAssessments');
+      } catch (e) {
+        console.warn('Failed to add scores column to StudentAssessments:', e?.message || e);
+      }
+    }
+  } catch (e) {
+    console.warn('ensureStudentAssessmentSchema warning:', e?.message || e);
   }
 };
 
@@ -824,6 +901,7 @@ preMigrateCleanup()
   .then(() => db.sequelize.sync({ force: false })) // Don't force recreate, just sync
   .then(() => ensureAttendanceIndexes())
   .then(() => ensureFollowupSchema())
+  .then(() => ensureStudentAssessmentSchema())
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Backend server running on http://localhost:${PORT}`);

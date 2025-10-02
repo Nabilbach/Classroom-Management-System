@@ -96,7 +96,18 @@ function StudentEvaluationBoard() {
         // جلب الطلاب
         const studentsResponse = await fetch(`http://localhost:3000/api/students/section/${selectedSection}`);
         if (studentsResponse.ok) {
-          const studentsData = await studentsResponse.json();
+          const studentsDataRaw = await studentsResponse.json();
+          // Normalize shape: backend returns firstName/lastName and sectionId (camelCase)
+          const studentsData = (Array.isArray(studentsDataRaw) ? studentsDataRaw : []).map((s: any) => ({
+            id: s.id ?? s.student_id ?? s.id,
+            // compose display name from possible fields
+            name: ((s.firstName ?? s.first_name ?? s.name ?? '') + ' ' + (s.lastName ?? s.last_name ?? '')).trim() || (s.name ?? `${s.firstName ?? ''}`),
+            section_id: s.sectionId ?? s.section_id ?? null,
+            section_name: s.sectionName ?? s.section_name ?? null,
+            classOrder: s.classOrder ?? s.class_order ?? s.number ?? null,
+            // keep original raw for other uses
+            _raw: s,
+          }));
           setStudents(studentsData);
 
           // جلب التقييمات لكل طالب
