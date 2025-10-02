@@ -63,7 +63,21 @@ interface SectionProviderProps {
 export const SectionProvider = ({ children }: SectionProviderProps) => {
   const [sections, setSections] = useState<Section[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [currentSection, setCurrentSection] = useState<Section | null>(null);
+  const [currentSectionState, setCurrentSectionState] = useState<Section | null>(null);
+
+  // Wrapped setter that persists the current section id to localStorage
+  const setCurrentSection = (section: Section | null) => {
+    setCurrentSectionState(section);
+    try {
+      if (section && section.id) {
+        localStorage.setItem('lastSection', String(section.id));
+      } else {
+        localStorage.removeItem('lastSection');
+      }
+    } catch (e) {
+      // ignore storage errors
+    }
+  };
 
   /**
    * @function loadSections
@@ -76,6 +90,18 @@ export const SectionProvider = ({ children }: SectionProviderProps) => {
         const data = await fetchSections();
         setSections(data);
         console.log("Sections loaded successfully!");
+        // If user previously selected a section, restore it
+        try {
+          const saved = localStorage.getItem('lastSection');
+          if (saved) {
+            const savedSection = data.find((s: Section) => String(s.id) === String(saved));
+            if (savedSection) {
+              setCurrentSection(savedSection);
+            }
+          }
+        } catch (e) {
+          // ignore
+        }
       } catch (error) {
         console.error("Failed to fetch sections:", error);
       } finally {
@@ -164,7 +190,7 @@ export const SectionProvider = ({ children }: SectionProviderProps) => {
       editSection,
       deleteSection,
       deleteAllSections,
-      currentSection,
+      currentSection: currentSectionState,
       setCurrentSection,
     }}>
       {children}

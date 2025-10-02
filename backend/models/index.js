@@ -28,7 +28,7 @@ Student.belongsTo(Section, { foreignKey: 'sectionId' });
 Student.hasMany(StudentAssessment, { foreignKey: 'studentId' });
 StudentAssessment.belongsTo(Student, { foreignKey: 'studentId' });
 
-// FollowUp association
+// FollowUp associations
 Student.hasMany(FollowUp, { foreignKey: 'studentId' });
 FollowUp.belongsTo(Student, { foreignKey: 'studentId' });
 

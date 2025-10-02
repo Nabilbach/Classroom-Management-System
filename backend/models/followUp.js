@@ -10,23 +10,34 @@ const FollowUp = sequelize.define('FollowUp', {
   studentId: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    field: 'student_id'
+    field: 'student_id',
+  },
+  sectionId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'section_id',
   },
   type: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
+    field: 'type',
   },
-  description: {
+  notes: {
     type: DataTypes.TEXT,
     allowNull: true,
+    field: 'notes',
   },
-  status: {
-    type: DataTypes.STRING,
+  isOpen: {
+    type: DataTypes.BOOLEAN,
     allowNull: false,
-    defaultValue: 'open',
+    defaultValue: true,
+    field: 'is_open',
   }
 }, {
+  tableName: 'FollowUps',
   timestamps: true,
+  underscored: true,
+  freezeTableName: true,
 });
 
 module.exports = FollowUp;

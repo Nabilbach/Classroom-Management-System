@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import MainContent from './components/MainContent';
+import BackupStatusIndicator from './components/BackupStatusIndicator';
 import { LessonLogProvider } from './contexts/LessonLogContext';
 
 // Pages
@@ -26,6 +27,7 @@ function App() {
         v7_relativeSplatPath: true,
       }}
     >
+      <BackupStatusIndicator />
       <div className="flex h-screen w-full overflow-x-hidden" dir="rtl">
         {/* Main content first, sidebar on the right */}
         <div className="flex-1 flex flex-col min-h-0 min-w-0 w-full transition-all duration-300" style={{ marginRight: 'var(--sidebar-width, 260px)' }}>

@@ -32,7 +32,7 @@ class TextbookExportService {
 
       // معلومات إضافية
       doc.setFontSize(12);
-      doc.text(`تاريخ التصدير: ${new Date().toLocaleDateString('ar')}`, 20, 35);
+  doc.text(`تاريخ التصدير: ${new Date().toISOString().slice(0,10)}`, 20, 35);
       doc.text(`عدد السجلات: ${entries.length}`, 20, 45);
 
       // إعداد الجدول
@@ -619,7 +619,7 @@ class TextbookExportService {
    */
   private formatDate(dateString: string): string {
     try {
-      return new Date(dateString).toLocaleDateString('ar');
+  return new Date(dateString).toISOString().slice(0,10);
     } catch {
       return dateString;
     }

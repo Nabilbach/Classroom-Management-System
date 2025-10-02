@@ -1,42 +1,72 @@
-﻿# Node modules - Dependencies
+﻿# ======================================
+# Node.js
+# ======================================
 node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.pnpm-debug.log*
 
+# ======================================
 # IDE
+# ======================================
 .vscode/
+.idea/
+*.swp
+*.swo
 
-# Build output
-dist/
-build/
-
-# Backups - Local backups only
-backups/
-automated_backups/
-*_backup*.db
-backup_*.db
-
-# Database files - Avoid conflicts
+# ======================================
+# Database files - حماية قواعد البيانات (محدث 2025-10-02)
+# ======================================
+# حماية جميع قواعد البيانات من Git لمنع فقدان البيانات
+classroom.db
+classroom_*.db
 *.db
 *.sqlite
 *.sqlite3
-classroom*.db
-classroom.db
+*.db-journal
+*.db-shm
+*.db-wal
 
+# ======================================
+# Backup files - النسخ الاحتياطية
+# ======================================
+backups/
+auto_backups/
+automated_backups/
+emergency_environment_backups/
+*_backup/
+*_backup*.db
+backup_*.db
+*.backup
+*.bak
+
+# ======================================
 # Log files
+# ======================================
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
+# ======================================
 # Environment files
+# ======================================
 .env
 .env.local
 .env.development
 .env.production
 
+# ======================================
 # Temporary files
+# ======================================
 *.tmp
 *.temp
-
-# OS files
+*.lock
 .DS_Store
 Thumbs.db
+
+# ======================================
+# Build directories
+# ======================================
+dist/
+build/
+.vite/
+.next/
