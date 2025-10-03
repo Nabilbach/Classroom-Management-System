@@ -1,0 +1,51 @@
+name: Auto Backup Main
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * *' # daily at 00:00 UTC
+
+permissions:
+  contents: write
+
+jobs:
+  create-backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create backup branch and tag (via GitHub API)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const core = require('@actions/core');
+            const ts = new Date().toISOString().replace(/[:.]/g, '-');
+            const branch = `backup/save-${ts}`;
+            const tag = `save-${ts}`;
+            const sha = context.sha || (await github.rest.repos.get({ owner: context.repo.owner, repo: context.repo.repo })).data.sha;
+
+            core.info(`Creating/updating backup branch ${branch} and tag ${tag} for commit ${sha}`);
+
+            // Create branch if it doesn't exist
+            try {
+              await github.rest.git.getRef({ owner: context.repo.owner, repo: context.repo.repo, ref: `heads/${branch}` });
+              core.info(`Branch ${branch} already exists`);
+            } catch (err) {
+              await github.rest.git.createRef({ owner: context.repo.owner, repo: context.repo.repo, ref: `refs/heads/${branch}`, sha });
+              core.info(`Created branch ${branch}`);
+            }
+
+            // Create an annotated tag object (ignore if tag exists)
+            try {
+              await github.rest.git.createTag({ owner: context.repo.owner, repo: context.repo.repo, tag, message: `Automated backup for ${ts}`, object: sha, type: 'commit' });
+              core.info(`Created tag object ${tag}`);
+            } catch (err) {
+              core.info(`Tag object creation skipped: ${err.message}`);
+            }
+
+            // Create tag ref if not exists
+            try {
+              await github.rest.git.createRef({ owner: context.repo.owner, repo: context.repo.repo, ref: `refs/tags/${tag}`, sha });
+              core.info(`Created tag ref refs/tags/${tag}`);
+            } catch (err) {
+              core.info(`Tag ref creation skipped: ${err.message}`);
+            }
