@@ -114,9 +114,8 @@ function StudentManagement() {
         // 1. التحميل الأولي للصفحة
         // 2. لا يوجد قسم محدد حالياً
         // 3. لا يوجد اختيار يدوي حديث
-        const shouldApplySmartFilter = isInitialLoad || 
-                                      !currentSection || 
-                                      !hasRecentManualSelection;
+        // تم تعطيل الاختيار التلقائي للقسم - يجب على المستخدم اختيار القسم يدوياً
+        const shouldApplySmartFilter = false; // كان: isInitialLoad || !currentSection || !hasRecentManualSelection
         
         if (shouldApplySmartFilter) {
           console.log('🎯 فلترة ذكية عند تحميل الصفحة:', recommendedSection.name);
@@ -131,24 +130,6 @@ function StudentManagement() {
       }
     }
   }, [recommendedSectionId, sections, currentSection, setCurrentSection, isTeachingTime, isInitialLoad, lastManualSelection]);
-
-  // تطبيق فلترة ذكية إضافية عند تحميل الصفحة
-  useEffect(() => {
-    // عند تحميل الصفحة أول مرة، إذا لم يكن هناك قسم محدد، اختر القسم المقترح أو الأول
-    if (sections.length > 0 && !currentSection) {
-      if (recommendedSectionId) {
-        const recommendedSection = sections.find(s => s.id === recommendedSectionId);
-        if (recommendedSection) {
-          console.log('🔄 تحديد القسم عند تحميل الصفحة (مقترح):', recommendedSection.name);
-          setCurrentSection(recommendedSection);
-          return;
-        }
-      }
-      // إذا لم يوجد قسم مقترح، اختر الأول
-      console.log('🔄 تحديد القسم عند تحميل الصفحة (افتراضي):', sections[0].name);
-      setCurrentSection(sections[0]);
-    }
-  }, [sections, currentSection, setCurrentSection, recommendedSectionId]);
 
   // دالة تعيين جميع الطلاب كغائبين
   const handleMarkAllAbsent = () => {
