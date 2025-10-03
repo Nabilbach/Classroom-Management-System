@@ -13,39 +13,36 @@ jobs:
   create-backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Create backup branch and tag (via GitHub API)
-        uses: actions/github-script@v7
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          script: |
-            const core = require('@actions/core');
-            const ts = new Date().toISOString().replace(/[:.]/g, '-');
-            const branch = `backup/save-${ts}`;
-            const tag = `save-${ts}`;
-            const sha = context.sha || (await github.rest.repos.get({ owner: context.repo.owner, repo: context.repo.repo })).data.sha;
+          fetch-depth: 0
 
-            core.info(`Creating/updating backup branch ${branch} and tag ${tag} for commit ${sha}`);
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-            // Create branch if it doesn't exist
-            try {
-              await github.rest.git.getRef({ owner: context.repo.owner, repo: context.repo.repo, ref: `heads/${branch}` });
-              core.info(`Branch ${branch} already exists`);
-            } catch (err) {
-              await github.rest.git.createRef({ owner: context.repo.owner, repo: context.repo.repo, ref: `refs/heads/${branch}`, sha });
-              core.info(`Created branch ${branch}`);
-            }
+      - name: Create and push backup branch and tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref }}
+        run: |
+          set -e
+          ts=$(date -u +"%Y-%m-%d_%H%M%S")
+          branch="backup/save-$ts"
+          tag="save-$ts"
 
-            // Create an annotated tag object (ignore if tag exists)
-            try {
-              await github.rest.git.createTag({ owner: context.repo.owner, repo: context.repo.repo, tag, message: `Automated backup for ${ts}`, object: sha, type: 'commit' });
-              core.info(`Created tag object ${tag}`);
-            } catch (err) {
-              core.info(`Tag object creation skipped: ${err.message}`);
-            }
+          echo "Creating branch $branch from current HEAD"
+          git checkout -b "$branch"
 
-            // Create tag ref if not exists
-            try {
-              await github.rest.git.createRef({ owner: context.repo.owner, repo: context.repo.repo, ref: `refs/tags/${tag}`, sha });
-              core.info(`Created tag ref refs/tags/${tag}`);
-            } catch (err) {
-              core.info(`Tag ref creation skipped: ${err.message}`);
-            }
+          # Push branch using GITHUB_TOKEN
+          remote_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git"
+          git push "$remote_url" "$branch":refs/heads/"$branch"
+
+          echo "Creating tag $tag"
+          git tag -a "$tag" -m "Automated backup for $ts"
+          git push "$remote_url" refs/tags/"$tag"
+
+          echo "Backup branch and tag pushed: $branch  $tag"
