@@ -20,10 +20,10 @@ const FollowUp = sequelize.define('FollowUp', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
-  status: {
-    type: DataTypes.STRING,
+  is_open: {
+    type: DataTypes.BOOLEAN,
     allowNull: false,
-    defaultValue: 'open',
+    defaultValue: true,
   }
 }, {
   timestamps: true,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Typography, Button, Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions, Box, Chip } from '@mui/material';
+import { Typography, Button, Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions, Box, Chip, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import FilterDrawer from '../components/students/FilterDrawer';
 import { Student } from '../types/student';
 import { useSections } from '../contexts/SectionsContext';
@@ -15,7 +15,7 @@ import QuickEvaluation from '../components/evaluation/QuickEvaluation';
 import StudentTableSkeleton from '../components/students/StudentTableSkeleton';
 import StudentCardSkeleton from '../components/students/StudentCardSkeleton';
 import ExcelUploadModal from '../components/students/ExcelUploadModal';
-import AbsenceHistoryContent from '../components/AbsenceHistoryContent';
+import AbsenceHistoryContent from '../components/AbsenceHistoryContent_Enhanced';
 import useDebounce from '../hooks/useDebounce';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
@@ -27,9 +27,10 @@ interface AbsentStudentsModalProps {
   onClose: () => void;
   absentStudents: Student[];
   sectionName: string;
+  onCancelAbsence?: (studentId: number) => void;
 }
 
-const AbsentStudentsModal: React.FC<AbsentStudentsModalProps> = ({ isOpen, onClose, absentStudents, sectionName }) => {
+const AbsentStudentsModal: React.FC<AbsentStudentsModalProps> = ({ isOpen, onClose, absentStudents, sectionName, onCancelAbsence }) => {
   const printContent = () => {
     const printableContent = document.getElementById('printable-absent-list');
     const printWindow = window.open('', '', 'height=600,width=800');
@@ -59,6 +60,7 @@ const AbsentStudentsModal: React.FC<AbsentStudentsModalProps> = ({ isOpen, onClo
               <tr>
                 <th style={{ padding: '8px', border: '1px solid #ddd', backgroundColor: '#f2f2f2', fontWeight: 'bold' }}>رقم الطالب في القسم</th>
                 <th style={{ padding: '8px', border: '1px solid #ddd', backgroundColor: '#f2f2f2', fontWeight: 'bold' }}>الاسم الكامل</th>
+                {onCancelAbsence && <th style={{ padding: '8px', border: '1px solid #ddd', backgroundColor: '#f2f2f2', fontWeight: 'bold' }}>الإجراءات</th>}
               </tr>
             </thead>
             <tbody>
@@ -66,6 +68,19 @@ const AbsentStudentsModal: React.FC<AbsentStudentsModalProps> = ({ isOpen, onClo
                 <tr key={student.id}>
                   <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{student.classOrder}</td>
                   <td style={{ padding: '8px', border: '1px solid #ddd' }}>{`${student.firstName} ${student.lastName}`}</td>
+                  {onCancelAbsence && (
+                    <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        onClick={() => onCancelAbsence(student.id)}
+                        sx={{ fontSize: '12px', padding: '4px 8px' }}
+                      >
+                        إلغاء الغياب
+                      </Button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -85,18 +100,12 @@ const MemoizedStudentTable = React.memo(StudentTable);
 
 function StudentManagement() {
   const { sections, currentSection, setCurrentSection } = useSections();
-  const { students, deleteStudent, isLoading, fetchStudents, updateStudentLocal } = useStudents();
+  const { students, deleteStudent, isLoading, fetchStudents } = useStudents();
   const { recommendedSectionId, displayMessage, isTeachingTime } = useCurrentLesson();
 
-  // تطبيق اختيار القسم الذكي
+  // لا نطبق اختيار القسم الذكي تلقائياً - المستخدم يختار بنفسه
   useEffect(() => {
-    if (recommendedSectionId && sections.length > 0 && !currentSection) {
-      const recommendedSection = sections.find(s => s.id === recommendedSectionId);
-      if (recommendedSection) {
-        console.log('🎯 تطبيق اختيار القسم الذكي:', recommendedSection.name);
-        setCurrentSection(recommendedSection);
-      }
-    }
+    // تم إزالة الاختيار التلقائي للقسم لتجنب عرض بيانات غير مرغوب فيها
   }, [recommendedSectionId, sections, currentSection, setCurrentSection]);
 
   // دالة تعيين جميع الطلاب كغائبين
@@ -165,11 +174,14 @@ function StudentManagement() {
   const [scoreRangeFilter, setScoreRangeFilter] = useState<string>('الكل');
   const [assessmentStatusFilter, setAssessmentStatusFilter] = useState<string>('الكل');
   const [warningStatusFilter, setWarningStatusFilter] = useState<string>('الكل');
+  const [followupStatusFilter, setFollowupStatusFilter] = useState<string>('');
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
 
   // Attendance State
   const [isAttendanceMode, setIsAttendanceMode] = useState(false);
   const [attendanceStatus, setAttendanceStatus] = useState<Record<string, boolean>>({});
+  // indicator for whether today's attendance is recorded for the current section
+  const [hasAttendanceToday, setHasAttendanceToday] = useState<boolean | null>(null);
   const [showAbsentListModal, setShowAbsentListModal] = useState(false);
   const [absentStudents, setAbsentStudents] = useState<Student[]>([]);
 
@@ -288,7 +300,8 @@ function StudentManagement() {
   }, [todayScheduleSorted, nowTick, sections]);
 
   useEffect(() => {
-    if (sections.length > 0 && !currentSection) {
+    // Only auto-select first section if we have sections and no explicit section choice was made
+    if (sections.length > 0 && !currentSection && !localStorage.getItem('explicit_section_choice')) {
       setCurrentSection(sections[0]);
     }
   }, [sections, setCurrentSection]);
@@ -333,6 +346,7 @@ function StudentManagement() {
 
     return { averageScore, topStudents, needsAttention, weeklyAssessments };
   }, [sectionStudents, currentSection]);
+  // (checkTodaysAttendance will be defined later near attendance handlers)
   
   // Follow-up count for current section (simple quick count)
   const [sectionFollowupCount, setSectionFollowupCount] = useState<number>(0);
@@ -419,12 +433,7 @@ function StudentManagement() {
   }, [fetchStudents]);
 
   // Quick-select student from the widget: open QuickEvaluation modal and set selectedStudent
-  const handleQuickSelectStudent = (id: number) => {
-    const found = students.find(s => Number(s.id) === Number(id)) || null;
-    setSelectedStudent(found as any);
-    if (!isAssessmentModalOpen) setIsAssessmentModalOpen(true);
-    // If already open, QuickEvaluation will react to the changed studentId prop
-  };
+  // quick-select widget removed / handled inside QuickEvaluation modal now
 
   const isNumericSearch = (term: string): boolean => /^\d+$/.test(term);
   const isPathwaySearch = (term: string): boolean => term.toUpperCase().startsWith('H');
@@ -444,10 +453,15 @@ function StudentManagement() {
         );
       });
     }
-    if (scoreRangeFilter !== 'الكل') {
+    if (scoreRangeFilter !== 'الكل' && scoreRangeFilter !== 'all') {
       studentsToFilter = studentsToFilter.filter(student => {
         const score = student.score;
         if (score === undefined || score === null) return false;
+        if (scoreRangeFilter === 'excellent') return score >= 18;
+        if (scoreRangeFilter === 'good') return score >= 14 && score < 18;
+        if (scoreRangeFilter === 'average') return score >= 10 && score < 14;
+        if (scoreRangeFilter === 'poor') return score < 10;
+        // Legacy support
         if (scoreRangeFilter === '0-4') return score >= 0 && score < 4;
         if (scoreRangeFilter === '4-6') return score >= 4 && score < 6;
         if (scoreRangeFilter === '6-8') return score >= 6 && score < 8;
@@ -457,22 +471,33 @@ function StudentManagement() {
     }
     if (assessmentStatusFilter !== 'الكل') {
       studentsToFilter = studentsToFilter.filter(student => {
-        const isAssessed = Boolean(student.score && student.score > 0);
-        if (assessmentStatusFilter === 'مقيم') return isAssessed;
-        if (assessmentStatusFilter === 'غير مقيم') return !isAssessed;
+        const hasAssessment = Boolean(student.score !== undefined && student.score !== null);
+        if (assessmentStatusFilter === 'مقيم') return hasAssessment;
+        if (assessmentStatusFilter === 'غير مقيم') return !hasAssessment;
         return true;
       });
     }
     if (warningStatusFilter !== 'الكل') {
       studentsToFilter = studentsToFilter.filter(student => {
-        const hasWarnings = Boolean(student.score && student.score < 10);
-        if (warningStatusFilter === 'مع إنذار') return hasWarnings;
-        if (warningStatusFilter === 'بدون إنذار') return !hasWarnings;
+        const hasWarnings = Boolean(student.score !== undefined && student.score !== null && student.score < 10);
+        if (warningStatusFilter === 'محذر') return hasWarnings;
+        if (warningStatusFilter === 'غير محذر') return !hasWarnings;
         return true;
       });
     }
+    
+    // فلتر المتابعة
+    if (followupStatusFilter && followupStatusFilter !== 'الكل') {
+      studentsToFilter = studentsToFilter.filter(student => {
+        const isInFollowup = followupStudents.some(fs => fs.id === student.id);
+        if (followupStatusFilter === 'متابع') return isInFollowup;
+        if (followupStatusFilter === 'غير متابع') return !isInFollowup;
+        return true;
+      });
+    }
+    
     return studentsToFilter;
-  }, [sectionStudents, debouncedSearchTerm, scoreRangeFilter, assessmentStatusFilter, warningStatusFilter]);
+  }, [sectionStudents, debouncedSearchTerm, scoreRangeFilter, assessmentStatusFilter, warningStatusFilter, followupStatusFilter, followupStudents]);
 
   const handleEditStudent = useCallback((student: Student) => {
     setEditingStudent(student);
@@ -490,11 +515,14 @@ function StudentManagement() {
     setIsAssessmentModalOpen(true);
   }, []);
 
+  // (attendance indicator removed) no per-section attendance check displayed here
+
   const handleClearFilters = useCallback(() => {
     setSearchTerm('');
     setScoreRangeFilter('الكل');
     setAssessmentStatusFilter('الكل');
     setWarningStatusFilter('الكل');
+    setFollowupStatusFilter('');
   }, []);
 
   const handleConfirmModalOpen = useCallback((message: string, action: () => void) => {
@@ -562,6 +590,29 @@ function StudentManagement() {
     setAttendanceStatus(prev => ({ ...prev, [studentId]: isPresent }));
   };
 
+  // Check if attendance has been recorded for the current section today
+  const checkTodaysAttendance = useCallback(async () => {
+    if (!currentSection) {
+      setHasAttendanceToday(null);
+      return;
+    }
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const resp = await fetch(`http://localhost:3000/api/attendance?date=${today}&sectionId=${encodeURIComponent(String(currentSection.id))}`);
+      if (!resp.ok) { setHasAttendanceToday(null); return; }
+      const data = await resp.json();
+      const records = Array.isArray(data) ? data : (data.value || data.records || []);
+      setHasAttendanceToday((records || []).length > 0);
+    } catch (e) {
+      console.warn('Failed to check todays attendance', e);
+      setHasAttendanceToday(null);
+    }
+  }, [currentSection]);
+
+  useEffect(() => {
+    checkTodaysAttendance();
+  }, [checkTodaysAttendance]);
+
   const handleSaveAttendance = async () => {
     if (!currentSection) return;
 
@@ -590,10 +641,76 @@ function StudentManagement() {
       setAbsentStudents(absent);
       setShowAbsentListModal(true);
       setIsAttendanceMode(false);
+      // تحديث حالة تسجيل الغياب للعرض
+      checkTodaysAttendance();
 
     } catch (error) {
       console.error('Error saving attendance:', error);
       alert('فشل في حفظ بيانات الحضور.');
+    }
+  };
+
+  // دالة إلغاء الغياب لطالب معين
+  const handleCancelAbsence = async (studentId: number) => {
+    if (!window.confirm('هل تريد إلغاء غياب هذا الطالب وتسجيله كحاضر؟')) {
+      return;
+    }
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // حذف سجل الغياب الحالي
+      const deleteResponse = await fetch(`http://localhost:3000/api/attendance`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          student_id: studentId, 
+          date: today,
+          section_id: currentSection?.id 
+        }),
+      });
+
+      if (!deleteResponse.ok) {
+        throw new Error('Failed to delete absence record');
+      }
+
+      // تسجيل الطالب كحاضر
+      const attendanceData = [{
+        student_id: studentId,
+        isPresent: true,
+        sectionId: currentSection?.id,
+        date: today,
+      }];
+
+      const saveResponse = await fetch(`http://localhost:3000/api/attendance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attendance: attendanceData }),
+      });
+
+      if (!saveResponse.ok) {
+        throw new Error('Failed to save new attendance record');
+      }
+
+      // تحديث القائمة المحلية
+      const updatedAbsentStudents = absentStudents.filter(s => s.id !== studentId);
+      setAbsentStudents(updatedAbsentStudents);
+      
+      // إذا لم يعد هناك غائبين، أغلق النافذة
+      if (updatedAbsentStudents.length === 0) {
+        setShowAbsentListModal(false);
+      }
+
+      alert('تم إلغاء الغياب وتسجيل الطالب كحاضر بنجاح.');
+      
+      // تحديث بيانات الطلاب
+      fetchStudents();
+    // تحديث مؤشر حالة الغياب بعد التغيير
+    try { checkTodaysAttendance(); } catch (e) { /* ignore */ }
+
+    } catch (error) {
+      console.error('Error canceling absence:', error);
+      alert('فشل في إلغاء الغياب.');
     }
   };
 
@@ -603,7 +720,6 @@ function StudentManagement() {
       <div className="flex flex-wrap justify-between items-center mb-2 sticky top-0 z-20 bg-white shadow-sm py-1 px-2" style={{ borderBottom: '1px solid #eee', marginRight: 0 }}>
         <Typography variant="h4" color="blue-gray" sx={{ fontWeight: 'bold' }}>إدارة الطلاب</Typography>
         <div className="flex flex-wrap gap-2 overflow-x-auto" style={{ maxWidth: '100%' }}>
-          <Button onClick={() => setIsFilterDrawerOpen(true)} variant="outlined" color="primary">الفلاتر</Button>
           {!isAttendanceMode ? (
             <>
               <Button onClick={handleEnterAttendanceMode} variant="contained" color="secondary" startIcon={<PencilSquareIcon className="h-5 w-5" />}>
@@ -672,11 +788,17 @@ function StudentManagement() {
 
   {/* Sticky section chips bar */}
   <div className="flex gap-2 mb-4 overflow-x-auto pb-2 sticky top-[56px] z-10 bg-white border-b border-gray-100 chips-scrollbar w-full" style={{ minHeight: '48px' }}>
-        <Button variant={!currentSection ? "contained" : "outlined"} onClick={() => setCurrentSection(null)} className="flex-shrink-0" sx={{ fontWeight: 'bold' }}>
+        <Button variant={!currentSection ? "contained" : "outlined"} onClick={() => {
+          setCurrentSection(null);
+          localStorage.setItem('explicit_section_choice', 'all_students');
+        }} className="flex-shrink-0" sx={{ fontWeight: 'bold' }}>
           جميع التلاميذ
         </Button>
         {sections.map((section) => (
-          <Button key={section.id} variant={currentSection?.id === section.id ? "contained" : "outlined"} onClick={() => setCurrentSection(section)} className="flex-shrink-0" sx={{ fontWeight: 'bold' }}>
+          <Button key={section.id} variant={currentSection?.id === section.id ? "contained" : "outlined"} onClick={() => {
+            setCurrentSection(section);
+            localStorage.setItem('explicit_section_choice', section.id.toString());
+          }} className="flex-shrink-0" sx={{ fontWeight: 'bold' }}>
             {section.name}
           </Button>
         ))}
@@ -707,15 +829,25 @@ function StudentManagement() {
                 <Typography variant="h5" color="blue-gray" sx={{ fontWeight: 'bold' }}>
                   {currentSection ? `طلاب قسم ${currentSection.name}` : 'جميع التلاميذ'} ({finalFilteredStudents.length} طالب)
                 </Typography>
-                {/* مؤشر الحصة الذكي */}
-                {recommendedSectionId && currentSection?.id === recommendedSectionId && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                
+                {/* حالة تسجيل الغياب: مؤشر بسيط تحت عنوان القسم */}
+                {currentSection && (
+                  <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
+                    حالة الغياب اليوم: <span style={{ fontWeight: 'bold', color: hasAttendanceToday === null ? '#9e9e9e' : (hasAttendanceToday ? '#4caf50' : '#ff9800') }}>
+                      {hasAttendanceToday === null ? 'جاري التحقق...' : (hasAttendanceToday ? 'مسجل' : 'غير مسجل')}
+                    </span>
+                  </Typography>
+                )}
+                
+                {/* مؤشر الحصة الذكي - يظهر فقط عند وجود حصة حالية */}
+                {recommendedSectionId && currentSection?.id === recommendedSectionId && isTeachingTime && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
                     <Chip 
                       label={displayMessage}
                       size="small"
                       sx={{
-                        bgcolor: isTeachingTime ? 'success.light' : 'info.light',
-                        color: isTeachingTime ? 'success.dark' : 'info.dark',
+                        bgcolor: 'success.light',
+                        color: 'success.dark',
                         fontWeight: 'bold',
                         '& .MuiChip-label': {
                           fontSize: '0.75rem'
@@ -727,7 +859,89 @@ function StudentManagement() {
               </div>
             </div>
 
-            {/* Filter controls moved to FilterDrawer */}
+            {/* Quick Filters - نقل الفلاتر هنا لسهولة الوصول */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3, p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+                {/* البحث السريع */}
+                <TextField
+                  label="البحث عن طالب"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  variant="outlined"
+                  size="small"
+                  sx={{ minWidth: 300 }}
+                  placeholder="الاسم أو رقم المسار..."
+                />
+                
+                {/* فلتر حسب التقييم */}
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>التقييم</InputLabel>
+                  <Select
+                    value={assessmentStatusFilter}
+                    onChange={(e) => setAssessmentStatusFilter(e.target.value as string)}
+                    label="التقييم"
+                  >
+                    <MenuItem value="الكل">الكل</MenuItem>
+                    <MenuItem value="مقيم">مُقيم</MenuItem>
+                    <MenuItem value="غير مقيم">غير مُقيم</MenuItem>
+                  </Select>
+                </FormControl>
+                
+                {/* فلتر حسب التحذير */}
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>التحذير</InputLabel>
+                  <Select
+                    value={warningStatusFilter}
+                    onChange={(e) => setWarningStatusFilter(e.target.value as string)}
+                    label="التحذير"
+                  >
+                    <MenuItem value="الكل">الكل</MenuItem>
+                    <MenuItem value="محذر">محذر</MenuItem>
+                    <MenuItem value="غير محذر">غير محذر</MenuItem>
+                  </Select>
+                </FormControl>
+                
+                {/* فلتر حسب المتابعة */}
+                <FormControl size="small" sx={{ minWidth: 130 }}>
+                  <InputLabel>المتابعة</InputLabel>
+                  <Select
+                    value={followupStatusFilter || 'الكل'}
+                    onChange={(e) => setFollowupStatusFilter(e.target.value === 'الكل' ? '' : e.target.value)}
+                    label="المتابعة"
+                  >
+                    <MenuItem value="الكل">الكل</MenuItem>
+                    <MenuItem value="متابع">متابع</MenuItem>
+                    <MenuItem value="غير متابع">غير متابع</MenuItem>
+                  </Select>
+                </FormControl>
+                
+                {/* فلتر النطاق النقطي */}
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>النطاق النقطي</InputLabel>
+                  <Select
+                    value={scoreRangeFilter}
+                    onChange={(e) => setScoreRangeFilter(e.target.value as string)}
+                    label="النطاق النقطي"
+                  >
+                    <MenuItem value="all">الكل</MenuItem>
+                    <MenuItem value="excellent">ممتاز (18+)</MenuItem>
+                    <MenuItem value="good">جيد (14-17)</MenuItem>
+                    <MenuItem value="average">متوسط (10-13)</MenuItem>
+                    <MenuItem value="poor">ضعيف (أقل من 10)</MenuItem>
+                  </Select>
+                </FormControl>
+                
+                {/* مسح الفلاتر */}
+                <Button 
+                  onClick={handleClearFilters}
+                  variant="outlined" 
+                  size="small"
+                  sx={{ minWidth: 80 }}
+                >
+                  مسح
+                </Button>
+              </Box>
+            </Box>
 
             <div className="flex justify-end gap-2 mb-4">
               <Button variant={viewMode === 'table' ? "contained" : "outlined"} onClick={() => setViewMode('table')} size="small" sx={{ fontWeight: 'bold' }}>عرض الجدول</Button>
@@ -788,10 +1002,10 @@ function StudentManagement() {
   {/* استبدال نافذة التقييم البسيطة بنافذة التقييم المتقدمة */}
   <Dialog open={isAssessmentModalOpen} onClose={() => setIsAssessmentModalOpen(false)} maxWidth="md" fullWidth>
     <QuickEvaluation
-      studentId={selectedStudent ? String(selectedStudent.id) : ''}
+      studentId={selectedStudent ? Number(selectedStudent.id) : 0}
       studentName={selectedStudent ? `${selectedStudent.firstName} ${selectedStudent.lastName}` : ''}
       onClose={() => setIsAssessmentModalOpen(false)}
-      sectionStudents={sectionStudents}
+      sectionStudents={sectionStudents.map(s => ({ id: Number(s.id), name: `${s.firstName} ${s.lastName}` }))}
       onSwitchStudent={(id: number) => {
         // switch the modal to another student id without closing it
         const found = students.find(s => Number(s.id) === Number(id)) || null;
@@ -811,7 +1025,13 @@ function StudentManagement() {
     />
   </Dialog>
       <ExcelUploadModal isOpen={isExcelUploadModalOpen} onClose={() => setIsExcelUploadModalOpen(false)} />
-      <AbsentStudentsModal isOpen={showAbsentListModal} onClose={() => setShowAbsentListModal(false)} absentStudents={absentStudents} sectionName={currentSection?.name || ''} />
+      <AbsentStudentsModal 
+        isOpen={showAbsentListModal} 
+        onClose={() => setShowAbsentListModal(false)} 
+        absentStudents={absentStudents} 
+        sectionName={currentSection?.name || ''} 
+        onCancelAbsence={handleCancelAbsence}
+      />
 
       {/* Absence History Modal */}
       <Dialog 

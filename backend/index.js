@@ -28,6 +28,51 @@ app.use('/api/scheduled-lessons', scheduledLessonsRoutes);
 const sectionStatsRoutes = require('./routes/sectionStats');
 app.use('/api/sections/stats', sectionStatsRoutes);
 
+// Backup status API
+const fs = require('fs');
+const path = require('path');
+
+app.get('/api/backup-status', async (req, res) => {
+  try {
+    const backupDir = path.join(__dirname, '..', 'automated_backups');
+    let lastBackup = null;
+    let isRunning = false;
+    
+    if (fs.existsSync(backupDir)) {
+      const files = fs.readdirSync(backupDir)
+        .filter(file => file.startsWith('auto_backup_'))
+        .map(file => ({
+          name: file,
+          path: path.join(backupDir, file),
+          stat: fs.statSync(path.join(backupDir, file))
+        }))
+        .sort((a, b) => b.stat.mtime - a.stat.mtime);
+
+      if (files.length > 0) {
+        lastBackup = files[0].stat.mtime.toISOString();
+        // إذا كانت آخر نسخة احتياطية خلال آخر 8 ساعات، فالخدمة نشطة
+        const timeDiff = Date.now() - files[0].stat.mtime.getTime();
+        isRunning = timeDiff < (8 * 60 * 60 * 1000);
+      }
+    }
+
+    res.json({
+      isRunning,
+      lastBackup,
+      nextBackup: null, // يمكن حسابها لاحقاً
+      backupCount: fs.existsSync(backupDir) ? fs.readdirSync(backupDir).filter(f => f.startsWith('auto_backup_')).length : 0
+    });
+  } catch (error) {
+    console.error('Error checking backup status:', error);
+    res.status(500).json({
+      isRunning: false,
+      lastBackup: null,
+      nextBackup: null,
+      backupCount: 0
+    });
+  }
+});
+
 // Helper function to get the current score for a student
 const getCurrentScore = async (studentId) => {
   try {
@@ -334,7 +379,7 @@ app.post('/api/students/:studentId/followups', async (req, res) => {
     const { type, description } = req.body;
     if (!type) return res.status(400).json({ message: 'type is required' });
 
-    const f = await db.FollowUp.create({ studentId, type, description: description || null, status: 'open' });
+    const f = await db.FollowUp.create({ studentId, type, description: description || null, is_open: true });
     res.status(201).json(f);
   } catch (error) {
     console.error('Error creating followup:', error);
@@ -364,7 +409,7 @@ app.get('/api/sections/:sectionId/followups-count', async (req, res) => {
     const students = await db.Student.findAll({ where: { sectionId } });
     const studentIds = students.map(s => s.id);
     if (studentIds.length === 0) return res.json({ count: 0 });
-    const count = await db.FollowUp.count({ where: { studentId: studentIds, status: 'open' } });
+    const count = await db.FollowUp.count({ where: { studentId: studentIds, is_open: true } });
     res.json({ count });
   } catch (error) {
     console.error('Error fetching section followup counts:', error);
@@ -384,7 +429,7 @@ app.get('/api/sections/:sectionId/followups-students', async (req, res) => {
     // Count open followups grouped by studentId
     const counts = await db.FollowUp.findAll({
       attributes: ['studentId', [db.sequelize.fn('COUNT', db.sequelize.col('id')), 'count']],
-      where: { studentId: studentIds, status: 'open' },
+      where: { studentId: studentIds, is_open: true },
       group: ['studentId']
     });
 
@@ -723,6 +768,64 @@ const ensureAttendanceIndexes = async () => {
     console.warn('ensureAttendanceIndexes warning:', e?.message || e);
   }
 };
+
+// ====================================
+// BACKUP STATUS API
+// ====================================
+
+// Backup status endpoint
+app.get('/api/backup-status', async (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    
+    // Check for backup files in automated_backups directory
+    const backupDir = path.join(__dirname, '..', 'automated_backups');
+    let lastBackup = null;
+    let backupCount = 0;
+    let isRunning = false;
+    
+    if (fs.existsSync(backupDir)) {
+      const files = fs.readdirSync(backupDir)
+        .filter(file => file.startsWith('auto_backup_'))
+        .map(file => {
+          const filePath = path.join(backupDir, file);
+          const stats = fs.statSync(filePath);
+          return {
+            name: file,
+            path: filePath,
+            mtime: stats.mtime
+          };
+        })
+        .sort((a, b) => b.mtime - a.mtime);
+      
+      backupCount = files.length;
+      
+      if (files.length > 0) {
+        lastBackup = files[0].mtime.toISOString();
+        // Consider backup service running if last backup is within 24 hours
+        const hoursSinceLastBackup = (Date.now() - files[0].mtime) / (1000 * 60 * 60);
+        isRunning = hoursSinceLastBackup < 24;
+      }
+    }
+    
+    res.json({
+      isRunning,
+      lastBackup,
+      nextBackup: null, // Can be calculated based on schedule
+      backupCount
+    });
+  } catch (error) {
+    console.error('Error fetching backup status:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch backup status',
+      isRunning: false,
+      lastBackup: null,
+      nextBackup: null,
+      backupCount: 0
+    });
+  }
+});
 
 // Start the server
 preMigrateCleanup()

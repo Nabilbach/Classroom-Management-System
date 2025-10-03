@@ -112,10 +112,7 @@ async function analyzeCurrentSchedule() {
             console.log(`   🏛️ القاعة: ${nextLesson.classroom || 'غير محدد'}`);
         } else {
             console.log('\n⚪ لا يوجد حصص حالياً أو قادمة لهذا اليوم');
-            console.log('🔍 سيتم عرض القسم الافتراضي (أول قسم في القائمة)');
-            if (sections.length > 0) {
-                console.log(`📝 القسم الافتراضي: ${sections[0].name} (ID: ${sections[0].id})`);
-            }
+            console.log('🔍 لن يتم عرض أي قسم افتراضي');
         }
 
         // إرجاع النتيجة للاستخدام في API
@@ -138,10 +135,7 @@ async function analyzeCurrentSchedule() {
                 teacher: nextLesson.teacher,
                 classroom: nextLesson.classroom
             } : null,
-            defaultSection: sections.length > 0 ? {
-                id: sections[0].id,
-                name: sections[0].name
-            } : null,
+            defaultSection: null, // إزالة القسم الافتراضي
             currentTime,
             currentDay: dayNames[currentDay] || currentDay,
             isTeachingTime: !!currentLesson

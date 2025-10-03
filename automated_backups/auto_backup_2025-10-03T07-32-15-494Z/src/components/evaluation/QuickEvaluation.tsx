@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import { formatDateShort } from '../../utils/formatDate';
-import { EvaluationData, FollowupData, AssessmentHistoryItem, Student, LEVEL_NAMES, LEVEL_COLORS, calculateLevel } from '../../types/evaluation';
-import { Card, CardBody, Button, Typography } from '@material-tailwind/react';
+import { Card, CardBody, Button, Typography, Textarea } from '@material-tailwind/react';
 import StudentQuickList from '../students/StudentQuickList';
 
 interface QuickEvaluationProps {
@@ -65,8 +63,12 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
   const [activeTab, setActiveTab] = useState<'evaluation' | 'followups'>('evaluation');
   const [followups, setFollowups] = useState<any[]>([]);
   const [followupLoading, setFollowupLoading] = useState(false);
-  const { enqueueSnackbar } = useSnackbar();
   const [collapsed, setCollapsed] = useState(false);
+  
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    console.log(`${type.toUpperCase()}: ${message}`);
+    alert(message);
+  };
 
   // جلب التقييم الحالي
   useEffect(() => {
@@ -225,7 +227,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
     console.log('QuickEvaluation.handleSave invoked', { studentId, evaluation });
 
     if (!studentId) {
-      enqueueSnackbar('لا يوجد معرف طالب صالح لحفظ التقييم.', { variant: 'error' });
+      console.log('لا يوجد معرف طالب صالح لحفظ التقييم.');
       return;
     }
 
@@ -264,7 +266,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
         let saved = null;
         try { saved = await response.json(); } catch (e) { /* ignore parse errors */ }
   console.log('✅ تم حفظ التقييم بنجاح', saved);
-  enqueueSnackbar('تم حفظ التقييم بنجاح', { variant: 'success' });
+  console.log('تم حفظ التقييم بنجاح');
         // If backend returned the saved scores, update local evaluation state so reopening shows exact values
         if (saved && saved.scores) {
           let s = saved.scores;
@@ -317,12 +319,12 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
         try { body = text ? JSON.parse(text) : {}; } catch (e) { body = { rawText: text }; }
         if (!resp.ok) {
           console.error('[QuickEvaluation] delete response not ok', resp.status, resp.statusText, body);
-          enqueueSnackbar(`فشل في حذف سجلات التقييم: ${resp.status} ${resp.statusText}`, { variant: 'error' });
+          showNotification(`فشل في حذف سجلات التقييم: ${resp.status} ${resp.statusText}`, 'error');
           return;
         }
 
         console.log('[QuickEvaluation] delete response', body);
-        enqueueSnackbar('تم حذف سجلات التقييم وإعادة التعيين.', { variant: 'info' });
+        showNotification('تم حذف سجلات التقييم وإعادة التعيين.', 'success');
         // Clear local UI state
         const zeroEval: EvaluationData = {
           behavior_score: 0,
@@ -339,10 +341,10 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
         setEvaluation(zeroEval);
         setLastAssessmentDate(null);
         // notify parent to refresh lists
-        try { onSave?.({ deleted: true, deletedCount: body.deletedCount ?? 0 }); } catch (e) { console.error('onSave threw', e); }
+        try { onSave?.({ deleted: true, deletedCount: (body as any).deletedCount ?? 0 }); } catch (e) { console.error('onSave threw', e); }
       } catch (error) {
         // Provide richer error info for debugging
-        console.error('Error resetting assessments:', error && (error.message || error));
+        console.error('Error resetting assessments:', error && ((error as any).message || error));
         try { window.alert('فشل في حذف سجلات التقييم بسبب خطأ في الشبكة. تحقق من اتصال السيرفر وحاول مجددًا.'); } catch (e) {}
       }
     })();
@@ -359,15 +361,15 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
         const created = await resp.json().catch(() => null);
         // prepend to local list
         setFollowups(prev => [created || { type, description: '', status: 'open' }, ...prev]);
-  enqueueSnackbar('تم إضافة متابعة', { variant: 'success' });
+  console.log('تم إضافة متابعة');
       } else {
         const txt = await resp.text().catch(() => '');
         console.error('Failed creating followup', resp.status, txt);
-  enqueueSnackbar('فشل في إضافة متابعة. حاول مرة أخرى.', { variant: 'error' });
+  console.error('فشل في إضافة متابعة. حاول مرة أخرى.');
       }
     } catch (e) {
       console.error('Network error creating followup', e);
-  enqueueSnackbar('خطأ في الاتصال. تأكد من تشغيل الخادم.', { variant: 'error' });
+  console.log('خطأ في الاتصال. تأكد من تشغيل الخادم.');
     }
   };
 
@@ -379,19 +381,19 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
         body: JSON.stringify({ status: 'closed' })
       });
       if (resp.ok) {
-        const updated = await resp.json().catch(() => null);
+        await resp.json().catch(() => null);
         // remove/refresh local list
         setFollowups(prev => prev.filter(f => String(f.id) !== String(id)));
-  enqueueSnackbar('تم إغلاق المتابعة', { variant: 'success' });
+  console.log('تم إغلاق المتابعة');
         try { onSave?.({ closedFollowup: id }); } catch (e) { console.error('onSave threw', e); }
       } else {
         const txt = await resp.text().catch(() => '');
         console.error('Failed closing followup', resp.status, txt);
-  enqueueSnackbar('فشل في إغلاق المتابعة. حاول مرة أخرى.', { variant: 'error' });
+  console.error('فشل في إغلاق المتابعة. حاول مرة أخرى.');
       }
     } catch (e) {
       console.error('Network error closing followup', e);
-  enqueueSnackbar('خطأ في الاتصال. تأكد من تشغيل الخادم.', { variant: 'error' });
+  console.log('خطأ في الاتصال. تأكد من تشغيل الخادم.');
     }
   };
 
