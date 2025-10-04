@@ -431,8 +431,8 @@ const TextbookPage: React.FC = () => {
               >
                 <MenuItem value="">جميع المستويات</MenuItem>
                 <MenuItem value="جذع مشترك">جذع مشترك</MenuItem>
-                <MenuItem value="أولى بكالوريا">أولى بكالوريا</MenuItem>
-                <MenuItem value="ثانية بكالوريا">ثانية بكالوريا</MenuItem>
+                <MenuItem value="أولى باكالوريا">أولى باكالوريا</MenuItem>
+                <MenuItem value="ثانية باكالوريا">ثانية باكالوريا</MenuItem>
               </Select>
             </FormControl>
           </Grid>

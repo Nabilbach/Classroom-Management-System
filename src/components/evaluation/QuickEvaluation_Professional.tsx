@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Paper, Box, Typography, Button, Slider, TextField, IconButton, Chip, 
-  LinearProgress, Card, CardContent, Tooltip, Badge, Avatar
+  LinearProgress, Card, CardContent, Tooltip, Avatar
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import StarIcon from '@mui/icons-material/Star';
@@ -10,7 +10,7 @@ import SchoolIcon from '@mui/icons-material/School';
 import BookIcon from '@mui/icons-material/Book';
 import PersonIcon from '@mui/icons-material/Person';
 import { useSnackbar } from 'notistack';
-import { formatDateShort } from '../../utils/dateUtils';
+
 
 // (أزيل استخدام الأكورديون واستبدل بتبويبات فرعية داخل التقييم)
 // v3: Professional design with proper colors, XP system, and clear visual hierarchy
@@ -129,7 +129,7 @@ function QuickEvaluationProfessional({ studentId, studentName, onClose, onSave, 
   const [lastAssessmentDate, setLastAssessmentDate] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'evaluation' | 'followups' | 'history'>('evaluation');
   const [followups, setFollowups] = useState<any[]>([]);
-  const [followupLoading, setFollowupLoading] = useState(false);
+  const [_followupLoading, setFollowupLoading] = useState(false);
   const [_assessmentsHistory, setAssessmentsHistory] = useState<any[]>([]);
   const { enqueueSnackbar } = useSnackbar();
 

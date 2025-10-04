@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Paper, Box, Typography, Button, Slider, TextField, IconButton, Chip, 
   LinearProgress, Card, CardContent, Tooltip, Avatar, Divider
@@ -144,10 +144,10 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
   const [activeTab, setActiveTab] = useState<'evaluation' | 'followups' | 'history'>('evaluation');
   const [followups, setFollowups] = useState<any[]>([]);
   const [followupLoading, setFollowupLoading] = useState(false);
-  const [followupDeletingAll, setFollowupDeletingAll] = useState(false);
-  const [_studentsWithFollowups, setStudentsWithFollowups] = useState<Record<string, boolean>>({});
+  const [_followupDeletingAll, setFollowupDeletingAll] = useState(false);
+  const [_studentsWithFollowups, _setStudentsWithFollowups] = useState<Record<string, boolean>>({});
   const [_assessmentsHistory, setAssessmentsHistory] = useState<any[]>([]);
-  const [collapsed, setCollapsed] = useState(true);
+  const [_collapsed, _setCollapsed] = useState(true);
   const { enqueueSnackbar } = useSnackbar();
 
   // Calculate XP and level from scores
@@ -674,7 +674,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                       <Button
                         onClick={() => onSwitchStudent && onSwitchStudent(s.id)}
                         variant={isCurrent ? 'contained' : 'outlined'}
-                        size="large"
+                        size="medium"
                         sx={{
                           minWidth: 50,
                           height: 50,
@@ -709,7 +709,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                   onClick={() => setActiveTab(tab.id as any)}
                   variant={activeTab === tab.id ? 'contained' : 'outlined'}
                   startIcon={tab.icon}
-                  size="large"
+                  size="medium"
                   sx={{
                     px: 4,
                     py: 2,
@@ -937,7 +937,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                       fullWidth
                       variant="outlined"
                       placeholder="عدد النقاط الإضافية"
-                      size="large"
+                      size="medium"
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           borderRadius: 3,
@@ -1040,7 +1040,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                     <Button
                       variant="outlined"
                       onClick={onClose}
-                      size="large"
+                      size="medium"
                       sx={{ px: 6, py: 2, borderRadius: 3, fontWeight: 'bold' }}
                     >
                       إغلاق
@@ -1049,7 +1049,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                       variant="outlined"
                       color="error"
                       onClick={resetToZero}
-                      size="large"
+                      size="medium"
                       sx={{ px: 6, py: 2, borderRadius: 3, fontWeight: 'bold' }}
                     >
                       إعادة تعيين
@@ -1058,7 +1058,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                       variant="contained"
                       onClick={handleSave}
                       disabled={saving}
-                      size="large"
+                      size="medium"
                       sx={{
                         px: 8,
                         py: 2,
@@ -1092,14 +1092,14 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                 <Typography variant="h5" sx={{ fontWeight: 'bold', color: LEVEL_COLORS[evaluation.student_level] }}>
                   المتابعات ({followups.length})
                 </Typography>
-                <Button size="large" variant="contained" color="primary" onClick={() => createQuickFollowup('دفتر')} sx={{ borderRadius: 3 }}>
+                <Button size="medium" variant="contained" color="primary" onClick={() => createQuickFollowup('دفتر')} sx={{ borderRadius: 3 }}>
                   إضافة متابعة دفتر
                 </Button>
-                <Button size="large" variant="contained" color="primary" onClick={() => createQuickFollowup('كتاب')} sx={{ borderRadius: 3 }}>
+                <Button size="medium" variant="contained" color="primary" onClick={() => createQuickFollowup('كتاب')} sx={{ borderRadius: 3 }}>
                   إضافة متابعة كتاب
                 </Button>
                 {followups.length > 0 && (
-                  <Button size="large" color="error" variant="outlined" onClick={deleteAllFollowups} disabled={followupDeletingAll} sx={{ borderRadius: 3 }}>
+                  <Button size="medium" color="error" variant="outlined" onClick={deleteAllFollowups} disabled={followupDeletingAll} sx={{ borderRadius: 3 }}>
                     {followupDeletingAll ? 'جارٍ الحذف...' : 'حذف الكل'}
                   </Button>
                 )}
@@ -1129,7 +1129,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                           )}
                         </div>
                         <Button 
-                          size="large" 
+                          size="medium" 
                           color="error" 
                           variant="outlined" 
                           onClick={() => closeFollowup(f.id)}

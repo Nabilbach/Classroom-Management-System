@@ -39,7 +39,7 @@ interface Section {
   name: string;
 }
 
-const LEVEL_NAMES = {
+const LEVEL_NAMES: { [key: number]: string } = {
   1: "المبتدئ",
   2: "الناشط", 
   3: "المتميز",
@@ -47,7 +47,7 @@ const LEVEL_NAMES = {
   5: "الخبير"
 };
 
-const LEVEL_COLORS = {
+const LEVEL_COLORS: { [key: number]: string } = {
   1: "bg-gray-100 text-gray-700",
   2: "bg-blue-100 text-blue-700",
   3: "bg-green-100 text-green-700", 
@@ -144,11 +144,56 @@ function StudentEvaluationBoard() {
   };
 
   // تحديث التقييم بعد الحفظ
-  const handleEvaluationSaved = (updatedEvaluation: StudentEvaluation) => {
-    setEvaluations(prev => ({
-      ...prev,
-      [updatedEvaluation.student_id]: updatedEvaluation
-    }));
+  const handleEvaluationSaved = (updatedEvaluation: any) => {
+    try {
+      // Accept multiple payload shapes coming from different QuickEvaluation variants
+      const id = updatedEvaluation?.student_id ?? updatedEvaluation?.id ?? updatedEvaluation?.studentId ?? null;
+      if (!id) return;
+
+      setEvaluations(prev => {
+        const existing = prev[id] || {} as any;
+        const merged = {
+          ...existing,
+          ...updatedEvaluation,
+        } as StudentEvaluation;
+
+        // Normalize common fields
+        if (updatedEvaluation?.lastAssessmentDate) merged.last_updated = String(updatedEvaluation.lastAssessmentDate);
+        if (updatedEvaluation?.last_assessment_date) merged.last_updated = String(updatedEvaluation.last_assessment_date);
+        if (updatedEvaluation?.last_updated) merged.last_updated = String(updatedEvaluation.last_updated);
+        if (updatedEvaluation?.total_xp !== undefined) merged.total_xp = Number(updatedEvaluation.total_xp);
+        if (updatedEvaluation?.totalXp !== undefined) merged.total_xp = Number(updatedEvaluation.totalXp);
+        if (updatedEvaluation?.student_level !== undefined) merged.student_level = Number(updatedEvaluation.student_level);
+
+        return {
+          ...prev,
+          [id]: merged,
+        };
+      });
+
+      // Also update students list (optimistic) so any student-level display reflects the new XP/date
+      const total_xp = updatedEvaluation?.total_xp ?? updatedEvaluation?.totalXp ?? updatedEvaluation?.total_xp_amount ?? updatedEvaluation?.totalXpAmount ?? undefined;
+      const lastDate = updatedEvaluation?.lastAssessmentDate ?? updatedEvaluation?.last_assessment_date ?? updatedEvaluation?.last_updated ?? undefined;
+      const levelVal = updatedEvaluation?.student_level ?? updatedEvaluation?.studentLevel ?? undefined;
+
+      setStudents(prev => prev.map(s => {
+        if (String(s.id) !== String(id)) return s;
+        const patch: any = {};
+        if (total_xp !== undefined) {
+          patch.total_xp = total_xp;
+          patch.xp = total_xp; // alias used elsewhere
+        }
+        if (lastDate !== undefined) {
+          patch.lastAssessmentDate = lastDate;
+          patch.last_assessment_date = lastDate;
+          patch.last_updated = lastDate;
+        }
+        if (levelVal !== undefined) patch.student_level = levelVal;
+        return { ...s, ...patch };
+      }));
+    } catch (e) {
+      console.warn('handleEvaluationSaved error', e);
+    }
   };
 
   // حساب متوسط القسم
@@ -218,6 +263,7 @@ function StudentEvaluationBoard() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               icon={<span>🔍</span>}
+              crossOrigin={undefined}
             />
           </div>
         </CardBody>

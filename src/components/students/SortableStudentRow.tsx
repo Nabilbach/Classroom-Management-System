@@ -29,6 +29,18 @@ function SortableStudentRow({ student, lastAssessmentDate, xp, onEdit, onDelete,
     transition,
   };
 
+  // Determine effective last assessment date, honoring a local '0' marker set by QuickEvaluation.resetToZero
+  const effectiveLastAssessmentDate = (() => {
+    try {
+      const key = `qe_last_assessment_date_${student.id}`;
+      const localVal = localStorage.getItem(key);
+      if (localVal === '0') return '0';
+    } catch (e) { /* ignore localStorage errors */ }
+    if (lastAssessmentDate) return lastAssessmentDate;
+    if (student.assessments && student.assessments.length > 0) return student.assessments[student.assessments.length - 1].date;
+    return null;
+  })();
+
   return (
     <tr
       ref={setNodeRef}
@@ -48,8 +60,8 @@ function SortableStudentRow({ student, lastAssessmentDate, xp, onEdit, onDelete,
       <td className="px-4 py-3 text-sm">{student.firstName}</td>
       <td className="px-4 py-3 text-sm">{student.gender}</td>
       <td className="px-4 py-3 text-sm">{student.birthDate}</td>
-  <td className="px-4 py-3 text-sm">{lastAssessmentDate ? formatDateShort(lastAssessmentDate) : '-'}</td>
-      <td className="px-4 py-3 text-sm">{xp ?? 0}</td>
+  <td className="px-4 py-3 text-sm">{(!effectiveLastAssessmentDate || effectiveLastAssessmentDate === '0') ? 'لم يتم التقييم بعد' : formatDateShort(effectiveLastAssessmentDate)}</td>
+    <td className="px-4 py-3 text-sm">{typeof xp === 'number' ? xp : 0}</td>
       <td className="px-4 py-3 text-sm">
         {isAttendanceMode ? (
           <div className="flex gap-2">

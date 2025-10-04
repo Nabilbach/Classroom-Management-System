@@ -117,13 +117,22 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
         <div className="flex items-center gap-2">
           <span className="text-xs text-yellow-600 font-semibold">💎</span>
           <div>
-            <div className="text-sm font-bold">{(student.total_xp ?? student.xp) ?? 0} XP</div>
+              <div className="text-sm font-bold">{(typeof student.total_xp === 'number' ? student.total_xp : (student.xp || 0))} XP</div>
             <div className="text-xs text-gray-500">نقاط الخبرة</div>
           </div>
         </div>
         <div className="text-right">
           <div className="text-sm font-medium">آخر تقييم</div>
-          <div className="text-xs text-gray-500">{student.lastAssessmentDate ? formatDateShort(student.lastAssessmentDate) : (student.assessments && student.assessments.length > 0 ? formatDateShort(student.assessments[student.assessments.length - 1].date) : '-')}</div>
+          <div className="text-xs text-gray-500">{
+            (() => {
+              try {
+                const key = `qe_last_assessment_date_${student.id}`;
+                const localVal = localStorage.getItem(key);
+                if (localVal === '0') return 'لم يتم التقييم بعد';
+              } catch (e) { /* ignore */ }
+              return (!student.lastAssessmentDate || student.lastAssessmentDate === '0') ? 'لم يتم التقييم بعد' : formatDateShort(student.lastAssessmentDate as string);
+            })()
+          }</div>
         </div>
       </div>
 

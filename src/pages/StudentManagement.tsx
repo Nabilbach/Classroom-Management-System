@@ -106,9 +106,8 @@ function StudentManagement() {
         // - لا يوجد قسم محدد حالياً، أو
         // - لم يتم اختيار قسم يدوياً خلال آخر 30 ثانية (للسماح بالانتقال بين الصفحات)
         
-        const now = Date.now();
-        const hasRecentManualSelection = lastManualSelection && 
-          (now - lastManualSelection.timestamp) < 2 * 60 * 1000; // دقيقتان
+  // const hasRecentManualSelection = lastManualSelection && 
+  //   ((Date.now() - lastManualSelection.timestamp) < 2 * 60 * 1000); // دقيقتان
         
         // تطبيق الفلترة الذكية فقط في الحالات التالية:
         // 1. التحميل الأولي للصفحة
@@ -438,7 +437,7 @@ function StudentManagement() {
 
     } catch (error) {
       console.error('❌ خطأ في حفظ الترتيب:', error);
-      alert('تعذر حفظ الترتيب. تحقق من الاتصال وحاول لاحقًا.');
+      alert('تعذر حفظ الترتيب. تحقق من الاتصال وحاول لاحقاً.');
       // Clear local override on failure
       setLocalOrderIds(null);
       // Optional: Revert state or refetch on failure
@@ -450,13 +449,18 @@ function StudentManagement() {
     fetchStudents();
   }, [fetchStudents]);
 
-  // Quick-select student from the widget: open QuickEvaluation modal and set selectedStudent
+  /*
   const handleQuickSelectStudent = (id: number) => {
-    const found = students.find(s => Number(s.id) === Number(id)) || null;
-    setSelectedStudent(found as any);
-    if (!isAssessmentModalOpen) setIsAssessmentModalOpen(true);
-    // If already open, QuickEvaluation will react to the changed studentId prop
+    // This function can be used to quickly select a student for evaluation
+    // from another component, for example.
+    const studentToSelect = students.find(s => s.id === id);
+    if (studentToSelect) {
+      handleOpenQuickEvaluation(studentToSelect);
+    }
   };
+  */
+
+  // (handleEvaluationSaved removed — QuickEvaluation onSave now updates students optimistically)
 
   const isNumericSearch = (term: string): boolean => /^\d+$/.test(term);
   const isPathwaySearch = (term: string): boolean => term.toUpperCase().startsWith('H');
@@ -748,7 +752,8 @@ function StudentManagement() {
                        isCurrentSection ? 'white' : 'primary.main',
                 borderColor: isActiveLesson && !isCurrentSection ? 'success.main' : 'primary.main',
                 '&:hover': {
-                  bgcolor: isActiveLesson ? 'success.dark' : 'primary.dark'
+                  bgcolor: isActiveLesson ? 'success.dark' : 'primary.dark',
+                  color: 'white'
                 }
               }}
             >
@@ -918,12 +923,52 @@ function StudentManagement() {
         setSelectedStudent(found as any);
       }}
       onSave={async (updatedEvaluation) => {
-        console.log('QuickEvaluation.onSave called for student', selectedStudent?.id, { updatedEvaluation });
-        // Refresh students from server so the new evaluation / XP appears in lists and cards
+        console.log('📥 [StudentManagement.onSave] Received payload from QuickEvaluation:', updatedEvaluation);
         try {
-              // Always refetch to ensure full sync (covers save, reset, or other actions)
-              await fetchStudents();
-          // Optionally keep the modal closed (QuickEvaluation already calls onClose)
+          // If no payload provided, just refresh from server to get canonical data
+          if (!updatedEvaluation) {
+            console.debug('⚠️ [StudentManagement.onSave] No payload, refreshing from server');
+            await fetchStudents();
+            return;
+          }
+
+          const idRaw = updatedEvaluation?.id ?? updatedEvaluation?.student_id ?? selectedStudent?.id;
+          const id = idRaw != null ? Number(idRaw) : undefined;
+
+          // Build a patch only from explicit fields present in the payload (do not default to '0')
+          const patch: any = {};
+          if (typeof (updatedEvaluation?.total_xp ?? updatedEvaluation?.totalXp) !== 'undefined') {
+            const total = updatedEvaluation?.total_xp ?? updatedEvaluation?.totalXp;
+            patch.total_xp = total;
+            patch.xp = total;
+          }
+
+          const lad = updatedEvaluation?.lastAssessmentDate ?? updatedEvaluation?.last_assessment_date ?? updatedEvaluation?.last_updated;
+          if (typeof lad !== 'undefined') {
+            patch.lastAssessmentDate = lad;
+            patch.last_assessment_date = lad;
+            patch.last_updated = lad;
+          }
+
+          if (typeof (updatedEvaluation?.student_level ?? updatedEvaluation?.studentLevel) !== 'undefined') {
+            patch.student_level = updatedEvaluation?.student_level ?? updatedEvaluation?.studentLevel;
+          }
+
+          console.debug('🔧 [StudentManagement.onSave] Built patch for student', id, ':', patch);
+
+          if (id && typeof updateStudentLocal === 'function' && Object.keys(patch).length > 0) {
+            console.debug('✅ [StudentManagement.onSave] Applying local update to student', id);
+            updateStudentLocal(id, patch);
+            console.debug('✅ [StudentManagement.onSave] Local update applied successfully. Skipping full fetchStudents to preserve local state.');
+          }
+
+          // Skip fetchStudents to avoid overwriting local optimistic updates
+          // Server has already saved the data, and we've updated locally
+          // Only refresh if there's a critical need (e.g., no local update applied)
+          if (!id || Object.keys(patch).length === 0) {
+            console.debug('⚠️ [StudentManagement.onSave] No local update applied, refreshing from server');
+            await fetchStudents();
+          }
         } catch (e) {
           console.warn('Failed to refresh students after saving evaluation', e);
         }
