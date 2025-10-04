@@ -18,6 +18,15 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health & backup status endpoints (مفيدة للفحص السريع)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString(), pid: process.pid });
+});
+app.get('/api/backup-status', (req, res) => {
+  // يمكنك لاحقًا قراءة آخر نسخة من ملف أو قاعدة البيانات
+  res.json({ status: 'ok', lastBackup: null, note: 'Placeholder – عدل هذا لاحقاً لعرض حالة النسخ الاحتياطي الفعلية.' });
+});
+
 // Routes
 const attendanceRoutes = require('./routes/attendance');
 app.use('/api/attendance', attendanceRoutes);

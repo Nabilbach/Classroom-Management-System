@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Paper, Box, Typography, Button, Slider, TextField, IconButton, Chip, 
   LinearProgress, Card, CardContent, Tooltip, Avatar, Divider
@@ -145,9 +145,9 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
   const [followups, setFollowups] = useState<any[]>([]);
   const [followupLoading, setFollowupLoading] = useState(false);
   const [followupDeletingAll, setFollowupDeletingAll] = useState(false);
-  const [_studentsWithFollowups, _setStudentsWithFollowups] = useState<Record<string, boolean>>({});
+  const [_studentsWithFollowups, setStudentsWithFollowups] = useState<Record<string, boolean>>({});
   const [_assessmentsHistory, setAssessmentsHistory] = useState<any[]>([]);
-  const [_collapsed, _setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(true);
   const { enqueueSnackbar } = useSnackbar();
 
   // Calculate XP and level from scores
@@ -540,17 +540,11 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
       <Paper
         elevation={4}
         sx={{
-          borderRadius: 6,
+          borderRadius: 4,
           background: LEVEL_GRADIENTS[evaluation.student_level],
-          position: 'fixed',
-          top: 12,
-          left: 12,
-          right: 12,
-          bottom: 12,
-          width: 'calc(100% - 24px)',
-          height: 'calc(100% - 24px)',
+          position: 'relative',
           overflow: 'hidden',
-          boxShadow: '0 28px 60px rgba(0,0,0,0.25)'
+          boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
         }}
       >
         {/* Header with Student Info and Level */}
@@ -662,8 +656,8 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
           </div>
         </Box>
 
-  {/* Content */}
-  <Box sx={{ backgroundColor: 'white', p: 3, display: 'flex', flexDirection: 'column', gap: 12, height: '100%', boxSizing: 'border-box' }}>
+        {/* Content */}
+        <Box sx={{ backgroundColor: 'white', p: 4 }}>
           {/* Student Number Grid */}
           {Array.isArray(sectionStudents) && sectionStudents.length > 0 && (
             <Box sx={{ mb: 4 }}>
@@ -703,7 +697,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
           )}
 
           {/* Main Tabs */}
-          <Box sx={{ mb: 3 }}>
+          <Box sx={{ mb: 4 }}>
             <div className="flex gap-3">
               {[
                 { id: 'evaluation', label: 'التقييم', icon: <SchoolIcon /> },
@@ -736,27 +730,37 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
 
           {/* Tab Content */}
           {activeTab === 'evaluation' && (
-            <div className="space-y-1">
+            <div className="space-y-6">
               {/* Evaluation Categories Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {EVALUATION_CATEGORIES.map(category => (
-                  <Card key={category.id} elevation={1} sx={{ borderRadius: 2, border: `1px solid ${category.color}18` }}>
-                    <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <span style={{ fontSize: 20 }}>{category.icon}</span>
-                          <Typography variant="body1" sx={{ fontWeight: 'bold', color: category.color }}>
+                  <Card key={category.id} elevation={3} sx={{ 
+                    borderRadius: 4,
+                    border: `3px solid ${category.color}20`,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      boxShadow: `0 12px 30px ${category.color}30`,
+                      transform: 'translateY(-4px)',
+                      borderColor: `${category.color}40`
+                    }
+                  }}>
+                    <CardContent sx={{ p: 4 }}>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <span style={{ fontSize: 32 }}>{category.icon}</span>
+                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: category.color }}>
                             {category.label}
                           </Typography>
                         </div>
                         <Chip
                           label={`${(evaluation[category.field] as number).toFixed(1)}/${category.max}`}
-                          size="small"
                           sx={{
                             backgroundColor: getScoreColor(evaluation[category.field] as number),
                             color: 'white',
                             fontWeight: 'bold',
-                            fontSize: 12,
+                            fontSize: 14,
+                            px: 2,
+                            py: 1,
                             height: 'auto'
                           }}
                         />
@@ -769,18 +773,35 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                         max={category.max}
                         step={category.step}
                         marks
-                        size="small"
                         sx={{
                           color: category.color,
+                          height: 8,
                           '& .MuiSlider-thumb': {
-                            width: 16,
-                            height: 16,
+                            width: 24,
+                            height: 24,
+                            boxShadow: `0 0 0 4px ${category.color}30`,
+                            '&:hover': {
+                              boxShadow: `0 0 0 6px ${category.color}40`
+                            }
                           },
+                          '& .MuiSlider-track': {
+                            height: 8,
+                            background: `linear-gradient(90deg, ${category.color}60, ${category.color})`
+                          },
+                          '& .MuiSlider-rail': {
+                            height: 8,
+                            backgroundColor: `${category.color}20`
+                          },
+                          '& .MuiSlider-mark': {
+                            backgroundColor: category.color,
+                            width: 3,
+                            height: 3
+                          }
                         }}
                       />
                       
-                      <div className="flex justify-between items-center">
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      <div className="flex justify-between items-center mt-3">
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                           {category.description}
                         </Typography>
                         <Chip
@@ -790,17 +811,21 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                           sx={{
                             backgroundColor: `${category.color}20`,
                             color: category.color,
-                            fontWeight: 'bold',
-                            fontSize: 11
+                            fontWeight: 'bold'
                           }}
                         />
                       </div>
+                      
                       {category.id === 'behavior' && (
-                        <Typography variant="caption" sx={{ 
-                          mt: 1, p: 0.5, backgroundColor: `${getScoreColor(evaluation.behavior_score)}18`,
-                          borderRadius: 1, color: getScoreColor(evaluation.behavior_score),
-                          fontWeight: 'bold', textAlign: 'center', display: 'block',
-                          border: `1px solid ${getScoreColor(evaluation.behavior_score)}30`
+                        <Typography variant="body2" sx={{ 
+                          mt: 3, 
+                          p: 2, 
+                          backgroundColor: `${getScoreColor(evaluation.behavior_score)}20`,
+                          borderRadius: 2,
+                          color: getScoreColor(evaluation.behavior_score),
+                          fontWeight: 'bold',
+                          textAlign: 'center',
+                          border: `2px solid ${getScoreColor(evaluation.behavior_score)}40`
                         }}>
                           {getBehaviorText(evaluation.behavior_score)}
                         </Typography>
@@ -810,28 +835,36 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                 ))}
               </div>
 
-              {/* Special Categories & Notes */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-1">
+              {/* Special Categories */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Quran Memorization */}
-                <Card elevation={1} sx={{ borderRadius: 2, border: '1px solid #4CAF5020' }}>
-                  <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span style={{ fontSize: 20 }}>📿</span>
-                        <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#4CAF50' }}>
-                          حفظ القرآن
+                <Card elevation={3} sx={{ borderRadius: 4, border: '3px solid #4CAF5020' }}>
+                  <CardContent sx={{ p: 4 }}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <span style={{ fontSize: 32 }}>📿</span>
+                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#4CAF50' }}>
+                          حفظ القرآن الكريم
                         </Typography>
                       </div>
                       <Chip
                         icon={<StarIcon />}
                         label={`+${evaluation.quran_memorization * 10} XP`}
-                        size="small"
-                        sx={{ backgroundColor: '#4CAF50', color: 'white', fontWeight: 'bold', fontSize: 12, height: 'auto' }}
+                        sx={{
+                          backgroundColor: '#4CAF50',
+                          color: 'white',
+                          fontWeight: 'bold',
+                          fontSize: 14,
+                          px: 2,
+                          py: 1,
+                          height: 'auto'
+                        }}
                       />
                     </div>
-                    <div className="grid grid-cols-4 gap-1">
+                    
+                    <div className="grid grid-cols-2 gap-3">
                       {[
-                        { value: 0, label: 'لا شيء', reward: '0', color: '#9E9E9E' },
+                        { value: 0, label: 'لم يحفظ', reward: '0', color: '#9E9E9E' },
                         { value: 5, label: 'جزئي', reward: '+50', color: '#FF9800' },
                         { value: 10, label: 'كامل', reward: '+100', color: '#4CAF50' },
                         { value: 15, label: 'متقن', reward: '+150', color: '#2196F3' }
@@ -840,18 +873,28 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                           key={opt.value}
                           onClick={() => updateScore('quran_memorization', opt.value)}
                           variant={evaluation.quran_memorization === opt.value ? 'contained' : 'outlined'}
-                          size="small"
                           sx={{
-                            flexDirection: 'column', py: 0.5, px: 0, borderRadius: 1.5, minWidth: 0,
-                            borderWidth: evaluation.quran_memorization === opt.value ? 0 : 1,
-                            borderColor: `${opt.color}40`,
+                            flexDirection: 'column',
+                            py: 3,
+                            px: 2,
+                            borderRadius: 3,
+                            border: `2px solid ${opt.color}40`,
                             ...(evaluation.quran_memorization === opt.value && {
-                              backgroundColor: opt.color, color: 'white', boxShadow: `0 2px 8px ${opt.color}40`
+                              backgroundColor: opt.color,
+                              color: 'white',
+                              boxShadow: `0 4px 15px ${opt.color}40`
                             })
                           }}
                         >
-                          <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: 12 }}>{opt.label}</Typography>
-                          <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: 10, opacity: 0.8 }}>{opt.reward}</Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                            {opt.label}
+                          </Typography>
+                          <Typography variant="caption" sx={{ 
+                            fontWeight: 'bold',
+                            ...(evaluation.quran_memorization === opt.value && { color: 'rgba(255,255,255,0.9)' })
+                          }}>
+                            {opt.reward} XP
+                          </Typography>
                         </Button>
                       ))}
                     </div>
@@ -859,22 +902,30 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                 </Card>
 
                 {/* Bonus Points */}
-                <Card elevation={1} sx={{ borderRadius: 2, border: '1px solid #FF980020' }}>
-                    <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span style={{ fontSize: 20 }}>⭐</span>
-                        <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#FF9800' }}>
+                <Card elevation={3} sx={{ borderRadius: 4, border: '3px solid #FF980020' }}>
+                  <CardContent sx={{ p: 4 }}>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <span style={{ fontSize: 32 }}>⭐</span>
+                        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#FF9800' }}>
                           أعمال مميزة
                         </Typography>
                       </div>
                       <Chip
                         icon={<StarIcon />}
                         label={`+${evaluation.bonus_points * 5} XP`}
-                        size="small"
-                        sx={{ backgroundColor: '#FF9800', color: 'white', fontWeight: 'bold', fontSize: 12, height: 'auto' }}
+                        sx={{
+                          backgroundColor: '#FF9800',
+                          color: 'white',
+                          fontWeight: 'bold',
+                          fontSize: 14,
+                          px: 2,
+                          py: 1,
+                          height: 'auto'
+                        }}
                       />
                     </div>
+                    
                     <TextField
                       type="number"
                       value={evaluation.bonus_points}
@@ -882,81 +933,152 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                         const value = e.target.value === '' ? 0 : Number(e.target.value);
                         updateScore('bonus_points', isNaN(value) ? 0 : Math.max(0, Math.min(20, value)));
                       }}
-                      inputProps={{ min: 0, max: 20, style: { textAlign: 'center' } }}
+                      inputProps={{ min: 0, max: 20 }}
                       fullWidth
                       variant="outlined"
-                      placeholder="نقاط إضافية"
-                      size="small"
+                      placeholder="عدد النقاط الإضافية"
+                      size="large"
                       sx={{
-                        '& .MuiOutlinedInput-root': { borderRadius: 1.5, fontSize: 14, '&.Mui-focused fieldset': { borderColor: '#FF9800' } }
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 3,
+                          fontSize: 18,
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#FF9800',
+                            borderWidth: 3
+                          }
+                        }
                       }}
                     />
+                    
+                    <Typography variant="body2" sx={{ color: 'text.secondary', mt: 2, textAlign: 'center' }}>
+                      للأعمال الاستثنائية والمشاريع المتميزة
+                      <br />
+                      <strong>(الحد الأقصى: 20 نقطة)</strong>
+                    </Typography>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Notes */}
-              <Card elevation={1} sx={{ borderRadius: 2 }}>
-                <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span style={{ fontSize: 16 }}>📝</span>
+              <Card elevation={3} sx={{ borderRadius: 4 }}>
+                <CardContent sx={{ p: 4 }}>
+                  <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <span style={{ fontSize: 24 }}>📝</span>
                     ملاحظات وتعليقات
                   </Typography>
                   <TextField
                     value={evaluation.notes}
                     onChange={(e) => setEvaluation(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="اكتب أي ملاحظات أو توصيات..."
+                    placeholder="اكتب أي ملاحظات أو تعليقات حول أداء الطالب، السلوك، أو التوصيات للتحسين..."
                     multiline
-                    rows={2}
+                    rows={4}
                     fullWidth
                     variant="outlined"
-                    size="small"
                     sx={{
-                      '& .MuiOutlinedInput-root': { borderRadius: 1.5, fontSize: 13, '&.Mui-focused fieldset': { borderColor: LEVEL_COLORS[evaluation.student_level] } }
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 3,
+                        fontSize: 16,
+                        '&.Mui-focused fieldset': {
+                          borderColor: LEVEL_COLORS[evaluation.student_level],
+                          borderWidth: 3
+                        }
+                      }
                     }}
                   />
                 </CardContent>
               </Card>
 
               {/* Summary & Actions */}
-              <Card elevation={2} sx={{ borderRadius: 2, background: `linear-gradient(135deg, ${LEVEL_COLORS[evaluation.student_level]}10, ${LEVEL_COLORS[evaluation.student_level]}05)`, border: `1px solid ${LEVEL_COLORS[evaluation.student_level]}28` }}>
-                <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-1 mb-2">
+              <Card elevation={4} sx={{ 
+                borderRadius: 4,
+                background: `linear-gradient(135deg, ${LEVEL_COLORS[evaluation.student_level]}10, ${LEVEL_COLORS[evaluation.student_level]}05)`,
+                border: `3px solid ${LEVEL_COLORS[evaluation.student_level]}30`
+              }}>
+                <CardContent sx={{ p: 4 }}>
+                  <Typography variant="h5" sx={{ mb: 4, fontWeight: 'bold', textAlign: 'center', color: LEVEL_COLORS[evaluation.student_level] }}>
+                    ملخص التقييم
+                  </Typography>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                     <div className="text-center">
-                      <Typography variant="h6" sx={{ fontWeight: 'bold', color: LEVEL_COLORS[evaluation.student_level] }}>{evaluation.total_xp}</Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>إجمالي XP</Typography>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', color: LEVEL_COLORS[evaluation.student_level], mb: 1 }}>
+                        {evaluation.total_xp}
+                      </Typography>
+                      <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+                        إجمالي نقاط الخبرة
+                      </Typography>
                     </div>
                     <div className="text-center">
-                      <Typography variant="h6" sx={{ fontWeight: 'bold', color: LEVEL_COLORS[evaluation.student_level] }}>{evaluation.student_level}</Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>المستوى</Typography>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', color: LEVEL_COLORS[evaluation.student_level], mb: 1 }}>
+                        {evaluation.student_level}
+                      </Typography>
+                      <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+                        المستوى الحالي
+                      </Typography>
                     </div>
                     <div className="text-center">
-                      <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#4CAF50' }}>{((evaluation.behavior_score + evaluation.participation_score + evaluation.notebook_score + evaluation.attendance_score + evaluation.portfolio_score) / 5).toFixed(1)}</Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>المتوسط</Typography>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#4CAF50', mb: 1 }}>
+                        {((evaluation.behavior_score + evaluation.participation_score + evaluation.notebook_score + evaluation.attendance_score + evaluation.portfolio_score) / 5).toFixed(1)}
+                      </Typography>
+                      <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+                        المتوسط العام
+                      </Typography>
                     </div>
                     <div className="text-center">
-                      <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#FF9800' }}>{getProgressToNextLevel().toFixed(0)}%</Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>للترقية</Typography>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#FF9800', mb: 1 }}>
+                        {getProgressToNextLevel().toFixed(0)}%
+                      </Typography>
+                      <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+                        التقدم للمستوى التالي
+                      </Typography>
                     </div>
                   </div>
 
-                  <div className="flex justify-end gap-1">
-                    <Button variant="outlined" onClick={onClose} size="small" sx={{ px: 2, borderRadius: 2, fontWeight: 'bold' }}>إغلاق</Button>
-                    <Button variant="outlined" color="error" onClick={resetToZero} size="small" sx={{ px: 2, borderRadius: 2, fontWeight: 'bold' }}>إعادة تعيين</Button>
+                  <Divider sx={{ my: 3 }} />
+
+                  <div className="flex justify-end gap-4">
+                    <Button
+                      variant="outlined"
+                      onClick={onClose}
+                      size="large"
+                      sx={{ px: 6, py: 2, borderRadius: 3, fontWeight: 'bold' }}
+                    >
+                      إغلاق
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      onClick={resetToZero}
+                      size="large"
+                      sx={{ px: 6, py: 2, borderRadius: 3, fontWeight: 'bold' }}
+                    >
+                      إعادة تعيين
+                    </Button>
                     <Button
                       variant="contained"
                       onClick={handleSave}
                       disabled={saving}
-                      size="small"
+                      size="large"
                       sx={{
-                        px: 4, borderRadius: 2, fontWeight: 'bold', fontSize: 14,
+                        px: 8,
+                        py: 2,
+                        borderRadius: 3,
+                        fontWeight: 'bold',
+                        fontSize: 16,
                         background: LEVEL_GRADIENTS[evaluation.student_level],
-                        boxShadow: `0 4px 12px ${LEVEL_COLORS[evaluation.student_level]}30`,
-                        '&:hover': { transform: 'translateY(-1px)' },
-                        '&:disabled': { background: '#9E9E9E', color: 'white' }
+                        boxShadow: `0 6px 20px ${LEVEL_COLORS[evaluation.student_level]}40`,
+                        '&:hover': {
+                          background: LEVEL_GRADIENTS[evaluation.student_level],
+                          boxShadow: `0 8px 25px ${LEVEL_COLORS[evaluation.student_level]}50`,
+                          transform: 'translateY(-2px)'
+                        },
+                        '&:disabled': {
+                          background: '#9E9E9E',
+                          color: 'white'
+                        }
                       }}
                     >
-                      {saving ? 'جارٍ الحفظ...' : 'حفظ'}
+                      {saving ? 'جارٍ الحفظ...' : 'حفظ التقييم'}
                     </Button>
                   </div>
                 </CardContent>
