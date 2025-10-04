@@ -663,7 +663,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
         </Box>
 
   {/* Content */}
-  <Box sx={{ backgroundColor: 'white', p: 3, display: 'flex', flexDirection: 'column', gap: 12, height: '100%', boxSizing: 'border-box' }}>
+  <Box sx={{ backgroundColor: 'white', p: 3, display: 'flex', flexDirection: 'column', gap: 12, height: '100%', boxSizing: 'border-box', overflowY: 'auto' }}>
           {/* Student Number Grid */}
           {Array.isArray(sectionStudents) && sectionStudents.length > 0 && (
             <Box sx={{ mb: 4 }}>
@@ -672,32 +672,44 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                 التنقل السريع بين الطلاب
               </Typography>
               <div className="flex gap-2 flex-wrap">
-                {sectionStudents.slice(0, 20).map((s: any) => {
-                  const num = s.classOrder ?? s.number ?? s.id;
-                  const isCurrent = String(s.id) === String(studentId);
-                  return (
-                    <Tooltip key={s.id} title={`${s.firstName ?? ''} ${s.lastName ?? ''}`.trim()}>
-                      <Button
-                        onClick={() => onSwitchStudent && onSwitchStudent(s.id)}
-                        variant={isCurrent ? 'contained' : 'outlined'}
-                        size="large"
-                        sx={{
-                          minWidth: 50,
-                          height: 50,
-                          borderRadius: 3,
-                          fontWeight: 'bold',
-                          fontSize: 16,
-                          ...(isCurrent && {
-                            background: LEVEL_GRADIENTS[evaluation.student_level],
-                            boxShadow: `0 4px 15px ${LEVEL_COLORS[evaluation.student_level]}40`
-                          })
-                        }}
-                      >
-                        {num}
-                      </Button>
-                    </Tooltip>
-                  );
-                })}
+                {
+                  // Render up to 40 slots (preserve existing students, show placeholders for empty slots)
+                  (() => {
+                    const slots = new Array(40).fill(null).map((_, idx) => {
+                      const student = Array.isArray(sectionStudents) ? sectionStudents[idx] : undefined;
+                      const display = student ? (student.classOrder ?? student.number ?? student.id) : (idx + 1);
+                      const isEmpty = !student;
+                      const isCurrent = student ? String(student.id) === String(studentId) : false;
+                      return (
+                        <Tooltip key={idx} title={student ? `${student.firstName ?? ''} ${student.lastName ?? ''}`.trim() : ''}>
+                          <span>
+                            <Button
+                              onClick={() => { if (!isEmpty && onSwitchStudent) onSwitchStudent(student.id); }}
+                              variant={isCurrent ? 'contained' : 'outlined'}
+                              size="large"
+                              disabled={isEmpty}
+                              sx={{
+                                minWidth: 50,
+                                height: 50,
+                                borderRadius: 3,
+                                fontWeight: 'bold',
+                                fontSize: 16,
+                                ...(isCurrent ? {
+                                  background: LEVEL_GRADIENTS[evaluation.student_level],
+                                  boxShadow: `0 4px 15px ${LEVEL_COLORS[evaluation.student_level]}40`
+                                } : {}),
+                                ...(isEmpty ? { opacity: 0.45, borderStyle: 'dashed' } : {})
+                              }}
+                            >
+                              {display}
+                            </Button>
+                          </span>
+                        </Tooltip>
+                      );
+                    });
+                    return slots;
+                  })()
+                }
               </div>
             </Box>
           )}
