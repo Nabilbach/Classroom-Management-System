@@ -1,0 +1,13 @@
+{
+  "name": "attendance-system-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start:backend": "node backend/index.js",
+    "start:frontend": "cd central-frontend && npm run dev",
+    "start:all": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.1"
+  }
+}

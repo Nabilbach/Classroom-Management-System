@@ -376,10 +376,18 @@ app.post('/api/students', async (req, res) => {
 app.post('/api/students/:studentId/followups', async (req, res) => {
   try {
     const { studentId } = req.params;
-    const { type, description } = req.body;
+    const { type, description, notes, sectionId } = req.body;
     if (!type) return res.status(400).json({ message: 'type is required' });
 
-    const f = await db.FollowUp.create({ studentId, type, description: description || null, is_open: true });
+    // Use notes field (description is kept for backward compatibility)
+    const notesValue = notes || description || null;
+    const f = await db.FollowUp.create({ 
+      studentId, 
+      sectionId: sectionId || null,
+      type, 
+      notes: notesValue, 
+      is_open: true 
+    });
     res.status(201).json(f);
   } catch (error) {
     console.error('Error creating followup:', error);
@@ -393,7 +401,7 @@ app.get('/api/students/:studentId/followups', async (req, res) => {
     const { status } = req.query;
     const where = { studentId };
     if (status) where.status = status;
-    const items = await db.FollowUp.findAll({ where, order: [['createdAt', 'DESC']] });
+    const items = await db.FollowUp.findAll({ where, order: [['created_at', 'DESC']] });
     res.json(items);
   } catch (error) {
     console.error('Error fetching followups:', error);
@@ -455,7 +463,26 @@ app.get('/api/sections/:sectionId/followups-students', async (req, res) => {
 app.patch('/api/followups/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = req.body || {};
+    const updatesRaw = req.body || {};
+    // Normalize common client shapes to the DB column names
+    const updates = { ...updatesRaw };
+    // support { status: 'closed' } or { status: 'open' }
+    if (typeof updates.status !== 'undefined') {
+      if (updates.status === 'closed' || updates.status === 'close') updates.is_open = 0;
+      else if (updates.status === 'open') updates.is_open = 1;
+      delete updates.status;
+    }
+    // support camelCase isOpen
+    if (typeof updates.isOpen !== 'undefined') {
+      updates.is_open = updates.isOpen;
+      delete updates.isOpen;
+    }
+    // support description -> notes for backward compatibility when updating notes
+    if (typeof updates.description !== 'undefined' && typeof updates.notes === 'undefined') {
+      updates.notes = updates.description;
+      delete updates.description;
+    }
+
     const [updated] = await db.FollowUp.update(updates, { where: { id } });
     if (updated) {
       const fu = await db.FollowUp.findByPk(id);
@@ -466,6 +493,48 @@ app.patch('/api/followups/:id', async (req, res) => {
   } catch (error) {
     console.error('Error updating followup:', error);
     res.status(500).json({ message: 'Error updating followup', error: error.message, stack: error.stack });
+  }
+});
+
+// Close a followup by student and followup id (legacy/compatibility route)
+app.patch('/api/students/:studentId/followups/:id/close', async (req, res) => {
+  try {
+    const { studentId, id } = req.params;
+    // Ensure the followup exists and belongs to the student
+    const fu = await db.FollowUp.findOne({ where: { id, studentId } });
+    if (!fu) {
+      return res.status(404).json({ message: 'FollowUp not found for this student' });
+    }
+    // Update is_open to 0 (closed)
+    await db.FollowUp.update({ is_open: 0 }, { where: { id, studentId } });
+    const updated = await db.FollowUp.findByPk(id);
+    res.json(updated);
+  } catch (error) {
+    console.error('Error closing followup by student:', error);
+    res.status(500).json({ message: 'Error closing followup', error: error.message, stack: error.stack });
+  }
+});
+
+// Close a followup using the students scoped endpoint (legacy client calls this)
+app.patch('/api/students/:studentId/followups/:id/close', async (req, res) => {
+  try {
+    const { studentId, id } = req.params;
+    // Try to update the followup and ensure it belongs to the student (best-effort)
+    const [updated] = await db.FollowUp.update({ is_open: 0 }, { where: { id, studentId } });
+    if (updated) {
+      const fu = await db.FollowUp.findByPk(id);
+      return res.json(fu);
+    }
+    // Fallback: if not updated, try updating by id only (in case studentId is stored differently)
+    const [updated2] = await db.FollowUp.update({ is_open: 0 }, { where: { id } });
+    if (updated2) {
+      const fu = await db.FollowUp.findByPk(id);
+      return res.json(fu);
+    }
+    res.status(404).json({ message: 'FollowUp not found' });
+  } catch (error) {
+    console.error('Error closing followup (students scoped):', error);
+    res.status(500).json({ message: 'Error closing followup', error: error.message, stack: error.stack });
   }
 });
 

@@ -12,11 +12,16 @@ const FollowUp = sequelize.define('FollowUp', {
     allowNull: false,
     field: 'student_id'
   },
+  sectionId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'section_id'
+  },
   type: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  description: {
+  notes: {
     type: DataTypes.TEXT,
     allowNull: true,
   },
@@ -27,6 +32,8 @@ const FollowUp = sequelize.define('FollowUp', {
   }
 }, {
   timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
 });
 
 module.exports = FollowUp;

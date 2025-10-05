@@ -171,9 +171,9 @@ function StudentManagement() {
   const [confirmModalMessage, setConfirmModalMessage] = useState<string>('');
   const [confirmModalAction, setConfirmModalAction] = useState<(() => void) | null>(null);
 
-  const [scoreRangeFilter, setScoreRangeFilter] = useState<string>('الكل');
-  const [assessmentStatusFilter, setAssessmentStatusFilter] = useState<string>('الكل');
-  const [warningStatusFilter, setWarningStatusFilter] = useState<string>('الكل');
+  const [scoreRangeFilter, setScoreRangeFilter] = useState<string>('all');
+  const [assessmentStatusFilter, setAssessmentStatusFilter] = useState<string>('all');
+  const [warningStatusFilter, setWarningStatusFilter] = useState<string>('all');
   const [followupStatusFilter, setFollowupStatusFilter] = useState<string>('');
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
 
@@ -453,7 +453,7 @@ function StudentManagement() {
         );
       });
     }
-    if (scoreRangeFilter !== 'الكل' && scoreRangeFilter !== 'all') {
+    if (scoreRangeFilter !== 'all') {
       studentsToFilter = studentsToFilter.filter(student => {
         const score = student.score;
         if (score === undefined || score === null) return false;
@@ -469,7 +469,7 @@ function StudentManagement() {
         return true;
       });
     }
-    if (assessmentStatusFilter !== 'الكل') {
+    if (assessmentStatusFilter !== 'all') {
       studentsToFilter = studentsToFilter.filter(student => {
         const hasAssessment = Boolean(student.score !== undefined && student.score !== null);
         if (assessmentStatusFilter === 'مقيم') return hasAssessment;
@@ -477,7 +477,7 @@ function StudentManagement() {
         return true;
       });
     }
-    if (warningStatusFilter !== 'الكل') {
+    if (warningStatusFilter !== 'all') {
       studentsToFilter = studentsToFilter.filter(student => {
         const hasWarnings = Boolean(student.score !== undefined && student.score !== null && student.score < 10);
         if (warningStatusFilter === 'محذر') return hasWarnings;
@@ -519,9 +519,9 @@ function StudentManagement() {
 
   const handleClearFilters = useCallback(() => {
     setSearchTerm('');
-    setScoreRangeFilter('الكل');
-    setAssessmentStatusFilter('الكل');
-    setWarningStatusFilter('الكل');
+    setScoreRangeFilter('all');
+    setAssessmentStatusFilter('all');
+    setWarningStatusFilter('all');
     setFollowupStatusFilter('');
   }, []);
 
@@ -881,7 +881,7 @@ function StudentManagement() {
                     onChange={(e) => setAssessmentStatusFilter(e.target.value as string)}
                     label="التقييم"
                   >
-                    <MenuItem value="الكل">الكل</MenuItem>
+                    <MenuItem value="all">الكل</MenuItem>
                     <MenuItem value="مقيم">مُقيم</MenuItem>
                     <MenuItem value="غير مقيم">غير مُقيم</MenuItem>
                   </Select>
@@ -895,7 +895,7 @@ function StudentManagement() {
                     onChange={(e) => setWarningStatusFilter(e.target.value as string)}
                     label="التحذير"
                   >
-                    <MenuItem value="الكل">الكل</MenuItem>
+                    <MenuItem value="all">الكل</MenuItem>
                     <MenuItem value="محذر">محذر</MenuItem>
                     <MenuItem value="غير محذر">غير محذر</MenuItem>
                   </Select>
@@ -1002,7 +1002,7 @@ function StudentManagement() {
   {/* استبدال نافذة التقييم البسيطة بنافذة التقييم المتقدمة */}
   <Dialog open={isAssessmentModalOpen} onClose={() => setIsAssessmentModalOpen(false)} maxWidth="md" fullWidth>
     <QuickEvaluation
-      studentId={selectedStudent ? Number(selectedStudent.id) : 0}
+      studentId={selectedStudent ? String(selectedStudent.id) : ''}
       studentName={selectedStudent ? `${selectedStudent.firstName} ${selectedStudent.lastName}` : ''}
       onClose={() => setIsAssessmentModalOpen(false)}
       sectionStudents={sectionStudents.map(s => ({ id: Number(s.id), name: `${s.firstName} ${s.lastName}` }))}
