@@ -74,7 +74,13 @@ function SectionManagement() {
         section.teacherName.toLowerCase().includes(searchLower) ||
         section.roomNumber.toLowerCase().includes(searchLower)
       );
-      const matchesLevel = levelFilter === 'all' || section.educationalLevel === levelFilter;
+      const normalize = (s?: string) => {
+        if (typeof s !== 'string') return '';
+        let t = s.normalize('NFC').replace(/\s+/g, '');
+        t = t.replace(/باكالوريا/g, 'بكالوريا');
+        return t.trim();
+      };
+      const matchesLevel = levelFilter === 'all' || normalize(section.educationalLevel) === normalize(levelFilter);
       const matchesSpecialty = specialtyFilter === 'all' || section.specialization === specialtyFilter;
       return matchesSearch && matchesLevel && matchesSpecialty;
     });

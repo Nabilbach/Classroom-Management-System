@@ -446,7 +446,16 @@ const TextbookPage: React.FC = () => {
               >
                 <MenuItem value="">جميع الأقسام</MenuItem>
                 {sections
-                  .filter(section => !levelFilter || section.educationalLevel === levelFilter)
+                  .filter(section => {
+                    if (!levelFilter) return true;
+                    const normalize = (s?: string) => {
+                      if (typeof s !== 'string') return '';
+                      let t = s.normalize('NFC').replace(/\s+/g, '');
+                      t = t.replace(/باكالوريا/g, 'بكالوريا');
+                      return t.trim();
+                    };
+                    return normalize(section.educationalLevel) === normalize(levelFilter);
+                  })
                   .map((section) => (
                   <MenuItem key={section.id} value={section.id}>
                     {section.name}

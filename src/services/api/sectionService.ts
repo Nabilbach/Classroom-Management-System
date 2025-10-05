@@ -2,8 +2,12 @@
 interface Section {
   id: string;
   name: string;
-  level?: string;
-  capacity?: number;
+  educationalLevel?: string;
+  specialization?: string;
+  roomNumber?: string;
+  teacherName?: string;
+  courseName?: string;
+  color?: string;
 }
 
 const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000';

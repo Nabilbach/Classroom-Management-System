@@ -5,21 +5,21 @@ import { fetchSections, createSection, updateSection, deleteSection as deleteSec
  * @interface Section
  * @property {string} id - Unique identifier for the section.
  * @property {string} name - Name of the section.
- * @property {string} educationalLevel - Educational level of the section.
- * @property {string} specialization - Specialization of the section.
- * @property {string} roomNumber - Room number assigned to the section.
- * @property {string} teacherName - Name of the teacher assigned to the section.
+ * @property {string} [educationalLevel] - Educational level of the section.
+ * @property {string} [specialization] - Specialization of the section (may be in external data).
+ * @property {string} [roomNumber] - Room number (may be in external data).
+ * @property {string} [teacherName] - Teacher name (may be in external data).
  * @property {string} [courseName] - Optional name of the course assigned to this section.
  * @property {Object.<string, 'not-started' | 'in-progress' | 'completed'>} [lessonProgress] - Progress of lessons for this section, keyed by lesson ID.
  */
 export interface Section {
   id: string;
   name: string;
-  educationalLevel: string;
-  specialization: string;
-  roomNumber: string;
-  teacherName: string;
-  courseName?: string; // New field
+  educationalLevel?: string;
+  specialization?: string;
+  roomNumber?: string;
+  teacherName?: string;
+  courseName?: string;
   lessonProgress?: { [lessonId: string]: 'not-started' | 'in-progress' | 'completed' };
 }
 
