@@ -1,1 +1,29 @@
-﻿
+﻿# Node and build
+node_modules/
+**/node_modules/
+# Vite cache and build outputs
+node_modules/.vite/
+.vite/
+dist/
+build/
+# Logs
+*.log
+# OS files
+.DS_Store
+Thumbs.db
+# Environment
+.env
+.env.*
+# SQLite databases and backups
+*.db
+auto_backups/
+automated_backups/
+# IDE
+.vscode/
+# npm lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+# misc
+*.sqlite
+*.sqlite3
