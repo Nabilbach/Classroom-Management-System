@@ -11,14 +11,14 @@ export default function TeacherDetail(){
 
   useEffect(()=>{(async ()=>{
     try{
-      const t = await api.get(`/api/users?role=teacher`)
+  const t = await api.get(`/api/admin/users?role=teacher`)
       const found = t.data.find((u:any)=>u.id===id)
       setTeacher(found)
-      const s = await api.get('/api/sections')
+  const s = await api.get('/api/admin/sections')
       const sectionsData = s.data || []
       // fetch counts in parallel
       const counts = await Promise.all(sectionsData.map(async (sec:any) => {
-        try{ const r = await api.get(`/api/sections/${sec.id}/students-count`); return r.data.count }catch(e){ return 0 }
+  try{ const r = await api.get(`/api/admin/sections/${sec.id}/students-count`); return r.data.count }catch(e){ return 0 }
       }))
       const sectionsWithCounts = sectionsData.map((sec:any, idx:number)=> ({ ...sec, studentCount: counts[idx] }))
       setSections(sectionsWithCounts)

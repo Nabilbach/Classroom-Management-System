@@ -7,6 +7,7 @@ import SectionsPage from './pages/SectionsPage';
 import AddTeacherPage from './pages/AddTeacherPage';
 import AddSectionPage from './pages/AddSectionPage';
 import TeacherDetail from './pages/TeacherDetail';
+import SectionDetailsPage from './pages/SectionDetailsPage';
 import './App.css';
 
 function App() {
@@ -52,6 +53,7 @@ function App() {
             <Route path="/teachers/:id" element={token ? <TeacherDetail /> : <Navigate to="/login" />} />
             <Route path="/sections" element={token ? <SectionsPage /> : <Navigate to="/login" />} />
             <Route path="/sections/add" element={token ? <AddSectionPage /> : <Navigate to="/login" />} />
+            <Route path="/sections/:id" element={token ? <SectionDetailsPage /> : <Navigate to="/login" />} />
           </Routes>
         </main>
       </div>

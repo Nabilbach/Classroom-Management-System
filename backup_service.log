@@ -18,3 +18,6 @@
 {"timestamp":"2025-10-03T18:18:55.143Z","type":"SERVICE_STARTED","message":"تم تفعيل خدمة النسخ الاحتياطية","data":{},"user":"nabil"}
 {"timestamp":"2025-10-03T18:18:55.706Z","type":"BACKUP_CREATED","message":"تم إنشاء النسخة الاحتياطية: auto_backup_2025-10-03T18-18-55-146Z","data":{"totalSize":1655533,"fileCount":10,"directoryCount":5},"user":"nabil"}
 {"timestamp":"2025-10-03T18:20:26.423Z","type":"SERVICE_STARTED","message":"تم تفعيل خدمة النسخ الاحتياطية","data":{},"user":"nabil"}
+{"timestamp":"2025-10-06T15:10:10.635Z","type":"SERVICE_STARTED","message":"تم تفعيل خدمة النسخ الاحتياطية","data":{},"user":"nabil"}
+{"timestamp":"2025-10-06T15:10:38.279Z","type":"SERVICE_STARTED","message":"تم تفعيل خدمة النسخ الاحتياطية","data":{},"user":"nabil"}
+{"timestamp":"2025-10-06T15:10:38.743Z","type":"BACKUP_CREATED","message":"تم إنشاء النسخة الاحتياطية: auto_backup_2025-10-06T15-10-38-284Z","data":{"totalSize":1741756,"fileCount":10,"directoryCount":5},"user":"nabil"}

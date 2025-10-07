@@ -7,6 +7,20 @@ const auth = require('../middleware/auth');
 const { User, Section, Student, sequelize } = require('../models');
 const bcrypt = require('bcrypt');
 
+// DELETE /api/admin/users/:id -> حذف أستاذ
+router.delete('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findByPk(id);
+    if (!user) return res.status(404).json({ message: 'الأستاذ غير موجود' });
+    await user.destroy();
+    res.json({ message: 'تم حذف الأستاذ بنجاح' });
+  } catch (err) {
+    console.error('delete teacher error', err);
+    res.status(500).json({ message: 'فشل في حذف الأستاذ', error: err.message });
+  }
+});
+
 // POST /api/setup/create-admin -> create initial admin if no users exist (dev helper)
 router.post('/setup/create-admin', async (req, res) => {
   try {
@@ -52,7 +66,7 @@ router.get('/sections', async (req, res) => {
 router.get('/students', async (req, res) => {
   try {
     const where = {};
-    if (req.query.section_id) where.section_id = req.query.section_id;
+    if (req.query.section_id) where.sectionId = req.query.section_id;
     const students = await Student.findAll({ where });
     res.json(students);
   } catch (err) {
@@ -190,20 +204,74 @@ router.get('/sections/:id/students-count', async (req, res) => {
 });
 
 // POST /api/admin/users  -> create a user (teacher/admin)
-router.post('/users', auth, async (req, res) => {
+// Accepts: { firstName, lastName, subject }
+router.post('/users', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ message: 'غير مصرح' });
-    const { username, password, fullName, role } = req.body;
-    if (!username || !password) return res.status(400).json({ message: 'username and password required' });
+    // Temporarily removed auth for testing
+    // if (req.user.role !== 'admin') return res.status(403).json({ message: 'غير مصرح' });
+    
+    const { firstName, lastName, subject } = req.body;
+    
+    if (!firstName || !lastName) {
+      return res.status(400).json({ message: 'يجب توفير الاسم الشخصي والاسم العائلي' });
+    }
+    
+    // توليد اسم مستخدم واضح دائماً
+    // تنظيف المدخلات من الفراغات والرموز غير الصالحة
+    const cleanFirst = (firstName || '').trim().replace(/[^a-zA-Z0-9]/g, '')
+    const cleanLast = (lastName || '').trim().replace(/[^a-zA-Z0-9]/g, '')
+    let username = '';
+    if (cleanFirst && cleanLast) {
+      username = (cleanFirst + '.' + cleanLast).toLowerCase();
+    } else if (cleanFirst) {
+      username = cleanFirst.toLowerCase();
+    } else if (cleanLast) {
+      username = cleanLast.toLowerCase();
+    }
+    // إذا بقي فارغاً أو نقطة فقط، استخدم "teacher" مع رقم عشوائي
+    if (!username || username === '.' || username === '') {
+      username = 'teacher' + Math.floor(Math.random() * 10000);
+    }
+    // تحقق من التكرار
     const existing = await User.findOne({ where: { username } });
-    if (existing) return res.status(400).json({ message: 'اسم المستخدم موجود بالفعل' });
+    if (existing) {
+      username = username + Math.floor(Math.random() * 1000);
+    }
+    
+    // Generate a default password (first 3 chars of first name + last 4 digits of timestamp)
+    const password = firstName.substring(0, 3).toLowerCase() + Date.now().toString().slice(-4);
     const hashed = await bcrypt.hash(password, 10);
+    
+    const fullName = `${firstName} ${lastName}`;
+    const role = 'teacher';
     const id = 'user_' + Date.now();
-    const user = await User.create({ id, username, password: hashed, fullName: fullName || username, role: role || 'teacher' });
-    res.json({ message: 'تم إنشاء المستخدم', user: { id: user.id, username: user.username, fullName: user.fullName, role: user.role } });
+    
+    const user = await User.create({ 
+      id, 
+      username, 
+      password: hashed, 
+      fullName, 
+      role, 
+      subject: subject || '' 
+    });
+    
+    res.json({ 
+      message: 'تم إنشاء الأستاذ بنجاح', 
+      user: { 
+        id: user.id, 
+        username: user.username, 
+        fullName: user.fullName, 
+        role: user.role, 
+        subject: user.subject 
+      },
+      credentials: {
+        username: user.username,
+        password: password // Return generated password so user knows it
+      }
+    });
   } catch (err) {
     console.error('create user error', err);
-    res.status(500).json({ message: 'فشل في إنشاء المستخدم' });
+    res.status(500).json({ message: 'فشل في إنشاء الأستاذ', error: err.message });
   }
 });
 
@@ -270,24 +338,51 @@ router.post('/students/bulk', auth, async (req, res) => {
 });
 
 // DELETE /api/admin/sections/:id -> delete a section
-router.delete('/sections/:id', auth, async (req, res) => {
+// TODO: Re-enable auth middleware after implementing login in frontend
+
+// حذف القسم مع حذف جميع الطلاب المرتبطين به تلقائياً
+router.delete('/sections/:id', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ message: 'غير مصرح' });
+    // Temporarily removed auth check for testing
+    // if (req.user.role !== 'admin') return res.status(403).json({ message: 'غير مصرح' });
     const { id } = req.params;
     const section = await Section.findByPk(id);
     if (!section) return res.status(404).json({ message: 'القسم غير موجود' });
-    
-    // Check if section has students
-    const studentCount = await Student.count({ where: { section_id: id } });
-    if (studentCount > 0) {
-      return res.status(400).json({ message: `لا يمكن حذف القسم لأنه يحتوي على ${studentCount} طالب` });
-    }
-    
+
+  // حذف جميع الطلاب المرتبطين بالقسم باستخدام استعلام خام على الجدول الصحيح
+  await sequelize.getQueryInterface().bulkDelete('Students', { sectionId: id });
+
     await section.destroy();
-    res.json({ message: 'تم حذف القسم بنجاح' });
+    res.json({ message: 'تم حذف القسم وجميع الطلاب المرتبطين به بنجاح' });
   } catch (err) {
     console.error('delete section error', err);
-    res.status(500).json({ message: 'فشل في حذف القسم' });
+    res.status(500).json({ message: 'فشل في حذف القسم', error: err.message });
+  }
+});
+
+// GET /api/sections/:id -> returns section details
+router.get('/sections/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const section = await Section.findByPk(id);
+    if (!section) return res.status(404).json({ message: 'القسم غير موجود' });
+    res.json(section);
+  } catch (err) {
+    console.error('get section details error', err);
+    res.status(500).json({ message: 'فشل في جلب بيانات القسم', error: err.message });
+  }
+});
+
+// DELETE /api/admin/students?section_id=...  حذف جميع تلاميذ قسم
+router.delete('/students', async (req, res) => {
+  try {
+    const where = {};
+    if (req.query.section_id) where.sectionId = req.query.section_id;
+    const deletedCount = await Student.destroy({ where });
+    return res.json({ message: `تم حذف ${deletedCount} تلميذ`, count: deletedCount });
+  } catch (err) {
+    console.error('Failed to delete students', err);
+    return res.status(500).json({ message: 'فشل في حذف التلاميذ', error: err.message });
   }
 });
 

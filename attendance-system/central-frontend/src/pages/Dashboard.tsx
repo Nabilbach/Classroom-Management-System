@@ -7,9 +7,9 @@ export default function Dashboard(){
     (async ()=>{
       try{
         const [students, sections, teachers] = await Promise.all([
-          axios.get('/api/students'),
-          axios.get('/api/sections'),
-          axios.get('/api/users?role=teacher')
+          axios.get('/admin/students'),
+          axios.get('/admin/sections'),
+          axios.get('/admin/users?role=teacher')
         ])
         setStats({ students: students.data.length, sections: sections.data.length, teachers: teachers.data.length })
       }catch(e){ console.error(e) }
