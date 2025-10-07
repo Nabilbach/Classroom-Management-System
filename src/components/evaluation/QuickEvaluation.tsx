@@ -1,21 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
-  Paper, Box, Typography, Button, Slider, TextField, IconButton, Chip, 
-  LinearProgress, Card, CardContent, Tooltip, Avatar, Divider
+  Paper, Box, Typography, Button, TextField, IconButton, Chip, 
+  LinearProgress, Card, CardContent, Tooltip, Avatar
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import StarIcon from '@mui/icons-material/Star';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
 import SchoolIcon from '@mui/icons-material/School';
 import BookIcon from '@mui/icons-material/Book';
 import PersonIcon from '@mui/icons-material/Person';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
 import { useSnackbar } from 'notistack';
 import { formatDateShort } from '../../utils/formatDate';
 import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -146,7 +147,15 @@ const EVALUATION_CATEGORIES = [
 
 function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStudents = [], onSwitchStudent }: QuickEvaluationProps) {
   const [evaluation, setEvaluation] = useState<EvaluationData>(ZERO_EVALUATION);
-  const [loading, setLoading] = useState(false);
+  // initialLoading: show full-screen loader only when the modal is first opened.
+  const [initialLoading, setInitialLoading] = useState<boolean>(true);
+  // assessmentsLoading: used to show inline loading for assessments when switching students.
+  const [assessmentsLoading, setAssessmentsLoading] = useState<boolean>(false);
+  const initialLoadRef = useRef<boolean>(true);
+  const currentRequestIdRef = useRef<number>(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const initialEvaluationRef = useRef<Partial<EvaluationData> | null>(null);
+  const [autoAttendanceComputed, setAutoAttendanceComputed] = useState<boolean>(false);
   const [saving, setSaving] = useState(false);
   const [lastAssessmentDate, setLastAssessmentDate] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'evaluation' | 'followups' | 'history'>('evaluation');
@@ -156,7 +165,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
   const [followupDialogOpenLocal, setFollowupDialogOpenLocal] = useState(false);
   const [followupDialogType, setFollowupDialogType] = useState('متابعة');
   const [followupDialogNotes, setFollowupDialogNotes] = useState('');
-  const [studentsFollowupCounts, setStudentsFollowupCounts] = useState({});
+  const [studentsFollowupCounts, setStudentsFollowupCounts] = useState<Record<string, number>>({});
   const [_assessmentsHistory, setAssessmentsHistory] = useState<any[]>([]);
   const [_collapsed, _setCollapsed] = useState(true);
   const [displayLevel, setDisplayLevel] = useState<number>(evaluation.student_level);
@@ -223,21 +232,13 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
     setEvaluation(prev => {
       const updated = { ...prev, [field]: value } as EvaluationData;
       const { total_xp, student_level } = calculateXPAndLevel(updated);
+      // If the user edits attendance manually, stop treating it as auto-calculated
+      if (field === 'attendance_score') setAutoAttendanceComputed(false);
+      // If the user edits behavior manually, it's accepted (no auto flag for behavior)
       return { ...updated, total_xp, student_level };
     });
   };
 
-  // Handle slider changes
-  const handleSliderChange = (field: keyof EvaluationData, ...args: any[]) => {
-    let raw: any = undefined;
-    if (args.length === 1) raw = args[0];
-    else if (args.length >= 2) raw = args[1];
-
-    if (raw && typeof raw === 'object' && 'target' in raw) raw = (raw.target as any).value;
-
-    const num = parseFloat(String(raw ?? '0'));
-    updateScore(field, Number.isNaN(num) ? 0 : num);
-  };
 
   // Get score color based on value
   const getScoreColor = (score: number, max: number = 10) => {
@@ -271,7 +272,23 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
 
   // Load data on student change
   useEffect(() => {
-    setEvaluation(ZERO_EVALUATION);
+    // Start with safe per-student defaults (do not mutate shared state)
+    const baseDefaults: Partial<EvaluationData> = { ...ZERO_EVALUATION, behavior_score: 10, attendance_score: 10 };
+    const derived = calculateXPAndLevel(baseDefaults as Partial<EvaluationData>);
+    const initialEval: EvaluationData = {
+      behavior_score: 10,
+      participation_score: 0,
+      notebook_score: 0,
+      attendance_score: 10,
+      portfolio_score: 0,
+      quran_memorization: 0,
+      bonus_points: 0,
+      notes: '',
+      total_xp: derived.total_xp,
+      student_level: derived.student_level,
+    };
+    setEvaluation(initialEval);
+    initialEvaluationRef.current = { ...initialEval };
     setAssessmentsHistory([]);
     setLastAssessmentDate(null);
 
@@ -303,20 +320,65 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
       // ignore localStorage errors
     }
 
-    // Load assessments and followups
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        await Promise.all([loadAssessments(), loadFollowups()]);
-      } finally {
-        setLoading(false);
+    // Load assessments and followups.
+    // If this is the very first load (opening the modal), show the full-screen loader.
+    // For subsequent student switches, load in background and show only inline indicators.
+    const runLoad = async () => {
+      if (!studentId) return;
+      // bump request id and abort previous in-flight requests
+      currentRequestIdRef.current += 1;
+      const localRequestId = currentRequestIdRef.current;
+      if (abortControllerRef.current) {
+        try { abortControllerRef.current.abort(); } catch (e) {}
+      }
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      if (initialLoadRef.current) {
+        setInitialLoading(true);
+        try {
+          await Promise.all([loadAssessments(controller.signal, localRequestId), loadFollowups(controller.signal, localRequestId)]);
+        } finally {
+          if (currentRequestIdRef.current === localRequestId) {
+            setInitialLoading(false);
+            initialLoadRef.current = false;
+          }
+        }
+      } else {
+        // background refresh: don't block the UI
+        // fire-and-forget (loadAssessments/loadFollowups manage their own small loading flags)
+        void loadAssessments(controller.signal, localRequestId);
+        void loadFollowups(controller.signal, localRequestId);
       }
     };
 
-    if (studentId) {
-      loadData();
-    }
+    if (studentId) runLoad();
   }, [studentId]);
+
+  // Try fetching absences count from the server. This helper tolerates different response shapes.
+  const fetchAbsencesCount = async (id: string) : Promise<number | null> => {
+    if (!id) return null;
+    const candidates = [
+      `http://localhost:3000/api/students/${id}/absences`,
+      `http://localhost:3000/api/students/${id}/attendance/absences`,
+      `http://localhost:3000/api/attendance/students/${id}/absences`
+    ];
+    for (const url of candidates) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const data = await res.json().catch(() => null);
+        if (data == null) continue;
+        // several possible shapes
+        if (typeof data === 'number') return data;
+        if (typeof data.count === 'number') return data.count;
+        if (typeof data.absences === 'number') return data.absences;
+        if (typeof data.absenceCount === 'number') return data.absenceCount;
+      } catch (e) {
+        // ignore and try next
+      }
+    }
+    return null;
+  };
 
   // Fetch which students in this section have open followups so we can highlight them
   useEffect(() => {
@@ -328,7 +390,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
         const res = await fetch(`http://localhost:3000/api/sections/${sectionId}/followups-students`);
         if (!res.ok) return;
         const data = await res.json().catch(() => []);
-        const map = {};
+        const map: Record<string, number> = {};
         (Array.isArray(data) ? data : []).forEach((r: any) => { if (r && r.studentId) map[String(r.studentId)] = Number(r.followupCount) || 0; });
         setStudentsFollowupCounts(map);
       } catch (e) {
@@ -366,6 +428,13 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
     return sectionStudents.findIndex((s: any) => String(s.id) === String(studentId));
   };
 
+  // Compute a visible student number/label for UI. Prefer explicit number fields,
+  // but fall back to the visible index (1-based) rather than an empty string or DB id.
+  const computeStudentNumber = (s: any, idx?: number) => {
+    if (!s) return '';
+    return s.classOrder ?? s.studentNumberInSection ?? s.pathwayNumber ?? s.number ?? (typeof idx === 'number' ? (idx + 1) : '');
+  };
+
   const goPrevStudent = () => {
     const idx = getCurrentIndex();
     if (!Array.isArray(sectionStudents) || sectionStudents.length === 0) return;
@@ -384,10 +453,11 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
     if (next) onSwitchStudent?.(next.id);
   };
 
-  const loadAssessments = async () => {
+  const loadAssessments = async (signal?: AbortSignal, requestId?: number) => {
     if (!studentId) return;
+    setAssessmentsLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/students/${studentId}/assessments`);
+      const res = await fetch(`http://localhost:3000/api/students/${studentId}/assessments`, { signal });
       if (!res.ok) {
         setAssessmentsHistory([]);
         return;
@@ -404,8 +474,10 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
         const dy = y.date ? new Date(y.date).getTime() : 0;
         return dy - dx;
       });
-      setAssessmentsHistory(entries);
-      if (entries.length > 0) setLastAssessmentDate(entries[0].date ?? lastAssessmentDate);
+  // ignore if this response is from an earlier request
+  if (typeof requestId === 'number' && requestId !== currentRequestIdRef.current) return;
+  setAssessmentsHistory(entries);
+  if (entries.length > 0) setLastAssessmentDate(entries[0].date ?? lastAssessmentDate);
 
       // Load latest scores if available
       const latest = entries[0];
@@ -414,59 +486,102 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
         if (typeof s === 'string') {
           try { s = JSON.parse(s); } catch (e) { s = null; }
         }
-        if (s && typeof s === 'object') {
-          const parsed: Partial<EvaluationData> = {
-            behavior_score: Number(s.behavior_score ?? 0),
-            participation_score: Number(s.participation_score ?? 0),
-            notebook_score: Number(s.notebook_score ?? 0),
-            attendance_score: Number(s.attendance_score ?? 0),
-            portfolio_score: Number(s.portfolio_score ?? 0),
-            quran_memorization: Number(s.quran_memorization ?? 0),
-            bonus_points: Number(s.bonus_points ?? 0),
+          if (s && typeof s === 'object') {
+          // Only override values that the server explicitly provides. Keep defaults for behavior/attendance
+          const parsedFromServer: Partial<EvaluationData> = {
+            behavior_score: typeof s.behavior_score !== 'undefined' ? Number(s.behavior_score) : undefined,
+            participation_score: typeof s.participation_score !== 'undefined' ? Number(s.participation_score) : undefined,
+            notebook_score: typeof s.notebook_score !== 'undefined' ? Number(s.notebook_score) : undefined,
+            attendance_score: typeof s.attendance_score !== 'undefined' ? Number(s.attendance_score) : undefined,
+            portfolio_score: typeof s.portfolio_score !== 'undefined' ? Number(s.portfolio_score) : undefined,
+            quran_memorization: typeof s.quran_memorization !== 'undefined' ? Number(s.quran_memorization) : undefined,
+            bonus_points: typeof s.bonus_points !== 'undefined' ? Number(s.bonus_points) : undefined,
             notes: latest.notes ?? '',
           };
-          const { total_xp, student_level } = calculateXPAndLevel(parsed);
-          setEvaluation({
-            behavior_score: parsed.behavior_score ?? 0,
-            participation_score: parsed.participation_score ?? 0,
-            notebook_score: parsed.notebook_score ?? 0,
-            attendance_score: parsed.attendance_score ?? 0,
-            portfolio_score: parsed.portfolio_score ?? 0,
-            quran_memorization: parsed.quran_memorization ?? 0,
-            bonus_points: parsed.bonus_points ?? 0,
-            notes: parsed.notes ?? '',
-            total_xp,
-            student_level,
-          });
+
+          // Start from current defaults then fill in from server where provided
+          const base: Partial<EvaluationData> = { ...ZERO_EVALUATION, behavior_score: 10, attendance_score: 10 };
+          const merged: Partial<EvaluationData> = { ...base, ...parsedFromServer };
+
+          // If attendance was not provided by server, try to auto-calc from absences
+          (async () => {
+            if (typeof parsedFromServer.attendance_score === 'undefined') {
+              const abs = await fetchAbsencesCount(String(studentId ?? ''));
+              if (abs !== null) {
+                merged.attendance_score = Math.max(0, 10 - (0.5 * abs));
+              }
+            }
+            const { total_xp, student_level } = calculateXPAndLevel(merged as Partial<EvaluationData>);
+            const finalEval = {
+              behavior_score: merged.behavior_score ?? 10,
+              participation_score: merged.participation_score ?? 0,
+              notebook_score: merged.notebook_score ?? 0,
+              attendance_score: merged.attendance_score ?? 10,
+              portfolio_score: merged.portfolio_score ?? 0,
+              quran_memorization: merged.quran_memorization ?? 0,
+              bonus_points: merged.bonus_points ?? 0,
+              notes: merged.notes ?? '',
+              total_xp,
+              student_level,
+            } as EvaluationData;
+            setEvaluation(finalEval);
+            initialEvaluationRef.current = { ...finalEval };
+          })();
         }
       }
     } catch (e) {
+      if ((e as any)?.name === 'AbortError') return;
       console.error('Failed loading assessments history', e);
       setAssessmentsHistory([]);
     }
+    finally {
+      if (!signal || signal?.aborted === false) setAssessmentsLoading(false);
+    }
   };
 
-  const loadFollowups = async () => {
+  const loadFollowups = async (signal?: AbortSignal, requestId?: number) => {
     if (!studentId) return;
     setFollowupLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/students/${studentId}/followups`);
-      if (res.ok) {
-        const data = await res.json();
-        const normalized = (Array.isArray(data) ? data : []).map((f: any) => ({
-          id: f.id,
-          type: f.type,
-          notes: f.notes ?? f.description ?? '',
-          isOpen: typeof f.isOpen !== 'undefined' ? Number(f.isOpen) : (f.is_open ? Number(f.is_open) : 1),
-          createdAt: f.createdAt,
-          updatedAt: f.updatedAt,
-        })).filter((f: any) => f.isOpen === 1);
-        setFollowups(normalized);
-      }
+      const res = await fetch(`http://localhost:3000/api/students/${studentId}/followups`, { signal });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (typeof requestId === 'number' && requestId !== currentRequestIdRef.current) return;
+      const normalized = (Array.isArray(data) ? data : []).map((f: any) => ({
+        id: f.id,
+        type: f.type,
+        notes: f.notes ?? f.description ?? '',
+        isOpen: typeof f.isOpen !== 'undefined' ? Number(f.isOpen) : (f.is_open ? Number(f.is_open) : 1),
+        createdAt: f.createdAt,
+        updatedAt: f.updatedAt,
+      })).filter((f: any) => f.isOpen === 1);
+      setFollowups(normalized);
     } catch (e) {
+      if ((e as any)?.name === 'AbortError') return;
       console.error('Error fetching followups', e);
     } finally {
       setFollowupLoading(false);
+    }
+  };
+
+  // Refresh attendance explicitly (manual refresh button) or internal use.
+  const refreshAttendance = async (requestId?: number) => {
+    if (!studentId) return;
+    try {
+      const abs = await fetchAbsencesCount(String(studentId));
+      if (abs !== null) {
+        const newAttendance = Math.max(0, 10 - (0.5 * abs));
+        // Only apply if this is latest request
+        if (typeof requestId === 'number' && requestId !== currentRequestIdRef.current) return;
+        setEvaluation(prev => {
+          const updated = { ...prev, attendance_score: newAttendance } as EvaluationData;
+          const { total_xp, student_level } = calculateXPAndLevel(updated);
+          setAutoAttendanceComputed(true);
+          return { ...updated, total_xp, student_level };
+        });
+      }
+    } catch (e) {
+      // ignore
     }
   };
 
@@ -477,51 +592,54 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
       return;
     }
 
-    const sliderAverage = (
-      evaluation.behavior_score +
-      evaluation.participation_score +
-      evaluation.notebook_score +
-      evaluation.attendance_score +
-      evaluation.portfolio_score
-    ) / 5;
-    const new_score = Number((sliderAverage * 2).toFixed(2));
+    // derived fields (total_xp & student_level) are already present on evaluation
 
     setSaving(true);
     try {
-      const scoresPayload = {
-        behavior_score: evaluation.behavior_score,
-        participation_score: evaluation.participation_score,
-        notebook_score: evaluation.notebook_score,
-        attendance_score: evaluation.attendance_score,
-        portfolio_score: evaluation.portfolio_score,
-        quran_memorization: evaluation.quran_memorization,
-        bonus_points: evaluation.bonus_points,
-      };
-
-      const response = await fetch(`http://localhost:3000/api/students/${studentId}/assessment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          new_score, 
-          notes: evaluation.notes || '', 
-          scores: scoresPayload, 
-          total_xp: evaluation.total_xp, 
-          student_level: evaluation.student_level 
-        }),
+      // Build a PATCH-like payload containing only fields that changed from initialEvaluationRef
+      const initial = initialEvaluationRef.current || {};
+      const patch: any = {};
+      const fieldsToCheck: Array<keyof EvaluationData> = ['behavior_score','participation_score','notebook_score','attendance_score','portfolio_score','quran_memorization','bonus_points','notes'];
+      fieldsToCheck.forEach((f) => {
+        const cur = (evaluation as any)[f];
+        const init = (initial as any)[f];
+        if (typeof cur !== 'undefined' && cur !== init) patch[f] = cur;
       });
+      // always include total_xp and student_level as derived fields
+      patch.total_xp = evaluation.total_xp;
+      patch.student_level = evaluation.student_level;
 
-      if (response.ok) {
-        const saved = await response.json().catch(() => null);
-        enqueueSnackbar('تم حفظ التقييم بنجاح', { variant: 'success' });
-        
-        // Save to localStorage
+      // Try patching to assessment endpoint; fallback to student update endpoints
+      const endpoints = [
+        `http://localhost:3000/api/students/${studentId}/assessment`,
+        `http://localhost:3000/api/students/${studentId}`,
+      ];
+      let savedBody: any = null;
+      for (const url of endpoints) {
         try {
-          localStorage.setItem(`qe_last_scores_${studentId}`, JSON.stringify(evaluation));
-        } catch (e) { /* ignore */ }
-        
-        // Refresh data
+          const method = url.endsWith('/assessment') ? 'POST' : 'PATCH';
+          const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patch),
+          });
+          if (res.ok) {
+            savedBody = await res.json().catch(() => null);
+            break;
+          }
+        } catch (e) {
+          // try next
+        }
+      }
+
+      if (savedBody !== null) {
+        enqueueSnackbar('تم حفظ التقييم بنجاح', { variant: 'success' });
+        try { localStorage.setItem(`qe_last_scores_${studentId}`, JSON.stringify(evaluation)); } catch(e) {}
+        // update initial snapshot
+        initialEvaluationRef.current = { ...evaluation };
+        // refresh assessments
         await loadAssessments();
-        onSave?.(saved);
+        onSave?.(savedBody);
       } else {
         enqueueSnackbar('فشل في حفظ التقييم. تحقق من الاتصال.', { variant: 'error' });
       }
@@ -751,7 +869,11 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
     }
   };
 
-  if (loading) {
+  const currentIndex = getCurrentIndex();
+  const currentStudent = currentIndex >= 0 ? sectionStudents[currentIndex] : null;
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  if (initialLoading) {
     return (
       <Paper className="w-full max-w-4xl mx-auto" elevation={3}>
         <Box className="text-center p-8">
@@ -851,12 +973,32 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                   {studentName}
                 </Typography>
 
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 0.5 }}>{
-                  (() => {
-                    const cur = sectionStudents && Array.isArray(sectionStudents) ? sectionStudents.find((s: any) => String(s.id) === String(studentId)) : null;
-                    return cur ? (cur.classOrder ?? cur.number ?? cur.id) : '';
-                  })()
-                }</Typography>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 0.5 }}>{computeStudentNumber(currentStudent, currentIndex)}</Typography>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {autoAttendanceComputed && (
+                      <Chip label="الحضور محسوب تلقائياً" color="info" size="small" sx={{ fontWeight: 'bold' }} />
+                    )}
+                    <Button
+                      size="small"
+                      variant="text"
+                      onClick={() => {
+                        if (!studentId) return;
+                        currentRequestIdRef.current += 1;
+                        const localId = currentRequestIdRef.current;
+                        if (abortControllerRef.current) {
+                          try { abortControllerRef.current.abort(); } catch (e) {}
+                        }
+                        const c = new AbortController();
+                        abortControllerRef.current = c;
+                        void refreshAttendance(localId);
+                      }}
+                      sx={{ textTransform: 'none', fontSize: 13 }}
+                    >
+                      تحديث الحضور
+                    </Button>
+                  </div>
+                </div>
                 {lastAssessmentDate && (
                   <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
                     آخر تقييم: {formatDateShort(lastAssessmentDate)}
@@ -913,9 +1055,13 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
             </div>
           </div>
         </Box>
+        {/* Inline loader when switching students so UI isn't fully blocked */}
+        {assessmentsLoading && (
+          <LinearProgress sx={{ height: 6 }} />
+        )}
 
   {/* Content */}
-  <Box sx={{ backgroundColor: 'white', pt: 2, px: 3, pb: 3, display: 'flex', flexDirection: 'column', gap: 3, height: 'calc(100% - 120px)', overflowY: 'auto', boxSizing: 'border-box', position: 'relative', borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }}>
+  <Box ref={contentRef} sx={{ backgroundColor: 'white', pt: 2, px: 3, pb: '96px', display: 'flex', flexDirection: 'column', gap: 3, height: 'calc(100% - 120px)', overflowY: 'auto', boxSizing: 'border-box', position: 'relative', borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }}>
           {/* Student Number Grid */}
           {Array.isArray(sectionStudents) && sectionStudents.length > 0 && (
             <Box sx={{ mb: 1 }}>
@@ -924,8 +1070,9 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                 التنقل السريع بين الطلاب
               </Typography>
               <div className="flex gap-2 flex-wrap">
-                {sectionStudents.map((s: any) => {
-                  const num = s.classOrder ?? s.number ?? s.id;
+                {sectionStudents.map((s: any, _idx: number) => {
+                  // Compute visible number consistently, fallback to (index+1)
+                  const num = computeStudentNumber(s, _idx);
                   const isCurrent = String(s.id) === String(studentId);
                   const count = Number(studentsFollowupCounts[String(s.id)] || 0);
                   const hasFollowup = count > 0;
@@ -1008,6 +1155,22 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                           <Typography variant="body1" sx={{ fontWeight: 'bold', color: category.color }}>
                             {category.label}
                           </Typography>
+                          {category.id === 'attendance' && (
+                            <IconButton
+                              aria-label="تحديث الحضور"
+                              size="small"
+                              color="primary"
+                              onClick={() => {
+                                // bump request id and call refresh with local id to avoid races
+                                currentRequestIdRef.current += 1;
+                                const localId = currentRequestIdRef.current;
+                                void refreshAttendance(localId);
+                              }}
+                              sx={{ ml: 1 }}
+                            >
+                              <AutorenewIcon />
+                            </IconButton>
+                          )}
                         </div>
                         <Chip
                           label={`${(evaluation[category.field] as number).toFixed(1)}/${category.max}`}
@@ -1022,22 +1185,33 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
                         />
                       </div>
                       
-                      <Slider
-                        value={evaluation[category.field] as number}
-                        onChange={(e, v) => handleSliderChange(category.field, e, v)}
-                        min={0}
-                        max={category.max}
-                        step={category.step}
-                        marks
-                        size="small"
-                        sx={{
-                          color: category.color,
-                          '& .MuiSlider-thumb': {
-                            width: 16,
-                            height: 16,
-                          },
-                        }}
-                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <IconButton
+                          size="small"
+                          onClick={() => updateScore(category.field as keyof EvaluationData, Math.max(0, (evaluation[category.field] as number) - category.step))}
+                          sx={{ width: 34, height: 34 }}
+                        >
+                          <RemoveIcon fontSize="small" />
+                        </IconButton>
+
+                        <div style={{ flex: 1 }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={Math.max(0, Math.min(100, ((evaluation[category.field] as number) / category.max) * 100))}
+                            sx={{ height: 10, borderRadius: 6, backgroundColor: `${category.color}20` }}
+                          />
+                        </div>
+
+                        <IconButton
+                          size="small"
+                          onClick={() => updateScore(category.field as keyof EvaluationData, Math.min(category.max, (evaluation[category.field] as number) + category.step))}
+                          sx={{ width: 34, height: 34 }}
+                        >
+                          <AddIcon fontSize="small" />
+                        </IconButton>
+
+                        <Typography variant="body2" sx={{ minWidth: 44, textAlign: 'right', fontWeight: 'bold' }}>{(evaluation[category.field] as number).toFixed(1)}</Typography>
+                      </div>
                       
                       <div className="flex justify-between items-center">
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -1209,18 +1383,31 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
           )}
 
           {/* Persistent action bar: Close / Reset / Save - visible across all tabs */}
-          <Box sx={{ position: 'sticky', bottom: 0, display: 'flex', justifyContent: 'flex-end', gap: 1, py: 1.5, px: 1, backgroundColor: 'white', borderTop: '1px solid rgba(0,0,0,0.06)', zIndex: 1400 }}>
-            <Button variant="outlined" onClick={onClose} size="small" sx={{ px: 2, borderRadius: 2, fontWeight: 'bold' }}>إغلاق</Button>
-            <Button variant="outlined" color="error" onClick={resetToZero} size="small" sx={{ px: 2, borderRadius: 2, fontWeight: 'bold' }}>إعادة تعيين</Button>
+          {/* small scroll hint so users can nudge the content down without hiding the sticky action bar */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
+            <Button
+              variant="text"
+              size="small"
+              onClick={() => { if (contentRef.current) contentRef.current.scrollBy({ top: 64, behavior: 'smooth' }); }}
+              sx={{ color: 'text.secondary', textTransform: 'none', fontSize: 13 }}
+              aria-label="scroll-down-hint"
+            >
+              ▼ اسحب للأسفل
+            </Button>
+          </Box>
+
+          <Box sx={{ position: 'sticky', bottom: 8, display: 'flex', justifyContent: 'flex-end', gap: 2, py: 1.5, px: 2, backgroundColor: 'white', borderTop: '1px solid rgba(0,0,0,0.06)', zIndex: 1400 }}>
+            <Button variant="outlined" onClick={onClose} size="medium" sx={{ px: 3, borderRadius: 2, fontWeight: 'bold', minWidth: 100, fontSize: 14 }}>إغلاق</Button>
+            <Button variant="outlined" color="error" onClick={resetToZero} size="medium" sx={{ px: 3, borderRadius: 2, fontWeight: 'bold', minWidth: 120, fontSize: 14 }}>إعادة تعيين</Button>
             <Button
               variant="contained"
               onClick={handleSave}
               disabled={saving}
-              size="small"
+              size="medium"
               sx={{
-                px: 4, borderRadius: 2, fontWeight: 'bold', fontSize: 14,
+                px: 4, borderRadius: 2, fontWeight: 'bold', fontSize: 15, minWidth: 140,
                 background: LEVEL_GRADIENTS[evaluation.student_level],
-                boxShadow: `0 4px 12px ${LEVEL_COLORS[evaluation.student_level]}30`,
+                boxShadow: `0 6px 18px ${LEVEL_COLORS[evaluation.student_level]}30`,
                 '&:hover': { transform: 'translateY(-1px)' },
                 '&:disabled': { background: '#9E9E9E', color: 'white' }
               }}

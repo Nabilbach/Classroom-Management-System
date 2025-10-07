@@ -1,0 +1,48 @@
+delete section error Error
+    at Database.<anonymous> (C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\node_modules\sequelize\lib\dialects\sqlite\query.js:185:27)
+    at C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\node_modules\sequelize\lib\dialects\sqlite\query.js:183:50
+    at new Promise (<anonymous>)
+    at Query.run (C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\node_modules\sequelize\lib\dialects\sqlite\query.js:183:12)
+    at C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\node_modules\sequelize\lib\sequelize.js:315:28
+    at async SQLiteQueryInterface.rawSelect (C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\node_modules\sequelize\lib\dialects\abstract\query-interface.js:434:18)
+    at async Student.aggregate (C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\node_modules\sequelize\lib\model.js:1277:19)
+    at async Student.count (C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\node_modules\sequelize\lib\model.js:1306:20)
+    at async C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\routes\admin.js:281:26 {
+  name: 'SequelizeDatabaseError',
+  parent: [Error: SQLITE_ERROR: no such column: Student.section_id] {
+    errno: 1,
+    code: 'SQLITE_ERROR',
+    sql: "SELECT count(*) AS `count` FROM `Students` AS `Student` WHERE `Student`.`section_id` = 'section_1759703231537';"
+  },
+  original: [Error: SQLITE_ERROR: no such column: Student.section_id] {
+    errno: 1,
+    code: 'SQLITE_ERROR',
+    sql: "SELECT count(*) AS `count` FROM `Students` AS `Student` WHERE `Student`.`section_id` = 'section_1759703231537';"
+  },
+  sql: "SELECT count(*) AS `count` FROM `Students` AS `Student` WHERE `Student`.`section_id` = 'section_1759703231537';",
+  parameters: {}
+}
+delete section error Error
+    at Database.<anonymous> (C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\node_modules\sequelize\lib\dialects\sqlite\query.js:185:27)
+    at C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\node_modules\sequelize\lib\dialects\sqlite\query.js:183:50
+    at new Promise (<anonymous>)
+    at Query.run (C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\node_modules\sequelize\lib\dialects\sqlite\query.js:183:12)
+    at C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\node_modules\sequelize\lib\sequelize.js:315:28
+    at async SQLiteQueryInterface.rawSelect (C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\node_modules\sequelize\lib\dialects\abstract\query-interface.js:434:18)
+    at async Student.aggregate (C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\node_modules\sequelize\lib\model.js:1277:19)
+    at async Student.count (C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\node_modules\sequelize\lib\model.js:1306:20)
+    at async C:\Users\nabil\OneDrive\Documents\Classroom Management System\attendance-system\backend\routes\admin.js:281:26 {
+  name: 'SequelizeDatabaseError',
+  parent: [Error: SQLITE_ERROR: no such column: Student.section_id] {
+    errno: 1,
+    code: 'SQLITE_ERROR',
+    sql: "SELECT count(*) AS `count` FROM `Students` AS `Student` WHERE `Student`.`section_id` = 'section_1759703231537';"
+  },
+  original: [Error: SQLITE_ERROR: no such column: Student.section_id] {
+    errno: 1,
+    code: 'SQLITE_ERROR',
+    sql: "SELECT count(*) AS `count` FROM `Students` AS `Student` WHERE `Student`.`section_id` = 'section_1759703231537';"
+  },
+  sql: "SELECT count(*) AS `count` FROM `Students` AS `Student` WHERE `Student`.`section_id` = 'section_1759703231537';",
+  parameters: {}
+}

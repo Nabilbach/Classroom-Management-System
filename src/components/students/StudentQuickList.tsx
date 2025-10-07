@@ -17,9 +17,11 @@ const StudentQuickList: React.FC<Props> = ({ students, onSelectStudent, currentS
 
       <div className="flex-1 overflow-auto">
         <div className="grid grid-cols-3 gap-2">
-          {students.map((s) => {
+          {students.map((s, idx) => {
             const id = s.id;
-            const label = s.classOrder || s.pathwayNumber || s.id;
+            // Prefer classOrder (class number) or studentNumberInSection when available.
+            // Avoid falling back to the raw DB id (which can be large) — use pathwayNumber or index+1 instead.
+            const label = s.classOrder ?? s.studentNumberInSection ?? s.pathwayNumber ?? (idx + 1);
             const selected = String(currentStudentId) === String(id);
             return (
               <button

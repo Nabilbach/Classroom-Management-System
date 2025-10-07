@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Typography, Button, Select, MenuItem, FormControl, InputLabel, Paper, Chip } from '@mui/material';
+import CheckCircle from '@mui/icons-material/CheckCircle';
+import Circle from '@mui/icons-material/Circle';
 
 interface Student {
   id: number;
@@ -55,6 +57,11 @@ const AttendanceTracker: React.FC = () => {
     } catch (error) {
       console.error('خطأ في جلب الأقسام:', error);
     }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const response = await fetch('/api/students');
       const data = await response.json();
       setStudents(data);
     } catch (error) {
@@ -76,11 +83,7 @@ const AttendanceTracker: React.FC = () => {
       setTodaysAttendance(records as AttendanceRecord[]);
       setIsAttendanceRecorded(records.length > 0);
 
-      // تحديث حالة القسم الحالي في الخريطة
-      setSectionsAttendanceStatus(prev => ({
-        ...prev,
-        [sid]: records.length > 0
-      }));
+      // (no sectionsAttendanceStatus map maintained here)
     } catch (error) {
       console.error('خطأ في جلب الحضور:', error);
     }
@@ -166,7 +169,13 @@ const AttendanceTracker: React.FC = () => {
       </Typography>
 
       <Box sx={{ mb: 3 }}>
-            {/* حالة تسجيل الحضور للصف محددة داخل منطقة السجل (تمت إزالتها من العنوان) */}
+        <FormControl fullWidth>
+          <InputLabel id="section-select-label">اختر القسم</InputLabel>
+          <Select
+            labelId="section-select-label"
+            value={selectedSectionId || ''}
+            onChange={e => setSelectedSectionId(e.target.value as string)}
+            label="اختر القسم"
           >
             {sections.map((section) => (
               <MenuItem key={section.id} value={section.id}>
@@ -177,22 +186,24 @@ const AttendanceTracker: React.FC = () => {
             ))}
           </Select>
         </FormControl>
-
-        {/* مؤشر الحضور الكامل محذوف */}
       </Box>
 
       {selectedSectionId && selectedSection && (
         <Paper sx={{ p: 2, mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <Typography variant="h6">
-              {selectedSection.name}
-            </Typography>
-            <Chip
-              icon={isAttendanceRecorded ? <CheckCircle /> : <Circle />}
-              label={isAttendanceRecorded ? 'تم تسجيل الحضور' : 'لم يتم تسجيل الحضور'}
-              color={isAttendanceRecorded ? 'success' : 'warning'}
-              size="small"
-            />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="h6" sx={{ m: 0 }}>
+                {selectedSection.name}
+              </Typography>
+              <Chip
+                icon={isAttendanceRecorded ? <CheckCircle /> : <Circle />}
+                label={isAttendanceRecorded ? 'تم تسجيل الحضور' : 'لم يتم تسجيل الحضور'}
+                color={isAttendanceRecorded ? 'success' : 'warning'}
+                size="small"
+                sx={{ ml: 1 }}
+              />
+              {/* refresh button removed here — use the QuickEvaluation refresh control instead */}
+            </Box>
           </Box>
 
           {!isAttendanceRecorded ? (
