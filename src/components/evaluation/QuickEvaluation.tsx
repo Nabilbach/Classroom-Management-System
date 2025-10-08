@@ -97,7 +97,8 @@ const EVALUATION_CATEGORIES = [
     max: 10,
     step: 0.5,
     description: 'تقييم سلوك الطالب وانضباطه في الفصل',
-    xpMultiplier: 10
+    // behavior should contribute up to 60 XP (10 * 6)
+    xpMultiplier: 6
   },
   {
     id: 'participation',
@@ -141,7 +142,8 @@ const EVALUATION_CATEGORIES = [
     max: 10,
     step: 0.5,
     description: 'الانتظام والحضور في الفصل',
-    xpMultiplier: 10
+    // attendance should contribute up to 40 XP (10 * 4)
+    xpMultiplier: 4
   }
 ];
 
@@ -205,18 +207,33 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
   );
 
   // Calculate XP and level from scores
+  // Calculate XP and level using per-field multipliers defined in EVALUATION_CATEGORIES.
   const calculateXPAndLevel = (scores: Partial<EvaluationData>) => {
-    const sliderSum = (
-      (scores.behavior_score ?? 0) +
-      (scores.participation_score ?? 0) +
-      (scores.notebook_score ?? 0) +
-      (scores.attendance_score ?? 0) +
-      (scores.portfolio_score ?? 0)
-    );
-    const sliderXP = sliderSum * 10;
+    // build a quick map of field -> multiplier
+    const multiplierMap: Record<string, number> = {};
+    for (const cat of EVALUATION_CATEGORIES) {
+      multiplierMap[cat.field as string] = cat.xpMultiplier ?? 10;
+    }
+
+    // sum slider-based XP using multipliers
+    const sliderFields: Array<keyof EvaluationData> = [
+      'behavior_score',
+      'participation_score',
+      'notebook_score',
+      'attendance_score',
+      'portfolio_score',
+    ];
+
+    let sliderXP = 0;
+    for (const f of sliderFields) {
+      const val = (scores as any)[f] ?? 0;
+      const mult = multiplierMap[f as string] ?? 10;
+      sliderXP += val * mult;
+    }
+
     const quranXP = (scores.quran_memorization ?? 0) * 10;
     const bonusXP = (scores.bonus_points ?? 0) * 5;
-    const totalXP = sliderXP + quranXP + bonusXP;
+    const totalXP = Math.round(sliderXP + quranXP + bonusXP);
 
     let level = 1;
     if (totalXP >= 600) level = 5;
@@ -273,6 +290,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
   // Load data on student change
   useEffect(() => {
     // Start with safe per-student defaults (do not mutate shared state)
+    // Start new students at beginner level by default while keeping XP visible.
     const baseDefaults: Partial<EvaluationData> = { ...ZERO_EVALUATION, behavior_score: 10, attendance_score: 10 };
     const derived = calculateXPAndLevel(baseDefaults as Partial<EvaluationData>);
     const initialEval: EvaluationData = {
@@ -285,7 +303,8 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
       bonus_points: 0,
       notes: '',
       total_xp: derived.total_xp,
-      student_level: derived.student_level,
+      // always start at beginner (المبتدئ) for a new student's initial view
+      student_level: 1,
     };
     setEvaluation(initialEval);
     initialEvaluationRef.current = { ...initialEval };
@@ -365,7 +384,16 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
     for (const url of candidates) {
       try {
         const res = await fetch(url);
-        if (!res.ok) continue;
+        if (!res.ok) {
+          // Debug: log failed absences endpoint and response body if available
+          try {
+            const text = await res.text();
+            console.debug('[QE] fetchAbsencesCount - non-ok', { url, status: res.status, body: text });
+          } catch (e) {
+            console.debug('[QE] fetchAbsencesCount - non-ok (no body)', { url, status: res.status });
+          }
+          continue;
+        }
         const data = await res.json().catch(() => null);
         if (data == null) continue;
         // several possible shapes
@@ -374,7 +402,8 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
         if (typeof data.absences === 'number') return data.absences;
         if (typeof data.absenceCount === 'number') return data.absenceCount;
       } catch (e) {
-        // ignore and try next
+        // network/parse error - log for debugging then try next
+        console.error('[QE] fetchAbsencesCount error for', url, e);
       }
     }
     return null;
@@ -459,6 +488,12 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
     try {
       const res = await fetch(`http://localhost:3000/api/students/${studentId}/assessments`, { signal });
       if (!res.ok) {
+        try {
+          const text = await res.text();
+          console.error('[QE] loadAssessments failed', { studentId, status: res.status, body: text });
+        } catch (e) {
+          console.error('[QE] loadAssessments failed and could not read body', { studentId, status: res.status });
+        }
         setAssessmentsHistory([]);
         return;
       }
@@ -544,7 +579,10 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
     setFollowupLoading(true);
     try {
       const res = await fetch(`http://localhost:3000/api/students/${studentId}/followups`, { signal });
-      if (!res.ok) return;
+      if (!res.ok) {
+        try { const text = await res.text(); console.error('[QE] loadFollowups failed', { studentId, status: res.status, body: text }); } catch (e) { console.error('[QE] loadFollowups failed', { studentId, status: res.status }); }
+        return;
+      }
       const data = await res.json();
       if (typeof requestId === 'number' && requestId !== currentRequestIdRef.current) return;
       const normalized = (Array.isArray(data) ? data : []).map((f: any) => ({
@@ -605,9 +643,33 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
         const init = (initial as any)[f];
         if (typeof cur !== 'undefined' && cur !== init) patch[f] = cur;
       });
-      // always include total_xp and student_level as derived fields
+      
+      // Calculate new_score from the total (0-20 scale)
+      const totalScore = 
+        (evaluation.behavior_score || 0) +
+        (evaluation.participation_score || 0) +
+        (evaluation.notebook_score || 0) +
+        (evaluation.attendance_score || 0) +
+        (evaluation.portfolio_score || 0) +
+        (evaluation.quran_memorization || 0) +
+        (evaluation.bonus_points || 0);
+      
+      // Always include required fields for assessment
+      patch.new_score = totalScore;
       patch.total_xp = evaluation.total_xp;
       patch.student_level = evaluation.student_level;
+      patch.notes = evaluation.notes || '';
+      
+      // Include detailed scores breakdown
+      patch.scores = {
+        behavior_score: evaluation.behavior_score || 0,
+        participation_score: evaluation.participation_score || 0,
+        notebook_score: evaluation.notebook_score || 0,
+        attendance_score: evaluation.attendance_score || 0,
+        portfolio_score: evaluation.portfolio_score || 0,
+        quran_memorization: evaluation.quran_memorization || 0,
+        bonus_points: evaluation.bonus_points || 0,
+      };
 
       // Try patching to assessment endpoint; fallback to student update endpoints
       const endpoints = [
@@ -618,16 +680,23 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
       for (const url of endpoints) {
         try {
           const method = url.endsWith('/assessment') ? 'POST' : 'PATCH';
+          // Debug: log outgoing save attempt
+          try { console.debug('[QE] handleSave - attempting', { url, method, payload: patch }); } catch (e) {}
           const res = await fetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(patch),
           });
-          if (res.ok) {
-            savedBody = await res.json().catch(() => null);
-            break;
+          if (!res.ok) {
+            let respText = '';
+            try { respText = await res.text(); } catch (e) { respText = `<failed to read body: ${String(e)}>`; }
+            console.error('[QE] handleSave - server returned error', { url, status: res.status, body: respText, payload: patch });
+            continue;
           }
+          savedBody = await res.json().catch(() => null);
+          break;
         } catch (e) {
+          console.error('[QE] handleSave - fetch threw for', url, e);
           // try next
         }
       }

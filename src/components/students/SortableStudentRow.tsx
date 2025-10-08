@@ -2,6 +2,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@material-tailwind/react";
+import { formatDateShort } from '../../utils/formatDate';
 import { FaEdit, FaTrash, FaInfoCircle, FaGripVertical, FaStar } from 'react-icons/fa';
 import { Student } from '../../types/student';
 
@@ -47,8 +48,8 @@ function SortableStudentRow({ student, lastAssessmentDate, xp, onEdit, onDelete,
       <td className="px-4 py-3 text-sm">{student.firstName}</td>
       <td className="px-4 py-3 text-sm">{student.gender}</td>
       <td className="px-4 py-3 text-sm">{student.birthDate}</td>
-      <td className="px-4 py-3 text-sm">{lastAssessmentDate || '-'}</td>
-      <td className="px-4 py-3 text-sm">{xp ?? 0}</td>
+  <td className="px-4 py-3 text-sm">{lastAssessmentDate ? formatDateShort(lastAssessmentDate) : '-'}</td>
+  <td className="px-4 py-3 text-sm">{Math.round(xp ?? 0)}</td>
       <td className="px-4 py-3 text-sm">
         {isAttendanceMode ? (
           <div className="flex gap-2">
@@ -73,17 +74,17 @@ function SortableStudentRow({ student, lastAssessmentDate, xp, onEdit, onDelete,
           </div>
         ) : (
           <div className="flex gap-2">
-            <Button variant="text" size="sm" color="yellow" className="p-1" onClick={() => onAssess(student)}>
-              <FaStar />
+            <Button variant="text" size="sm" color="yellow" className="p-2" onClick={() => onAssess(student)}>
+              <FaStar size={16} />
             </Button>
-            <Button variant="text" size="sm" color="blue" className="p-1" onClick={() => onEdit(student)}>
-              <FaEdit />
+            <Button variant="text" size="sm" color="blue" className="p-2" onClick={() => onEdit(student)}>
+              <FaEdit size={16} />
             </Button>
-            <Button variant="text" size="sm" color="red" className="p-1" onClick={() => onDelete(student.id)}>
-              <FaTrash />
+            <Button variant="text" size="sm" color="red" className="p-2" onClick={() => onDelete(student.id)}>
+              <FaTrash size={16} />
             </Button>
-            <Button variant="text" size="sm" color="gray" className="p-1" onClick={() => onDetail(student)}>
-              <FaInfoCircle />
+            <Button variant="text" size="sm" color="gray" className="p-2" onClick={() => onDetail(student)}>
+              <FaInfoCircle size={16} />
             </Button>
           </div>
         )}

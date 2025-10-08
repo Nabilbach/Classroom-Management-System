@@ -12,6 +12,7 @@ import StudentTable from '../components/students/StudentTable';
 import StudentDetailModal from '../components/students/StudentDetailModal';
 import BackToTopButton from '../components/BackToTopButton';
 import QuickEvaluation from '../components/evaluation/QuickEvaluation';
+import BulkEvaluation from '../components/evaluation/BulkEvaluation';
 import StudentTableSkeleton from '../components/students/StudentTableSkeleton';
 import StudentCardSkeleton from '../components/students/StudentCardSkeleton';
 import ExcelUploadModal from '../components/students/ExcelUploadModal';
@@ -100,7 +101,7 @@ const MemoizedStudentTable = React.memo(StudentTable);
 
 function StudentManagement() {
   const { sections, currentSection, setCurrentSection } = useSections();
-  const { students, deleteStudent, isLoading, fetchStudents } = useStudents();
+  const { students, deleteStudent, isLoading, fetchStudents, updateStudentLocal } = useStudents();
   const { recommendedSectionId, displayMessage, isTeachingTime } = useCurrentLesson();
 
   // لا نطبق اختيار القسم الذكي تلقائياً - المستخدم يختار بنفسه
@@ -167,6 +168,7 @@ function StudentManagement() {
   const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState<boolean>(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isExcelUploadModalOpen, setIsExcelUploadModalOpen] = useState<boolean>(false);
+  const [isBulkEvalOpen, setIsBulkEvalOpen] = useState<boolean>(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState<boolean>(false);
   const [confirmModalMessage, setConfirmModalMessage] = useState<string>('');
   const [confirmModalAction, setConfirmModalAction] = useState<(() => void) | null>(null);
@@ -333,18 +335,39 @@ function StudentManagement() {
       .sort(sortWithLocal);
   }, [students, currentSection, localOrderIds]);
 
-  const { averageScore, topStudents, needsAttention, weeklyAssessments } = useMemo(() => {
+  const { averageScore, topStudents, needsAttention, weeklyAssessments, topThree } = useMemo(() => {
     if (!currentSection || sectionStudents.length === 0) {
-      return { averageScore: 0, topStudents: 0, needsAttention: 0, weeklyAssessments: 0 };
+      return { averageScore: 0, topStudents: 0, needsAttention: 0, weeklyAssessments: 0, topThree: [] as Student[] };
     }
 
     const totalScore = sectionStudents.reduce((sum, student) => sum + (student.score || 0), 0);
     const averageScore = totalScore / sectionStudents.length;
     const topStudents = sectionStudents.filter(student => (student.score || 0) >= 18).length;
     const needsAttention = sectionStudents.filter(student => (student.score || 0) < 10).length;
-    const weeklyAssessments = sectionStudents.filter(student => student.score !== undefined).length;
+    // weeklyAssessments: count students whose lastAssessmentDate is within the last 7 days
+    const now = Date.now();
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    const weeklyAssessments = sectionStudents.filter(student => {
+      const last = (student as any).lastAssessmentDate || (student as any).lastAssessment || null;
+      if (!last) return false;
+      const t = new Date(last).getTime();
+      return !Number.isNaN(t) && (now - t) <= weekMs;
+    }).length;
 
-    return { averageScore, topStudents, needsAttention, weeklyAssessments };
+    // topThree leaderboard (by score desc, tie-breaker total_xp desc)
+    const topThree = sectionStudents
+      .slice()
+      .sort((a, b) => {
+        const sa = (a.score || 0);
+        const sb = (b.score || 0);
+        if (sb !== sa) return sb - sa;
+        const xa = Number((a as any).total_xp || 0);
+        const xb = Number((b as any).total_xp || 0);
+        return xb - xa;
+      })
+      .slice(0, 3);
+
+    return { averageScore, topStudents, needsAttention, weeklyAssessments, topThree };
   }, [sectionStudents, currentSection]);
   // (checkTodaysAttendance will be defined later near attendance handlers)
   
@@ -352,6 +375,11 @@ function StudentManagement() {
   const [sectionFollowupCount, setSectionFollowupCount] = useState<number>(0);
   const [followupDialogOpen, setFollowupDialogOpen] = useState(false);
   const [followupStudents, setFollowupStudents] = useState<Array<{id:number, firstName:string, lastName:string, followupCount:number}>>([]);
+  const [quickFilter, setQuickFilter] = useState<{ type: string; label: string } | null>(null);
+  const [suggestedDialogOpen, setSuggestedDialogOpen] = useState(false);
+  const [suggestedStudents, setSuggestedStudents] = useState<Student[]>([]);
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+  const [leaderboardStudents, setLeaderboardStudents] = useState<Student[]>([]);
   useEffect(() => {
     const load = async () => {
       if (!currentSection) { setSectionFollowupCount(0); return; }
@@ -494,6 +522,25 @@ function StudentManagement() {
         if (followupStatusFilter === 'غير متابع') return !isInFollowup;
         return true;
       });
+    }
+    // Apply quick card filter if set (transient, doesn't open drawer)
+    if (quickFilter) {
+      if (quickFilter.type === 'followups') {
+        studentsToFilter = studentsToFilter.filter(student => followupStudents.some(fs => fs.id === student.id));
+      } else if (quickFilter.type === 'top') {
+        studentsToFilter = studentsToFilter.filter(student => (student.score || 0) >= 18);
+      } else if (quickFilter.type === 'atrisk') {
+        studentsToFilter = studentsToFilter.filter(student => (student.score || 0) < 10);
+      } else if (quickFilter.type === 'weekly') {
+        // students with lastAssessmentDate within last 7 days
+        const now = Date.now();
+        const weekMs = 7 * 24 * 60 * 60 * 1000;
+        studentsToFilter = studentsToFilter.filter(student => {
+          const last = (student as any).lastAssessmentDate || (student as any).lastAssessment || null;
+          const d = last ? new Date(last).getTime() : null;
+          return d && (now - d) <= weekMs;
+        });
+      }
     }
     
     return studentsToFilter;
@@ -734,6 +781,9 @@ function StudentManagement() {
               <Button onClick={() => setIsExcelUploadModalOpen(true)} variant="outlined" color="primary">
                 رفع Excel
               </Button>
+              <Button onClick={() => setIsBulkEvalOpen(true)} variant="contained" color="primary">
+                تقييم الكل (بلوك)
+              </Button>
               <Button onClick={handleDeleteAllStudents} color="error" variant="outlined" sx={{ fontWeight: 'bold' }}>
                 حذف جميع الطلاب
               </Button>
@@ -775,15 +825,73 @@ function StudentManagement() {
           onClear={handleClearFilters}
         />
       </div>
+      {/* Quick filter chip (shows when a stat card was clicked) */}
+      {quickFilter && (
+        <div style={{ padding: '0 16px 8px 16px' }}>
+          <Chip label={`فلتر نشط: ${quickFilter.label}`} onDelete={() => { setQuickFilter(null); handleClearFilters(); }} color="primary" />
+        </div>
+      )}
           {/* spacer for layout (the quick-select widget is shown inside the evaluation modal now) */}
           <div className="mb-4" />
 
       {/* Statistic Cards */}
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 mt-2">
-                <Card onClick={openFollowupDialog} className="bg-blue-50 p-4 cursor-pointer hover:shadow-lg"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">يحتاج متابعة</Typography><ChartBarIcon className="h-5 w-5 text-blue-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{sectionFollowupCount}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">عدد المتابعات المفتوحة · معدل القسم: {Number(averageScore).toFixed(1)}</Typography></CardContent></Card>
-                <Card className="bg-green-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">المتفوقون</Typography><UserGroupIcon className="h-5 w-5 text-green-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{topStudents}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">18+ نقطة</Typography></CardContent></Card>
-                <Card className="bg-yellow-50 p-4 border border-yellow-200"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">يحتاج متابعة</Typography><ExclamationCircleIcon className="h-5 w-5 text-yellow-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{needsAttention}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">أقل من 10 نقاط</Typography></CardContent></Card>
-                <Card className="bg-indigo-50 p-4"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">تقييمات هذا الأسبوع</Typography><CalendarDaysIcon className="h-5 w-5 text-indigo-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{weeklyAssessments}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">طالب تم تقييمه</Typography></CardContent></Card>
+                <Card onClick={openFollowupDialog} className="bg-blue-50 p-4 cursor-pointer hover:shadow-lg"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">متابعات مفتوحة</Typography><ChartBarIcon className="h-5 w-5 text-blue-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{sectionFollowupCount}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">عدد المتابعات المفتوحة · متوسط القسم: {Number(averageScore).toFixed(1)}</Typography></CardContent></Card>
+                <Card onClick={() => { setQuickFilter({ type: 'top', label: 'المتفوقون (18+)' }); /* apply in-memory filter below */ }} className="bg-green-50 p-4 cursor-pointer"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">المتفوقون</Typography><UserGroupIcon className="h-5 w-5 text-green-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{topStudents}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">18+ نقطة</Typography></CardContent></Card>
+                <Card onClick={() => {
+                  // prepare full leaderboard and open dialog
+                  const list = sectionStudents.slice().sort((a,b) => {
+                    const sa = (a.score || 0);
+                    const sb = (b.score || 0);
+                    if (sb !== sa) return sb - sa;
+                    const xa = Number((a as any).total_xp || 0);
+                    const xb = Number((b as any).total_xp || 0);
+                    return xb - xa;
+                  });
+                  setLeaderboardStudents(list);
+                  setLeaderboardOpen(true);
+                }} className="bg-yellow-50 p-4 border border-yellow-200 cursor-pointer"><CardContent className="p-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <Typography variant="h6" color="textPrimary">قائمة المتصدرين</Typography>
+                    <UserGroupIcon className="h-5 w-5 text-yellow-600" />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {topThree.length === 0 ? (
+                      <Typography variant="body2" color="textSecondary">لا توجد بيانات كافية</Typography>
+                    ) : (
+                      topThree.map((s, idx) => (
+                        <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: 6, background: idx === 0 ? '#ffd54f' : (idx === 1 ? '#e0e0e0' : '#d7ccc8'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>{idx + 1}</div>
+                            <div style={{ fontWeight: 'bold' }}>{s.firstName} {s.lastName}</div>
+                          </div>
+                          <div style={{ fontWeight: 'bold' }}>{Math.round(Number((s as any).total_xp || 0))} XP</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent></Card>
+                <Card onClick={async () => {
+                  try {
+                    // compute suggestions: prefer never-assessed, then oldest-assessed
+                    const now = Date.now();
+                    const weekMs = 7 * 24 * 60 * 60 * 1000;
+                    const candidates = sectionStudents.slice();
+                    // students never assessed first
+                    const neverAssessed = candidates.filter(s => !( (s as any).lastAssessmentDate || (s as any).lastAssessment ));
+                    const assessedOld = candidates.filter(s => ( (s as any).lastAssessmentDate || (s as any).lastAssessment ));
+                    assessedOld.sort((a,b) => {
+                      const ta = new Date(((a as any).lastAssessmentDate || (a as any).lastAssessment)).getTime() || 0;
+                      const tb = new Date(((b as any).lastAssessmentDate || (b as any).lastAssessment)).getTime() || 0;
+                      return ta - tb; // oldest first
+                    });
+                    const list = [...neverAssessed, ...assessedOld].slice(0,5);
+                    setSuggestedStudents(list);
+                    setSuggestedDialogOpen(true);
+                  } catch(e) {
+                    console.warn('Failed to compute suggested students', e);
+                  }
+                }} className="bg-indigo-50 p-4 cursor-pointer"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">تقييمات هذا الأسبوع</Typography><CalendarDaysIcon className="h-5 w-5 text-indigo-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{weeklyAssessments}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">عدد الطلاب المُقيَّمين هذا الأسبوع</Typography></CardContent></Card>
       </div>
 
   {/* Sticky section chips bar */}
@@ -1013,17 +1121,41 @@ function StudentManagement() {
       }}
       onSave={async (updatedEvaluation) => {
         console.log('QuickEvaluation.onSave called for student', selectedStudent?.id, { updatedEvaluation });
-        // Refresh students from server so the new evaluation / XP appears in lists and cards
         try {
-              // Always refetch to ensure full sync (covers save, reset, or other actions)
-              await fetchStudents();
-          // Optionally keep the modal closed (QuickEvaluation already calls onClose)
+          // Optimistically update the local student cache so the table and leaderboard
+          // immediately reflect the XP/score shown in the QuickEvaluation modal.
+          if (selectedStudent && typeof updateStudentLocal === 'function') {
+            const patch: any = {};
+            if (updatedEvaluation && typeof updatedEvaluation.total_xp === 'number') patch.total_xp = updatedEvaluation.total_xp;
+            if (updatedEvaluation && typeof updatedEvaluation.new_score === 'number') patch.score = updatedEvaluation.new_score;
+            // also accept server shapes where numbers might be named differently
+            if (updatedEvaluation && typeof updatedEvaluation.score === 'number' && patch.score == null) patch.score = updatedEvaluation.score;
+            if (Object.keys(patch).length > 0) {
+              try { updateStudentLocal(Number(selectedStudent.id), patch); } catch (e) { console.warn('updateStudentLocal failed', e); }
+            }
+          }
+
+          // Refetch from server to fully synchronize other fields (assessments history, lastAssessmentDate, etc.)
+          await fetchStudents();
         } catch (e) {
           console.warn('Failed to refresh students after saving evaluation', e);
         }
       }}
     />
   </Dialog>
+  {/* Bulk evaluation dialog */}
+  <BulkEvaluation
+    open={isBulkEvalOpen}
+    onClose={() => setIsBulkEvalOpen(false)}
+    sectionStudents={sectionStudents.map(s => ({ id: Number(s.id), name: `${s.firstName} ${s.lastName}` }))}
+    sectionName={currentSection?.name}
+    onDone={async (result) => {
+      console.log('Bulk evaluation finished', result);
+      // refresh students to show updated XP/assessments
+      try { await fetchStudents(); } catch (e) { console.warn('Failed to refresh students after bulk eval', e); }
+      setIsBulkEvalOpen(false);
+    }}
+  />
       <ExcelUploadModal isOpen={isExcelUploadModalOpen} onClose={() => setIsExcelUploadModalOpen(false)} />
       <AbsentStudentsModal 
         isOpen={showAbsentListModal} 
@@ -1140,6 +1272,61 @@ function StudentManagement() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setFollowupDialogOpen(false)}>إغلاق</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Suggested assessments dialog (up to 5 students) */}
+      <Dialog open={suggestedDialogOpen} onClose={() => setSuggestedDialogOpen(false)} maxWidth="sm" fullWidth dir="rtl">
+        <DialogTitle>اقتراحات للتقييم (حتى 5)</DialogTitle>
+        <DialogContent dividers>
+          {suggestedStudents.length === 0 && <Typography>لا يوجد اقتراحات حالياً.</Typography>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {suggestedStudents.map((s) => (
+              <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 8, border: '1px solid #eee', borderRadius: 6 }}>
+                <div>
+                  <div style={{ fontWeight: 'bold' }}>{s.firstName} {s.lastName}</div>
+                  <div style={{ fontSize: 12, color: '#666' }}>رقم: {s.classOrder} · القسم: {currentSection?.name || ''}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button variant="outlined" size="small" onClick={() => {
+                    // open QuickEvaluation for this student
+                    setSelectedStudent(s as any);
+                    setIsAssessmentModalOpen(true);
+                    setSuggestedDialogOpen(false);
+                  }}>فتح التقييم</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSuggestedDialogOpen(false)}>إغلاق</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Full leaderboard dialog */}
+      <Dialog open={leaderboardOpen} onClose={() => setLeaderboardOpen(false)} maxWidth="md" fullWidth dir="rtl">
+        <DialogTitle>ترتيب التلاميذ (المتقدمين أولاً)</DialogTitle>
+        <DialogContent dividers>
+          {leaderboardStudents.length === 0 && <Typography>لا توجد بيانات.</Typography>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {leaderboardStudents.map((s, idx) => (
+              <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 8, border: '1px solid #eee', borderRadius: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 28, textAlign: 'center', fontWeight: 'bold' }}>{idx + 1}</div>
+                  <div style={{ fontWeight: 'bold' }}>{s.firstName} {s.lastName}</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ color: '#666' }}>{(s.score || 0).toFixed ? (s.score || 0).toFixed(1) : s.score}</div>
+                  <div style={{ fontWeight: 'bold' }}>{Math.round(Number((s as any).total_xp || 0))} XP</div>
+                  <Button size="small" variant="outlined" onClick={() => { setSelectedStudent(s as any); setIsAssessmentModalOpen(true); setLeaderboardOpen(false); }}>فتح التقييم</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLeaderboardOpen(false)}>إغلاق</Button>
         </DialogActions>
       </Dialog>
 

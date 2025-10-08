@@ -376,10 +376,10 @@ app.post('/api/students', async (req, res) => {
 app.post('/api/students/:studentId/followups', async (req, res) => {
   try {
     const { studentId } = req.params;
-    const { type, description } = req.body;
+    const { type, notes } = req.body;
     if (!type) return res.status(400).json({ message: 'type is required' });
 
-    const f = await db.FollowUp.create({ studentId, type, description: description || null, is_open: true });
+    const f = await db.FollowUp.create({ studentId, type, notes: notes || null, is_open: true });
     res.status(201).json(f);
   } catch (error) {
     console.error('Error creating followup:', error);
@@ -392,7 +392,22 @@ app.get('/api/students/:studentId/followups', async (req, res) => {
     const { studentId } = req.params;
     const { status } = req.query;
     const where = { studentId };
-    if (status) where.status = status;
+    // Map legacy/clients 'status' query to the model's is_open boolean column.
+    // Accepts: status=open|closed or status=true|false or status=1|0
+    if (typeof status !== 'undefined') {
+      const s = String(status).toLowerCase();
+      if (s === 'open') {
+        where.is_open = true;
+      } else if (s === 'closed') {
+        where.is_open = false;
+      } else if (s === 'true' || s === '1') {
+        where.is_open = true;
+      } else if (s === 'false' || s === '0') {
+        where.is_open = false;
+      }
+      // any other value will be ignored and no extra filter applied
+    }
+
     const items = await db.FollowUp.findAll({ where, order: [['createdAt', 'DESC']] });
     res.json(items);
   } catch (error) {
@@ -555,6 +570,22 @@ app.put('/api/students/:id', async (req, res) => {
   }
 });
 
+// Support PATCH for partial updates (same as PUT for this implementation)
+app.patch('/api/students/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [updated] = await db.Student.update(req.body, { where: { id } });
+    if (updated) {
+      const updatedStudent = await db.Student.findByPk(id);
+      res.json(updatedStudent);
+    } else {
+      res.status(404).json({ message: 'Student not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating student', error: error.message, stack: error.stack });
+  }
+});
+
 app.delete('/api/students/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -626,8 +657,13 @@ app.post('/api/students/:studentId/assessment', async (req, res) => {
     const { studentId } = req.params;
     const { new_score, notes, scores, total_xp, student_level } = req.body;
 
+    console.log('[Assessment] Creating for student:', studentId);
+    console.log('[Assessment] Payload:', { new_score, notes, scores, total_xp, student_level });
+
     const old_score = await getCurrentScore(studentId);
     const score_change = new_score - old_score;
+
+    console.log('[Assessment] Scores:', { old_score, new_score, score_change });
 
     const newAssessment = await db.StudentAssessment.create({
       studentId,
@@ -641,8 +677,10 @@ app.post('/api/students/:studentId/assessment', async (req, res) => {
       student_level: typeof student_level === 'number' ? student_level : null,
     });
 
+    console.log('[Assessment] Created successfully:', newAssessment.id);
     res.status(201).json(newAssessment);
   } catch (error) {
+    console.error('[Assessment] Error:', error);
     res.status(500).json({ message: 'Error creating assessment', error: error.message, stack: error.stack });
   }
 });

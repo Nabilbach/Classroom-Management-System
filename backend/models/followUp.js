@@ -16,7 +16,7 @@ const FollowUp = sequelize.define('FollowUp', {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  description: {
+  notes: {
     type: DataTypes.TEXT,
     allowNull: true,
   },
@@ -27,6 +27,9 @@ const FollowUp = sequelize.define('FollowUp', {
   }
 }, {
   timestamps: true,
+  underscored: true,
+  // Explicit DB table name (existing SQLite table is "FollowUps")
+  tableName: 'FollowUps',
 });
 
 module.exports = FollowUp;

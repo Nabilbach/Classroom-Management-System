@@ -1,8 +1,9 @@
-import { useState, useEffect, ChangeEvent, KeyboardEvent, useMemo } from 'react';
+import { useState, useEffect, ChangeEvent, KeyboardEvent } from 'react';
 import { Typography, IconButton, Input } from "@material-tailwind/react";
 import { FaEdit, FaTrash, FaInfoCircle, FaStar } from 'react-icons/fa';
 import { Student } from '../../types/student';
 import { useSettings } from '../../contexts/SettingsContext';
+import { formatDateShort } from '../../utils/formatDate';
 
 // Final merged version of the Student Card
 
@@ -68,7 +69,7 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
   };
 
   return (
-    <div className={`rounded-xl shadow-lg p-4 border text-right flex flex-col h-full ${student.followUpCount && student.followUpCount > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'}`} dir="rtl">
+  <div className={`rounded-xl shadow-lg p-4 border text-right flex flex-col h-full ${(student as any).followUpCount && (student as any).followUpCount > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'}`} dir="rtl">
       
       {/* Header: Badge and Editable Number */}
       <div className="flex justify-between items-start mb-2">
@@ -95,7 +96,7 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
           ) : (
             <>
               <Typography variant="small" color="blue-gray" className="font-semibold">
-                {student.studentNumberInSection}
+                {student.studentNumberInSection ?? ''}
               </Typography>
               <Typography variant="small" color="blue-gray" className="font-bold">
                 ر.ت
@@ -107,7 +108,7 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
 
       {/* Student Name */}
       <div className="text-center mb-4">
-        <h3 className="text-xl font-bold text-gray-800">{student.firstName} {student.lastName}</h3>
+  <h3 className="text-xl font-bold text-gray-800">{(student.firstName ?? '') + ' ' + (student.lastName ?? '')}</h3>
       </div>
 
       {/* XP & Last Assessment */}
@@ -115,13 +116,13 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
         <div className="flex items-center gap-2">
           <span className="text-xs text-yellow-600 font-semibold">💎</span>
           <div>
-            <div className="text-sm font-bold">{(student.total_xp ?? student.xp) ?? 0} XP</div>
+            <div className="text-sm font-bold">{Math.round(((student.total_xp ?? student.xp) ?? 0))} XP</div>
             <div className="text-xs text-gray-500">نقاط الخبرة</div>
           </div>
         </div>
         <div className="text-right">
           <div className="text-sm font-medium">آخر تقييم</div>
-          <div className="text-xs text-gray-500">{student.lastAssessmentDate || (student.assessments && student.assessments.length > 0 ? student.assessments[student.assessments.length - 1].date : '-')}</div>
+          <div className="text-xs text-gray-500">{formatDateShort(student.lastAssessmentDate ?? (student.assessments && student.assessments.length > 0 ? student.assessments[student.assessments.length - 1].date : undefined))}</div>
         </div>
       </div>
 
@@ -245,26 +246,26 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess, onUpdateNu
               <Typography variant="small" className="text-xs text-gray-600">متابعة</Typography>
             </div>
             <div className="flex flex-col items-center">
-              <IconButton variant="text" onClick={() => onAssess(student)} className="hover:bg-yellow-100">
-                <FaStar className="text-yellow-600" />
-              </IconButton>
+              <IconButton variant="text" onClick={() => onAssess(student)} className="hover:bg-yellow-100 p-2">
+                  <FaStar size={20} className="text-yellow-600" />
+                </IconButton>
               <Typography variant="small" className="text-xs text-gray-600 font-semibold">تقييم</Typography>
             </div>
             <div className="flex flex-col items-center">
-              <IconButton variant="text" onClick={() => onEdit(student)} className="hover:bg-blue-100">
-                <FaEdit className="text-blue-500" />
+              <IconButton variant="text" onClick={() => onEdit(student)} className="hover:bg-blue-100 p-2">
+                <FaEdit size={20} className="text-blue-500" />
               </IconButton>
               <Typography variant="small" className="text-xs text-gray-600 font-semibold">تعديل</Typography>
             </div>
             <div className="flex flex-col items-center">
-              <IconButton variant="text" onClick={() => onDetail(student)} className="hover:bg-gray-200">
-                <FaInfoCircle className="text-gray-500" />
+              <IconButton variant="text" onClick={() => onDetail(student)} className="hover:bg-gray-200 p-2">
+                <FaInfoCircle size={20} className="text-gray-500" />
               </IconButton>
               <Typography variant="small" className="text-xs text-gray-600 font-semibold">تفاصيل</Typography>
             </div>
             <div className="flex flex-col items-center">
-              <IconButton variant="text" onClick={() => onDelete(student.id)} className="hover:bg-red-100">
-                <FaTrash className="text-red-500" />
+              <IconButton variant="text" onClick={() => onDelete(student.id)} className="hover:bg-red-100 p-2">
+                <FaTrash size={20} className="text-red-500" />
               </IconButton>
               <Typography variant="small" className="text-xs text-gray-600 font-semibold">حذف</Typography>
             </div>
