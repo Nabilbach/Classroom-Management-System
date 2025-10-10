@@ -221,12 +221,14 @@ app.get('/api/students', async (req, res) => {
     const students = await db.Student.findAll({ where });
 
     // Get all scores at once instead of individual queries
-    const studentIds = students.map(student => student.id);
-    const scores = await db.StudentAssessment.findAll({
-      where: { studentId: studentIds },
-      order: [['date', 'DESC']],
-      group: ['studentId']
-    });
+    const studentIds = students.map(student => student.id).filter(Boolean);
+    let scores = [];
+    if (studentIds.length > 0) {
+      scores = await db.StudentAssessment.findAll({
+        where: { studentId: { [Op.in]: studentIds } },
+        order: [['date', 'DESC']],
+      });
+    }
 
     const scoreMap = {};
     scores.forEach(assessment => {
@@ -448,7 +450,7 @@ app.use('/api/textbook', textbookRoutes);
 app.post('/api/students/:studentId/assessment', async (req, res) => {
   try {
     const { studentId } = req.params;
-    const { new_score, notes } = req.body;
+    const { new_score, notes, scores } = req.body;
 
     const old_score = await getCurrentScore(studentId);
     const score_change = new_score - old_score;
@@ -460,6 +462,8 @@ app.post('/api/students/:studentId/assessment', async (req, res) => {
       new_score,
       score_change,
       notes,
+      // store detailed scores as JSON text for compatibility
+      scores: scores && typeof scores === 'object' ? JSON.stringify(scores) : (typeof scores === 'string' ? scores : null),
     });
 
     res.status(201).json(newAssessment);
@@ -475,9 +479,69 @@ app.get('/api/students/:studentId/assessments', async (req, res) => {
       where: { studentId },
       order: [[ 'date', 'DESC' ]],
     });
-    res.json(assessments);
+    // Try to parse scores JSON text into an object for the client
+    const normalized = (Array.isArray(assessments) ? assessments : []).map(a => {
+      const obj = a.toJSON ? a.toJSON() : a;
+      if (obj && obj.scores && typeof obj.scores === 'string') {
+        try { obj.scores = JSON.parse(obj.scores); } catch (e) { /* leave as string */ }
+      }
+      return obj;
+    });
+    res.json(normalized);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving assessments', error: error.message, stack: error.stack });
+  }
+});
+
+// Bulk delete assessments for a student: accepts { ids: [ ... ] }
+app.post('/api/students/:studentId/assessments/delete-bulk', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const ids = Array.isArray(req.body && req.body.ids) ? req.body.ids : [];
+    if (!ids || ids.length === 0) return res.status(400).json({ message: 'Missing ids array in request body' });
+
+    const existing = await db.StudentAssessment.findAll({ where: { id: ids, studentId } });
+    const existingIds = existing.map(a => a.id);
+    if (existingIds.length === 0) return res.json({ deletedCount: 0, deletedIds: [] });
+
+    const deleted = await db.StudentAssessment.destroy({ where: { id: existingIds } });
+    res.json({ deletedCount: Number(deleted || 0), deletedIds: existingIds });
+  } catch (error) {
+    console.error('Error in bulk delete student assessments (dev):', error);
+    res.status(500).json({ message: 'Error deleting assessments', error: error.message, stack: error.stack });
+  }
+});
+
+// Reset all assessments for a student (convenience endpoint used by QuickEvaluation)
+app.post('/api/students/:studentId/assessments/reset', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const assessments = await db.StudentAssessment.findAll({ where: { studentId } });
+    if (!Array.isArray(assessments) || assessments.length === 0) return res.json({ deletedCount: 0, deletedIds: [] });
+    const ids = assessments.map(a => a.id);
+    const deleted = await db.StudentAssessment.destroy({ where: { id: ids } });
+    res.json({ deletedCount: Number(deleted || 0), deletedIds: ids });
+  } catch (error) {
+    console.error('Error resetting assessments for student (dev):', error);
+    res.status(500).json({ message: 'Error resetting assessments', error: error.message, stack: error.stack });
+  }
+});
+
+// Global bulk delete endpoint: accepts { ids: [ ... ] }
+app.post('/api/assessments/bulk-delete', async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body && req.body.ids) ? req.body.ids : [];
+    if (!ids || ids.length === 0) return res.status(400).json({ message: 'Missing ids array in request body' });
+
+    const existing = await db.StudentAssessment.findAll({ where: { id: ids } });
+    const existingIds = existing.map(a => a.id);
+    if (existingIds.length === 0) return res.json({ deletedCount: 0, deletedIds: [] });
+
+    const deleted = await db.StudentAssessment.destroy({ where: { id: existingIds } });
+    res.json({ deletedCount: Number(deleted || 0), deletedIds: existingIds });
+  } catch (error) {
+    console.error('Error in global bulk delete assessments (dev):', error);
+    res.status(500).json({ message: 'Error deleting assessments', error: error.message, stack: error.stack });
   }
 });
 

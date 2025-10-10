@@ -59,16 +59,53 @@ router.post('/', async (req, res) => {
         const date = (raw.date || new Date().toISOString().split('T')[0]).slice(0, 10);
         const isPresent = Boolean(raw.isPresent);
 
-        // Find existing by unique key (studentId + date). If exists, update; else create
+        // Resolve student and ensure section consistency: attendance.sectionId MUST match the student's assigned section
+        const student = await Student.findByPk(studentId);
+        if (!student) throw new Error(`Student with id ${studentId} not found`);
+        // Student model uses snake_case DB column `section_id`; defensive access
+        const studentSectionId = student.section_id ?? student.sectionId ?? (student.get ? student.get('section_id') : undefined);
+        if (!studentSectionId) {
+          throw new Error(`Student ${studentId} does not have an assigned section`);
+        }
+
+        // Find existing by unique key (studentId + date). If exists, update; else create.
+        // IMPORTANT: Do not silently overwrite an existing record's sectionId.
+        // Changing sectionId on an existing attendance must be explicit (forceSectionUpdate=true)
         const existing = await Attendance.findOne({ where: { studentId, date } });
         if (existing) {
+          const forceSectionUpdate = raw.forceSectionUpdate === true || raw.forceSectionUpdate === 'true';
+
+          // If an attempt is made to change sectionId, require explicit forceSectionUpdate
+          if (String(existing.sectionId) !== String(sectionId)) {
+            if (!forceSectionUpdate) {
+              // Reject the change - do NOT silently overwrite. Log for auditing.
+              console.error('Rejected attendance POST: attempted to change sectionId on existing record without forceSectionUpdate', { attendanceId: existing.id, studentId, date, existingSectionId: existing.sectionId, attemptedSectionId: sectionId });
+              errors.push({ record: raw, error: 'Attempt to change sectionId on existing attendance without forceSectionUpdate' });
+              continue; // skip to next record
+            }
+            // If forceSectionUpdate present, ensure the requested section matches the student's assigned section
+            if (String(sectionId) !== String(studentSectionId)) {
+              console.error('Rejected attendance POST: forceSectionUpdate provided but attempted section does not match student assigned section', { studentId, date, attemptedSectionId: sectionId, studentSectionId });
+              errors.push({ record: raw, error: 'Requested sectionId does not match student assigned section even with forceSectionUpdate' });
+              continue;
+            }
+          }
+
+          // Allowed: either sectionId same as existing, or forceSectionUpdate granted and matches student's section
           existing.sectionId = sectionId;
           existing.isPresent = isPresent;
           await existing.save();
-          results.push(existing);
+          results.push(existing.toJSON ? existing.toJSON() : existing);
         } else {
+          // For new records: ensure the provided sectionId matches the student's assigned section
+          if (String(sectionId) !== String(studentSectionId)) {
+            console.error('Rejected attendance POST: new attendance sectionId mismatch with student assigned section', { studentId, date, attemptedSectionId: sectionId, studentSectionId });
+            errors.push({ record: raw, error: 'Attendance sectionId does not match student assigned section' });
+            continue; // skip creating this record
+          }
+
           const created = await Attendance.create({ studentId, sectionId, date, isPresent });
-          results.push(created);
+          results.push(created.toJSON ? created.toJSON() : created);
         }
       } catch (e) {
         console.error('Attendance record failed:', { raw, error: e?.message });
@@ -146,11 +183,38 @@ router.get('/', async (req, res) => {
   }
 });
 
-// DELETE /api/attendance?date=YYYY-MM-DD&sectionId=ID - Delete attendance for a specific day/section
-// DELETE /api/attendance?deleteAll=true - Delete all attendance records
+// DELETE /api/attendance - Delete attendance records
+// Query params:
+// - ?date=YYYY-MM-DD&sectionId=ID : Delete attendance for a specific day/section
+// - ?deleteAll=true : Delete all attendance records  
+// - Body: {student_id, date, section_id} : Delete specific student attendance
 router.delete('/', async (req, res) => {
   try {
     let { date, sectionId, deleteAll } = req.query;
+    const { student_id, section_id } = req.body;
+    
+    // Handle delete specific student attendance
+    if (req.body && student_id && date) {
+      console.log(`🗑️ Request to delete attendance for student ${student_id} on ${date}`);
+      
+      const whereClause = { 
+        studentId: student_id,
+        date: date
+      };
+      
+      if (section_id) {
+        whereClause.sectionId = section_id;
+      }
+      
+      const deletedCount = await Attendance.destroy({ where: whereClause });
+      
+      console.log(`✅ Deleted ${deletedCount} attendance record(s) for student ${student_id}`);
+      
+      return res.json({ 
+        message: 'Student attendance record deleted successfully',
+        deletedCount 
+      });
+    }
     
     // Handle delete all records
     if (deleteAll === 'true') {

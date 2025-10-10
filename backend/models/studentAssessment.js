@@ -25,6 +25,28 @@ const StudentAssessment = sequelize.define('StudentAssessment', {
   },
   notes: {
     type: DataTypes.STRING,
+    allowNull: true,
+  },
+  // Persist detailed scores (sliders, quran, bonus) as JSON
+  scores: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    get() {
+      const rawValue = this.getDataValue('scores');
+      return rawValue ? JSON.parse(rawValue) : null;
+    },
+    set(value) {
+      this.setDataValue('scores', value ? JSON.stringify(value) : null);
+    }
+  },
+  // Optional: store computed XP and level for snapshotting
+  total_xp: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  student_level: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
   },
 });
 

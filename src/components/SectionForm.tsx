@@ -32,29 +32,31 @@ function SectionForm({ onClose, addSection, updateSection, initialData }: Sectio
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sectionName || !educationalLevel || !specialization || !roomNumber || !teacherName) {
-      alert('الرجاء ملء جميع الحقول.'); // Please fill in all fields.
+    if (!sectionName || !educationalLevel) {
+      alert('الرجاء ملء الحقول المطلوبة (اسم القسم والمستوى التعليمي).'); // Please fill in required fields
       return;
     }
 
-    const sectionData = {
+    const sectionData: Partial<Section> = {
       name: sectionName,
       educationalLevel,
-      specialization,
-      roomNumber,
-      teacherName,
-      courseName: courseName || undefined, // Include courseName
     };
+    
+    // Include optional fields only if they have values
+    if (specialization) sectionData.specialization = specialization;
+    if (roomNumber) sectionData.roomNumber = roomNumber;
+    if (teacherName) sectionData.teacherName = teacherName;
+    if (courseName) sectionData.courseName = courseName;
 
     if (initialData) {
       // Editing existing section
       if (updateSection) {
-        await updateSection({ ...initialData, ...sectionData });
+        await updateSection({ ...initialData, ...sectionData } as Section);
       }
     } else {
       // Adding new section
       if (addSection) {
-        await addSection(sectionData);
+        await addSection(sectionData as Omit<Section, 'id'>);
       }
     }
     onClose();

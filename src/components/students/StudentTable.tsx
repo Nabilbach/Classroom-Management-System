@@ -15,6 +15,8 @@ function StudentTable({ students, onEdit, onDelete, onDetail, onAssess, onUpdate
             <th className="px-4 py-3 text-right text-blue-gray-900 font-semibold text-sm">الاسم</th>
             <th className="px-4 py-3 text-right text-blue-gray-900 font-semibold text-sm">النوع</th>
             <th className="px-4 py-3 text-right text-blue-gray-900 font-semibold text-sm">تاريخ الازدياد</th>
+            <th className="px-4 py-3 text-right text-blue-gray-900 font-semibold text-sm">آخر تقييم</th>
+            <th className="px-4 py-3 text-right text-blue-gray-900 font-semibold text-sm">XP</th>
             <th className="px-4 py-3 text-right text-blue-gray-900 font-semibold text-sm">{isAttendanceMode ? 'الحضور' : 'الإجراءات'}</th>
           </tr>
         </thead>
@@ -34,6 +36,8 @@ function StudentTable({ students, onEdit, onDelete, onDetail, onAssess, onUpdate
                   isAttendanceMode={!!isAttendanceMode}
                   attendanceStatus={attendanceStatus}
                   onToggleAttendance={onToggleAttendance}
+                  lastAssessmentDate={student.lastAssessmentDate ?? (Array.isArray(student.assessments) && student.assessments.length > 0 ? student.assessments[student.assessments.length - 1].date : '')}
+                  xp={typeof student.total_xp === 'number' ? student.total_xp : (student.xp || 0)}
                 />
               ))
             ) : (

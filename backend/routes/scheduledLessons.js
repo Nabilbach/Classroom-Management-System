@@ -175,15 +175,22 @@ router.get('/textbook', async (req, res) => {
       where.sectionId = sectionId;
     }
     
-    // Filter by educational level
+    // Filter by educational level (normalize stored values to handle stray newlines/whitespace)
     if (level && level !== 'all') {
-      // Get sections that match the educational level
-      const sectionsForLevel = await Section.findAll({
-        where: { educationalLevel: level },
-        attributes: ['id']
-      });
+      const normalize = (s) => {
+        if (typeof s !== 'string') return '';
+        let t = s.normalize('NFC').replace(/\s+/g, ''); // remove all whitespace
+        // common spelling variants
+        t = t.replace(/باكالوريا/g, 'بكالوريا');
+        return t.trim();
+      };
+      const wanted = normalize(level);
+
+      // Fetch candidate sections and filter in JS using normalized comparison
+  const allSections = await Section.findAll({ attributes: ['id', 'educationalLevel'] });
+  const sectionsForLevel = allSections.filter(s => normalize(s.educationalLevel) === wanted);
       const sectionIds = sectionsForLevel.map(s => s.id);
-      
+
       if (sectionIds.length > 0) {
         if (where.sectionId) {
           // If section is already filtered, ensure it's in the level filter

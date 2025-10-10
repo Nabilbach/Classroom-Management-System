@@ -1,7 +1,7 @@
 Task Name,Description,Status,Priority,Assignee,Due Date,Estimate (hours),Tags,List
-"نظام إدارة الطلاب الكامل","إضافة، تعديل، حذف، بحث، رفع Excel",Complete,High,نبيل باش,2025-09-26,16,"completed,verified",Foundation & Setup
-"نظام الحضور المتقدم","تسجيل فردي، جماعي، استثناءات، حفظ في قاعدة البيانات",Complete,High,نبيل باش,2025-09-26,16,"completed,verified",Foundation & Setup
-"واجهات المستخدم المتقدمة","فلاتر، سحب وإفلات، تصميم متجاوب، نوافذ منبثقة",Complete,High,نبيل باش,2025-09-26,16,"completed,verified",Foundation & Setup
-"Backend API للحضور","مسارات POST, GET, DELETE مع معالجة الأخطاء والتحقق",Complete,High,نبيل باش,2025-09-26,16,"completed,verified",Foundation & Setup
-"نماذج قاعدة البيانات","13 نموذج مع Sequelize والتحقق من البيانات",Complete,High,نبيل باش,2025-09-26,16,"completed,verified",Foundation & Setup
-"مكونات الواجهة الأساسية","3 مكون متكامل",Complete,High,نبيل باش,2025-09-26,16,"completed,verified",Foundation & Setup
+"نظام إدارة الطلاب الكامل","إضافة، تعديل، حذف، بحث، رفع Excel",Complete,High,نبيل باش,2025-10-02,16,"completed,verified",Foundation & Setup
+"نظام الحضور المتقدم","تسجيل فردي، جماعي، استثناءات، حفظ في قاعدة البيانات",Complete,High,نبيل باش,2025-10-02,16,"completed,verified",Foundation & Setup
+"واجهات المستخدم المتقدمة","فلاتر، سحب وإفلات، تصميم متجاوب، نوافذ منبثقة",Complete,High,نبيل باش,2025-10-02,16,"completed,verified",Foundation & Setup
+"Backend API للحضور","مسارات POST, GET, DELETE مع معالجة الأخطاء والتحقق",Complete,High,نبيل باش,2025-10-02,16,"completed,verified",Foundation & Setup
+"نماذج قاعدة البيانات","13 نموذج مع Sequelize والتحقق من البيانات",Complete,High,نبيل باش,2025-10-02,16,"completed,verified",Foundation & Setup
+"مكونات الواجهة الأساسية","3 مكون متكامل",Complete,High,نبيل باش,2025-10-02,16,"completed,verified",Foundation & Setup

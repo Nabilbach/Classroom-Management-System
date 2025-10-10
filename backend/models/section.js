@@ -9,6 +9,10 @@ const Section = sequelize.define('Section', {
   name: {
     type: DataTypes.STRING,
     allowNull: false,
+  },
+  educationalLevel: {
+    type: DataTypes.STRING,
+    allowNull: true,
   }
 });
 

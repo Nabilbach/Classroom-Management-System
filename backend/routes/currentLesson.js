@@ -12,7 +12,7 @@ router.get('/current-lesson', async (req, res) => {
       data: analysis,
       message: analysis.isTeachingTime 
         ? 'تم العثور على حصة حالية' 
-        : 'لا يوجد حصص حالياً، سيتم عرض القسم الافتراضي'
+        : 'لا يوجد حصص حالياً'
     });
     
   } catch (error) {

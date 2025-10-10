@@ -1,3 +1,10 @@
+// NOTE (source-of-truth): This file is the canonical implementation of AbsenceHistoryContent.
+// All edits should be made here. A feature-scoped copy under
+// `src/features/attendance/components/AbsenceHistoryContent.tsx` has been converted
+// to a thin re-export. Keeping this file as the single source of truth helps protect
+// attendance records and ensures the latest fixes are used throughout the app.
+// Do NOT edit the feature re-export file for behavior changes; edit this file instead.
+
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Box,
@@ -51,7 +58,7 @@ interface AbsenceHistoryContentProps {
 const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  // Removed unused loading state
+  const [isLoadingRecords, setIsLoadingRecords] = useState<boolean>(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedSectionId, setSelectedSectionId] = useState<string>('');
   const [availableDates, setAvailableDates] = useState<string[]>([]);
@@ -94,44 +101,46 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     fetchAvailableDates();
   }, []);
 
-  // Simplified: Just follow the alert directly
+  // Apply recommended section only when user hasn't explicitly selected a section.
+  // This prevents overriding 'ALL' or any user choice.
   useEffect(() => {
-    if (recommendedSectionId && sections.length > 0) {
-      // الأولوية الأولى: إذا كان هناك قسم موصى به (حصة حالية)
-      if (selectedSectionId !== recommendedSectionId) {
-        console.log('🎯 Auto-updating section and loading attendance data:', recommendedSectionId);
-        setSelectedSectionId(recommendedSectionId);
-        localStorage.setItem('lastSelectedSectionId', recommendedSectionId);
-        // تحميل البيانات فوراً للقسم الجديد
-        setTimeout(() => fetchData(), 100);
-      }
-    } else if (sections.length > 0 && selectedSectionId === '' && !recommendedSectionId) {
-      // الأولوية الثانية: استرجاع آخر قسم محفوظ
+    if (recommendedSectionId && sections.length > 0 && !selectedSectionId) {
+      // Only auto-apply when there is no current selection
+      console.log('🎯 Auto-applying recommended section (no selection yet):', recommendedSectionId);
+      setSelectedSectionId(recommendedSectionId);
+      localStorage.setItem('lastSelectedSectionId', recommendedSectionId);
+    } else if (sections.length > 0 && !selectedSectionId && !recommendedSectionId) {
+      // Restore last selected section if available, otherwise fallback to first
       const savedSectionId = localStorage.getItem('lastSelectedSectionId');
       if (savedSectionId && sections.find(s => s.id === savedSectionId)) {
-        console.log('� Restoring last selected section:', savedSectionId);
+        console.log('🔁 Restoring last selected section:', savedSectionId);
         setSelectedSectionId(savedSectionId);
       } else {
-        // الأولوية الثالثة: القسم الافتراضي أو الأول
         const defaultSection = sections[0];
-        console.log('�📝 Setting default section (fallback):', defaultSection.name);
+        console.log('📝 Setting default section (fallback):', defaultSection.name);
         setSelectedSectionId(defaultSection.id);
         localStorage.setItem('lastSelectedSectionId', defaultSection.id);
       }
     }
-  }, [recommendedSectionId, sections]);
+  }, [recommendedSectionId, sections, selectedSectionId]);
 
   const fetchData = useCallback(async () => {
+    let controller = new AbortController();
     try {
       // Don't fetch if section is not yet selected
       if (!selectedSectionId) {
         console.log('Skipping fetch: no section selected'); // Debug log
+        setRecords([]);
         return;
       }
 
+      // clear stale records and mark loading
+      setRecords([]);
+      setIsLoadingRecords(true);
+
       let url = 'http://localhost:3000/api/attendance';
       const params: string[] = [];
-      
+
       // Add date parameter only if a specific date is selected (not empty for "all dates")
       if (selectedDate && selectedDate.trim() !== '') {
         params.push(`date=${encodeURIComponent(selectedDate)}`);
@@ -139,38 +148,46 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
       } else {
         console.log('Fetching for ALL DATES'); // Debug log
       }
-      
+
       // Add section parameter if specific section is selected (not 'ALL')
       if (selectedSectionId && selectedSectionId !== 'ALL') {
-        const sectionParam = encodeURIComponent(selectedSection?.name ?? selectedSectionId);
+        const sectionParam = encodeURIComponent(selectedSectionId);
         params.push(`sectionId=${sectionParam}`);
-        console.log('Adding section filter:', selectedSection?.name); // Debug log
+        console.log('Adding section filter by id:', selectedSectionId); // Debug log
       } else if (selectedSectionId === 'ALL') {
         console.log('Fetching for ALL SECTIONS'); // Debug log
       }
-      
+
       // Append parameters to URL
       if (params.length > 0) {
         url += '?' + params.join('&');
       }
-      
+
       console.log('Fetching attendance data with URL:', url); // Debug log
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: controller.signal });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
-      console.log('Fetched records:', data.length, 'for section:', selectedSectionId === 'ALL' ? 'ALL SECTIONS' : selectedSection?.name); // Debug log
-      setRecords(data);
-    } catch (error) {
+      console.log('Fetched records:', Array.isArray(data) ? data.length : 'unknown', 'for section:', selectedSectionId === 'ALL' ? 'ALL SECTIONS' : selectedSection?.name); // Debug log
+      setRecords(Array.isArray(data) ? data : []);
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        console.log('Fetch aborted');
+        return;
+      }
       console.error('Error fetching attendance records:', error);
       setRecords([]);
+    } finally {
+      setIsLoadingRecords(false);
     }
   }, [selectedSectionId, selectedDate, selectedSection]);
 
-  // Fetch data when section or date changes (including empty date for "all dates")
+  // Fetch data when section or date changes (including 'ALL' sections)
   useEffect(() => {
-    if (selectedSectionId && selectedSection) {
-      console.log('Triggering data fetch for:', selectedSection.name, 'with date filter:', selectedDate || 'ALL DATES'); // Debug log
+    if (selectedSectionId && (selectedSection || selectedSectionId === 'ALL')) {
+      console.log('Triggering data fetch for:', selectedSectionId === 'ALL' ? 'ALL SECTIONS' : selectedSection?.name, 'with date filter:', selectedDate || 'ALL DATES'); // Debug log
       fetchData();
+    } else {
+      setRecords([]);
     }
   }, [selectedSectionId, selectedDate, selectedSection, fetchData]);
 
@@ -305,8 +322,8 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     const confirmed = window.confirm('هل أنت متأكد أنك تريد مسح سجل الغياب/الحضور لهذا اليوم بالكامل؟ لا يمكن التراجع.');
     if (!confirmed) return;
     try {
-      const sectionParam = encodeURIComponent(selectedSection?.name ?? selectedSectionId);
-      const res = await fetch(`http://localhost:3000/api/attendance?sectionId=${sectionParam}&date=${encodeURIComponent(selectedDate)}`, { method: 'DELETE' });
+  const sectionParam = encodeURIComponent(selectedSectionId || selectedSection?.id || '');
+  const res = await fetch(`http://localhost:3000/api/attendance?sectionId=${sectionParam}&date=${encodeURIComponent(selectedDate)}`, { method: 'DELETE' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       // Clear local records and refetch to be safe
       setRecords([]);
@@ -375,8 +392,8 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
 
   const isMobile = useMediaQuery('(max-width:600px)');
   return (
-    <Card sx={{ maxWidth: 900, mx: 'auto', my: 2, boxShadow: 6, borderRadius: 4, height: isMobile ? '100vh' : '90vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      <CardContent sx={{ pb: 0 }}>
+    <Card sx={{ maxWidth: 900, mx: 'auto', my: 2, boxShadow: 6, borderRadius: 4, height: isMobile ? '100vh' : 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+  <CardContent sx={{ pb: 0, display: 'flex', flexDirection: 'column', flex: 1 }}>
         {/* Header & Controls */}
         <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', gap: 2, mb: 2 }}>
           <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight="bold" color="primary" sx={{ mb: isMobile ? 2 : 0 }}>
@@ -467,31 +484,34 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
           <Tab label={`الغائبون (${absentSorted.length})`} />
         </Tabs>
         {/* Table Content */}
-        <Box sx={{ flex: 1, overflow: 'auto', mb: 2, maxHeight: 'calc(100vh - 320px)' }}>
+  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', mb: 2, minHeight: 0, pb: '96px' }}>
           {activeTab === 0 && (
-            <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2, maxHeight: '100%', overflow: 'auto' }}>
+            <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2, height: '100%', maxHeight: 'calc(100vh - 360px)', overflowY: 'scroll', flex: 1, WebkitOverflowScrolling: 'touch' }}>
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '8%', textAlign: 'center' }}>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '6%', textAlign: 'center' }}>
                       ر.ت
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '30%' }}>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '28%' }}>
                       الاسم الكامل
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '15%', textAlign: 'center' }}>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '18%', textAlign: 'center' }}>
+                      القسم
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '12%', textAlign: 'center' }}>
                       التاريخ
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '10%', textAlign: 'center' }}>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '8%', textAlign: 'center' }}>
                       الحصة
                     </TableCell>
                     <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '10%', textAlign: 'center' }}>
                       الفترة
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '12%', textAlign: 'center' }}>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '10%', textAlign: 'center' }}>
                       عدد الغيابات
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '15%', textAlign: 'center' }}>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'success.light', color: 'success.contrastText', width: '8%', textAlign: 'center' }}>
                       إجراء
                     </TableCell>
                   </TableRow>
@@ -499,6 +519,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                 <TableBody>
                   {presentSorted.map((r, idx) => {
                     const lessonInfo = getLessonInfo(r.createdAt || r.date);
+                    const sectionName = sections.find(s => s.id === r.sectionId)?.name || r.sectionId;
                     return (
                       <TableRow 
                         key={r.id} 
@@ -511,6 +532,9 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                         </TableCell>
                         <TableCell>
                           {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
+                        </TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          {sectionName}
                         </TableCell>
                         <TableCell sx={{ textAlign: 'center' }}>
                           {formatDateToArabic(r.date)}
@@ -544,7 +568,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                   })}
                   {presentSorted.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={selectedDate ? 6 : 7} sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
+                      <TableCell colSpan={8} sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
                         لا يوجد طلاب حاضرون في هذا التاريخ
                       </TableCell>
                     </TableRow>
@@ -554,7 +578,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
             </TableContainer>
           )}
           {activeTab === 1 && (
-            <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2, maxHeight: '100%', overflow: 'auto' }}>
+            <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2, height: '100%', maxHeight: 'calc(100vh - 360px)', overflowY: 'scroll', flex: 1, WebkitOverflowScrolling: 'touch' }}>
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
@@ -564,7 +588,10 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                     <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '30%' }}>
                       الاسم الكامل
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '15%', textAlign: 'center' }}>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '18%', textAlign: 'center' }}>
+                      القسم
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '12%', textAlign: 'center' }}>
                       التاريخ
                     </TableCell>
                     <TableCell sx={{ fontWeight: 'bold', bgcolor: 'error.light', color: 'error.contrastText', width: '10%', textAlign: 'center' }}>
@@ -584,6 +611,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                 <TableBody>
                   {absentSorted.map((r, idx) => {
                     const lessonInfo = getLessonInfo(r.createdAt || r.date);
+                    const sectionName = sections.find(s => s.id === r.sectionId)?.name || r.sectionId;
                     return (
                       <TableRow 
                         key={r.id} 
@@ -596,6 +624,9 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                         </TableCell>
                         <TableCell>
                           {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
+                        </TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          {sectionName}
                         </TableCell>
                         <TableCell sx={{ textAlign: 'center' }}>
                           {formatDateToArabic(r.date)}
@@ -658,7 +689,8 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
               <tr>
                 <th style={{ width: '8%' }}>ر.ت</th>
                 <th style={{ width: '20%' }}>الاسم الكامل</th>
-                <th style={{ width: '15%' }}>التاريخ</th>
+                <th style={{ width: '18%' }}>القسم</th>
+                <th style={{ width: '12%' }}>التاريخ</th>
                 <th style={{ width: '10%' }}>الحصة</th>
                 <th style={{ width: '12%' }}>الفترة</th>
                 <th style={{ width: '15%' }}>عدد الغيابات</th>
@@ -668,12 +700,14 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
             <tbody>
               {presentSorted.map((r, idx) => {
                 const lessonInfo = getLessonInfo(r.createdAt || r.date);
+                const sectionName = sections.find(s => s.id === r.sectionId)?.name || r.sectionId;
                 return (
                   <tr key={`p-${r.id}`}>
                     <td>{r.student?.classOrder ?? (idx + 1)}</td>
                     <td className="name-cell">
                       {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
                     </td>
+                    <td>{sectionName}</td>
                     <td>{formatDateToArabic(r.date)}</td>
                     <td>{lessonInfo ? lessonInfo.lessonNumber : '-'}</td>
                     <td>{lessonInfo?.period || 'غير محدد'}</td>
@@ -708,12 +742,14 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
             <tbody>
               {absentSorted.map((r, idx) => {
                 const lessonInfo = getLessonInfo(r.createdAt || r.date);
+                const sectionName = sections.find(s => s.id === r.sectionId)?.name || r.sectionId;
                 return (
                   <tr key={`a-${r.id}`}>
                     <td>{r.student?.classOrder ?? (idx + 1)}</td>
                     <td className="name-cell">
                       {`${r.student?.firstName ?? ''} ${r.student?.lastName ?? ''}`}
                     </td>
+                    <td>{sectionName}</td>
                     <td>{formatDateToArabic(r.date)}</td>
                     <td>{lessonInfo ? lessonInfo.lessonNumber : '-'}</td>
                     <td>{lessonInfo?.period || 'غير محدد'}</td>

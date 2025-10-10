@@ -1,0 +1,48 @@
+name: Auto Backup Main
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * *' # daily at 00:00 UTC
+
+permissions:
+  contents: write
+
+jobs:
+  create-backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push backup branch and tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref }}
+        run: |
+          set -e
+          ts=$(date -u +"%Y-%m-%d_%H%M%S")
+          branch="backup/save-$ts"
+          tag="save-$ts"
+
+          echo "Creating branch $branch from current HEAD"
+          git checkout -b "$branch"
+
+          # Push branch using GITHUB_TOKEN
+          remote_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git"
+          git push "$remote_url" "$branch":refs/heads/"$branch"
+
+          echo "Creating tag $tag"
+          git tag -a "$tag" -m "Automated backup for $ts"
+          git push "$remote_url" refs/tags/"$tag"
+
+          echo "Backup branch and tag pushed: $branch  $tag"

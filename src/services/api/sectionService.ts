@@ -1,6 +1,16 @@
-import { Section } from '../contexts/SectionsContext'; // Import Section interface
+// تعريف واجهة Section محلياً
+interface Section {
+  id: string;
+  name: string;
+  educationalLevel?: string;
+  specialization?: string;
+  roomNumber?: string;
+  teacherName?: string;
+  courseName?: string;
+  color?: string;
+}
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000';
 const SECTIONS_ENDPOINT = `${API_BASE_URL}/api/sections`;
 
 // Helper for handling responses

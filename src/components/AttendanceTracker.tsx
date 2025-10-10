@@ -1,178 +1,281 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Typography, Button, Select, MenuItem, FormControl, InputLabel, Paper, Chip } from '@mui/material';
-import { useStudents } from '../contexts/StudentsContext';
-import { useSections } from '../contexts/SectionsContext';
-import { useAttendance } from '../contexts/AttendanceContext';
-import { Student } from '../types/studentTypes'; // Assuming studentTypes defines Student interface
-import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import CheckCircle from '@mui/icons-material/CheckCircle';
+import Circle from '@mui/icons-material/Circle';
 
-interface AttendanceTrackerProps {
-  // Props can be added here if needed, e.g., onSave, onClose
+interface Student {
+  id: number;
+  name: string;
+  section_id: string | number;
+  attendance_number: number;
 }
 
-const AttendanceTracker: React.FC<AttendanceTrackerProps> = () => {
-  const { students } = useStudents();
-  const { sections } = useSections();
-  const { recordAttendance, fetchAttendance, attendanceRecords } = useAttendance();
+interface Section {
+  id: string;
+  name: string;
+}
 
-  const [selectedSectionId, setSelectedSectionId] = useState<string>('');
-  const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [currentAttendance, setCurrentAttendance] = useState<Record<string, 'present' | 'absent' | 'late'>>({});
+interface AttendanceRecord {
+  id: number;
+  student_id: number;
+  section_id: string;
+  date: string;
+  status: 'present' | 'absent';
+  student_name: string;
+}
+
+const AttendanceTracker: React.FC = () => {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [attendance, setAttendance] = useState<{ [key: number]: 'present' | 'absent' }>({});
   const [isSaving, setIsSaving] = useState(false);
-  const [absentStudentsList, setAbsentStudentsList] = useState<Student[]>([]);
-  const [isAbsentListModalOpen, setIsAbsentListModalOpen] = useState(false);
+  const [todaysAttendance, setTodaysAttendance] = useState<AttendanceRecord[]>([]);
+  const [isAttendanceRecorded, setIsAttendanceRecorded] = useState(false);
+
+  useEffect(() => {
+    fetchSections();
+    fetchStudents();
+  }, []);
+
+  useEffect(() => {
+    if (selectedSectionId) {
+      checkTodaysAttendance();
+    }
+  }, [selectedSectionId]);
+
+  // (indicator removed) no global sections check
+
+  const fetchSections = async () => {
+    try {
+      const response = await fetch('/api/sections');
+      const data = await response.json();
+      // normalize: the API may return { value: [...] } or array directly
+      const rawSections = Array.isArray(data) ? data : (data.value || []);
+      const normalized = rawSections.map((s: any) => ({ id: String(s.id).trim(), name: s.name }));
+      setSections(normalized);
+    } catch (error) {
+      console.error('خطأ في جلب الأقسام:', error);
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const response = await fetch('/api/students');
+      const data = await response.json();
+      setStudents(data);
+    } catch (error) {
+      console.error('خطأ في جلب الطلاب:', error);
+    }
+  };
+
+  // (indicator removed) no per-section status function
+
+  const checkTodaysAttendance = async () => {
+    if (!selectedSectionId) return;
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const sid = String(selectedSectionId).trim();
+      const response = await fetch(`/api/attendance?date=${today}&sectionId=${encodeURIComponent(sid)}`);
+      const data = await response.json();
+      const records = Array.isArray(data) ? data : (data.value || data.records || []);
+      setTodaysAttendance(records as AttendanceRecord[]);
+      setIsAttendanceRecorded(records.length > 0);
+
+      // (no sectionsAttendanceStatus map maintained here)
+    } catch (error) {
+      console.error('خطأ في جلب الحضور:', error);
+    }
+  };
 
   const filteredStudents = useMemo(() => {
-    if (!selectedSectionId) {
-      return [];
-    }
-    return students.filter(student => student.sectionId === selectedSectionId);
+    if (!selectedSectionId) return [];
+    return students.filter(student => String(student.section_id) === String(selectedSectionId));
   }, [students, selectedSectionId]);
 
-  useEffect(() => {
-    // When section or date changes, fetch existing attendance for that day/section
-    if (selectedSectionId && attendanceDate) {
-      fetchAttendance(selectedSectionId, attendanceDate);
-    }
-  }, [selectedSectionId, attendanceDate, fetchAttendance]);
-
-  useEffect(() => {
-    // Populate currentAttendance with fetched records
-    const initialAttendance: Record<string, 'present' | 'absent' | 'late'> = {};
-    if (attendanceRecords && attendanceRecords.length > 0) {
-      attendanceRecords.forEach(record => {
-        initialAttendance[record.studentId] = record.status;
-      });
-    } else {
-      // If no records, default all students in the selected section to 'present'
-      filteredStudents.forEach(student => {
-        initialAttendance[student.id] = 'present';
-      });
-    }
-    setCurrentAttendance(initialAttendance);
-  }, [attendanceRecords, filteredStudents]);
-
-  const handleStatusChange = (studentId: string, status: 'present' | 'absent' | 'late') => {
-    setCurrentAttendance(prev => ({
+  const handleAttendanceChange = (studentId: number, status: 'present' | 'absent') => {
+    setAttendance(prev => ({
       ...prev,
-      [studentId]: status,
+      [studentId]: status
     }));
   };
 
   const handleSaveAttendance = async () => {
+    if (!selectedSectionId) return;
+
     setIsSaving(true);
     try {
-      const recordsToSave = Object.entries(currentAttendance).map(([studentId, status]) => ({
-        studentId,
+      const attendanceData = Object.entries(attendance).map(([studentId, status]) => ({
+        studentId: parseInt(studentId, 10),
         sectionId: selectedSectionId,
-        date: attendanceDate,
-        status,
+        isPresent: status === 'present',
+        date: new Date().toISOString().split('T')[0]
       }));
-      await recordAttendance(recordsToSave);
-      alert('Attendance saved successfully!'); // Replace with Snackbar later
 
-      // Identify absent students
-      const absent = filteredStudents.filter(student => currentAttendance[student.id] === 'absent');
-      setAbsentStudentsList(absent);
-      setIsAbsentListModalOpen(true); // Open the modal
+      const response = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ attendance: attendanceData }),
+      });
 
+      if (response.ok) {
+        alert('تم حفظ الحضور بنجاح');
+        setAttendance({});
+        checkTodaysAttendance();
+      } else {
+        const err = await response.json().catch(() => null);
+        console.error('Save attendance failed:', err);
+        alert('خطأ في حفظ الحضور');
+      }
     } catch (error) {
-      console.error('Failed to save attendance:', error);
-      alert('Failed to save attendance.'); // Replace with Snackbar later
+      console.error('خطأ في حفظ الحضور:', error);
+      alert('خطأ في حفظ الحضور');
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleDeleteAttendance = async (attendanceId: number) => {
+    if (!window.confirm('هل تريد إلغاء سجل الحضور هذا؟')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/attendance/${attendanceId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        alert('تم إلغاء سجل الحضور بنجاح');
+        checkTodaysAttendance();
+      } else {
+        alert('خطأ في إلغاء سجل الحضور');
+      }
+    } catch (error) {
+      console.error('خطأ في إلغاء سجل الحضور:', error);
+      alert('خطأ في إلغاء سجل الحضور');
+    }
+  };
+
+  const selectedSection = sections.find(section => String(section.id) === String(selectedSectionId));
+
   return (
-    <Box sx={{ p: 2 }}>
-      <Typography variant="h6" gutterBottom>تسجيل الحضور والغياب</Typography>
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        تسجيل الحضور والغياب
+      </Typography>
 
-      <FormControl fullWidth margin="normal">
-        <InputLabel id="section-select-label">القسم</InputLabel>
-        <Select
-          labelId="section-select-label"
-          value={selectedSectionId}
-          label="القسم"
-          onChange={(e) => setSelectedSectionId(e.target.value as string)}
-        >
-          {sections.map(section => (
-            <MenuItem key={section.id} value={section.id}>{section.name}</MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-
-      <FormControl fullWidth margin="normal">
-        <InputLabel shrink>التاريخ</InputLabel>
-        <input
-          type="date"
-          value={attendanceDate}
-          onChange={(e) => setAttendanceDate(e.target.value)}
-          style={{ width: '100%', padding: '12px', borderRadius: '4px', border: '1px solid #ccc', marginTop: '8px' }}
-        />
-      </FormControl>
-
-      <Box sx={{ mt: 3 }}>
-        {filteredStudents.length === 0 ? (
-          <Typography>الرجاء اختيار قسم لعرض الطلاب.</Typography>
-        ) : (
-          <Box>
-            {filteredStudents.map(student => (
-              <Paper key={student.id} sx={{ p: 2, mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography>{student.first_name} {student.last_name}</Typography>
-                <Box>
-                  <Button
-                    variant={currentAttendance[student.id] === 'present' ? 'contained' : 'outlined'}
-                    color="success"
-                    size="small"
-                    onClick={() => handleStatusChange(student.id, 'present')}
-                    sx={{ mr: 1 }}
-                  >
-                    حاضر
-                  </Button>
-                  <Button
-                    variant={currentAttendance[student.id] === 'absent' ? 'contained' : 'outlined'}
-                    color="error"
-                    size="small"
-                    onClick={() => handleStatusChange(student.id, 'absent')}
-                  >
-                    غائب
-                  </Button>
+      <Box sx={{ mb: 3 }}>
+        <FormControl fullWidth>
+          <InputLabel id="section-select-label">اختر القسم</InputLabel>
+          <Select
+            labelId="section-select-label"
+            value={selectedSectionId || ''}
+            onChange={e => setSelectedSectionId(e.target.value as string)}
+            label="اختر القسم"
+          >
+            {sections.map((section) => (
+              <MenuItem key={section.id} value={section.id}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                  <span>{section.name}</span>
                 </Box>
-              </Paper>
+              </MenuItem>
             ))}
-          </Box>
-        )}
+          </Select>
+        </FormControl>
       </Box>
 
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleSaveAttendance}
-        disabled={isSaving || !selectedSectionId || filteredStudents.length === 0}
-        sx={{ mt: 3 }}
-      >
-        {isSaving ? 'جاري الحفظ...' : 'حفظ الحضور'}
-      </Button>
+      {selectedSectionId && selectedSection && (
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="h6" sx={{ m: 0 }}>
+                {selectedSection.name}
+              </Typography>
+              <Chip
+                icon={isAttendanceRecorded ? <CheckCircle /> : <Circle />}
+                label={isAttendanceRecorded ? 'تم تسجيل الحضور' : 'لم يتم تسجيل الحضور'}
+                color={isAttendanceRecorded ? 'success' : 'warning'}
+                size="small"
+                sx={{ ml: 1 }}
+              />
+              {/* refresh button removed here — use the QuickEvaluation refresh control instead */}
+            </Box>
+          </Box>
 
-      {/* Display absent students list here after saving */}
-      <Dialog open={isAbsentListModalOpen} onClose={() => setIsAbsentListModalOpen(false)}>
-        <DialogTitle>الطلاب الغائبون</DialogTitle>
-        <DialogContent>
-          {absentStudentsList.length === 0 ? (
-            <Typography>لا يوجد طلاب غائبون في هذا اليوم.</Typography>
+          {!isAttendanceRecorded ? (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                قم بتسجيل الحضور لتاريخ اليوم
+              </Typography>
+              
+              {filteredStudents.map((student) => (
+                <Box key={student.id} sx={{ mb: 2, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
+                  <Typography variant="h6" gutterBottom>
+                    {student.name} (رقم {student.attendance_number})
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button
+                      variant={attendance[student.id] === 'present' ? 'contained' : 'outlined'}
+                      color="success"
+                      onClick={() => handleAttendanceChange(student.id, 'present')}
+                    >
+                      حاضر
+                    </Button>
+                    <Button
+                      variant={attendance[student.id] === 'absent' ? 'contained' : 'outlined'}
+                      color="error"
+                      onClick={() => handleAttendanceChange(student.id, 'absent')}
+                    >
+                      غائب
+                    </Button>
+                  </Box>
+                </Box>
+              ))}
+
+              <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSaveAttendance}
+                  disabled={isSaving || !selectedSectionId || filteredStudents.length === 0}
+                >
+                  {isSaving ? 'جاري الحفظ...' : 'حفظ الحضور'}
+                </Button>
+              </Box>
+            </Box>
           ) : (
             <Box>
-              {absentStudentsList.map(student => (
-                <Typography key={student.id}>{student.first_name} {student.last_name}</Typography>
-              ))}
+              <Typography variant="h6" gutterBottom>
+                سجل الحضور لتاريخ اليوم:
+              </Typography>
+              
+              {todaysAttendance.length === 0 ? (
+                <Typography variant="body1" color="textSecondary">لا توجد سجلات حضور لهذا اليوم</Typography>
+              ) : (
+                todaysAttendance.map((record) => (
+                  <Box key={record.id} sx={{ mb: 2, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box>
+                        <Typography variant="body1">{record.student_name}</Typography>
+                        <Chip label={record.status === 'present' ? 'حاضر' : 'غائب'} color={record.status === 'present' ? 'success' : 'error'} size="small" />
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button variant="outlined" color="error" size="small" onClick={() => handleDeleteAttendance(record.id)}>إلغاء</Button>
+                      </Box>
+                    </Box>
+                  </Box>
+                ))
+              )}
             </Box>
           )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsAbsentListModalOpen(false)}>إغلاق</Button>
-        </DialogActions>
-      </Dialog>
+        </Paper>
+      )}
+
+      {/* debug info removed */}
     </Box>
   );
 };

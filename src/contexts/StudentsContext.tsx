@@ -20,6 +20,7 @@ interface StudentsContextType {
   deleteStudent: (id: number) => Promise<void>;
   isLoading: boolean;
   fetchStudents: () => Promise<void>;
+  updateStudentLocal: (id: number, patch: Partial<Student>) => void;
 }
 
 const StudentsContext = createContext<StudentsContextType | undefined>(undefined);
@@ -135,6 +136,11 @@ export const StudentsProvider = ({ children }: StudentsProviderProps) => {
     }
   };
 
+  // Local updater for optimistic UI updates (does not persist to server)
+  const updateStudentLocal = (id: number, patch: Partial<Student>) => {
+    setStudents(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
+  };
+
   return (
     <StudentsContext.Provider value={{
       students,
@@ -143,6 +149,7 @@ export const StudentsProvider = ({ children }: StudentsProviderProps) => {
       deleteStudent,
       isLoading,
       fetchStudents,
+      updateStudentLocal,
     }}>
       {children}
     </StudentsContext.Provider>
