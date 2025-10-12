@@ -1,0 +1,116 @@
+{
+  "timestamp": "2025-10-12T19:09:30.881Z",
+  "reason": "security_implementation",
+  "files": [
+    {
+      "source": "classroom.db",
+      "destination": "security_backups\\comprehensive_security_implementation_2025-10-12T19-09-30-870Z\\classroom.db",
+      "size": 626688,
+      "modified": "2025-10-12T16:59:53.409Z",
+      "hash": "14834917eef1a61f01625f6350891367df101ef437f0441bf2c3f76d2d5eab5f"
+    },
+    {
+      "source": "classroom_dev.db",
+      "destination": "security_backups\\comprehensive_security_implementation_2025-10-12T19-09-30-870Z\\classroom_dev.db",
+      "size": 368640,
+      "modified": "2025-10-09T22:11:35.274Z",
+      "hash": "a34883b7e9d93e428632dfadbf7a2710f7f0874e8c4c96c6934df6f1d8385c0b"
+    },
+    {
+      "source": "classroom_test.db",
+      "destination": "security_backups\\comprehensive_security_implementation_2025-10-12T19-09-30-870Z\\classroom_test.db",
+      "size": 368640,
+      "modified": "2025-10-09T22:11:35.276Z",
+      "hash": "a34883b7e9d93e428632dfadbf7a2710f7f0874e8c4c96c6934df6f1d8385c0b"
+    },
+    {
+      "source": "classroom_backup.db.db",
+      "destination": "security_backups\\comprehensive_security_implementation_2025-10-12T19-09-30-870Z\\classroom_backup.db.db",
+      "size": 0,
+      "modified": "2025-10-10T00:25:55.436Z",
+      "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "classroom_backup_2.db",
+      "destination": "security_backups\\comprehensive_security_implementation_2025-10-12T19-09-30-870Z\\classroom_backup_2.db",
+      "size": 0,
+      "modified": "2025-10-10T00:25:55.440Z",
+      "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "package.json",
+      "destination": "security_backups\\comprehensive_security_implementation_2025-10-12T19-09-30-870Z\\package.json",
+      "size": 2590,
+      "modified": "2025-10-11T23:11:55.624Z",
+      "hash": "7b1e46a94dbb7ef95a4f3ef33dc9fb28dfdfb36074391e42074fa2267f95503b"
+    },
+    {
+      "source": "tsconfig.json",
+      "destination": "security_backups\\comprehensive_security_implementation_2025-10-12T19-09-30-870Z\\tsconfig.json",
+      "size": 701,
+      "modified": "2025-10-09T22:17:42.117Z",
+      "hash": "7213bdf547947d2dbbeaac8a853b08e9e868c6f6bc8606d360568f161c6b7048"
+    },
+    {
+      "source": "vite.config.js",
+      "destination": "security_backups\\comprehensive_security_implementation_2025-10-12T19-09-30-870Z\\vite.config.js",
+      "size": 312,
+      "modified": "2025-10-09T22:17:42.128Z",
+      "hash": "59c1f46e1daacccc48bd0d518e140215d2d5ff7deab309e293bff2e235c4ad37"
+    },
+    {
+      "source": ".env.development",
+      "destination": "security_backups\\comprehensive_security_implementation_2025-10-12T19-09-30-870Z\\.env.development",
+      "size": 175,
+      "modified": "2025-10-09T22:09:46.058Z",
+      "hash": "bc8625bc3f37c42433772a50283cdcaf1388d076d9ce711df79efadc8418b1ee"
+    },
+    {
+      "source": ".env.production",
+      "destination": "security_backups\\comprehensive_security_implementation_2025-10-12T19-09-30-870Z\\.env.production",
+      "size": 168,
+      "modified": "2025-10-09T22:09:46.059Z",
+      "hash": "fc465b798abad41e7d3f83d5231b19f44a5d1a1baf1e581a28ef4144537620e8"
+    },
+    {
+      "source": ".env.testing",
+      "destination": "security_backups\\comprehensive_security_implementation_2025-10-12T19-09-30-870Z\\.env.testing",
+      "size": 164,
+      "modified": "2025-10-09T22:09:46.061Z",
+      "hash": "41c717a5d88187c4a5a4eca9fd0b77318a18c4268773164e4cae68edc591dd31"
+    }
+  ],
+  "directories": [
+    {
+      "source": "backend/config",
+      "destination": "security_backups\\comprehensive_security_implementation_2025-10-12T19-09-30-870Z\\backend\\config",
+      "size": 772
+    },
+    {
+      "source": "backend/models",
+      "destination": "security_backups\\comprehensive_security_implementation_2025-10-12T19-09-30-870Z\\backend\\models",
+      "size": 14879
+    },
+    {
+      "source": "backend/routes",
+      "destination": "security_backups\\comprehensive_security_implementation_2025-10-12T19-09-30-870Z\\backend\\routes",
+      "size": 73101
+    }
+  ],
+  "totalSize": 1452720,
+  "checksums": {
+    "classroom.db": "14834917eef1a61f01625f6350891367df101ef437f0441bf2c3f76d2d5eab5f",
+    "classroom_dev.db": "a34883b7e9d93e428632dfadbf7a2710f7f0874e8c4c96c6934df6f1d8385c0b",
+    "classroom_test.db": "a34883b7e9d93e428632dfadbf7a2710f7f0874e8c4c96c6934df6f1d8385c0b",
+    "classroom_backup.db.db": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "classroom_backup_2.db": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package.json": "7b1e46a94dbb7ef95a4f3ef33dc9fb28dfdfb36074391e42074fa2267f95503b",
+    "tsconfig.json": "7213bdf547947d2dbbeaac8a853b08e9e868c6f6bc8606d360568f161c6b7048",
+    "vite.config.js": "59c1f46e1daacccc48bd0d518e140215d2d5ff7deab309e293bff2e235c4ad37",
+    ".env.development": "bc8625bc3f37c42433772a50283cdcaf1388d076d9ce711df79efadc8418b1ee",
+    ".env.production": "fc465b798abad41e7d3f83d5231b19f44a5d1a1baf1e581a28ef4144537620e8",
+    ".env.testing": "41c717a5d88187c4a5a4eca9fd0b77318a18c4268773164e4cae68edc591dd31"
+  },
+  "status": "completed",
+  "completedAt": "2025-10-12T19:09:31.038Z"
+}

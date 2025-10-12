@@ -1,0 +1,338 @@
+const express = require('express');
+const router = express.Router();
+const { ScheduledLesson, Section, TextbookEntry, AdminScheduleEntry } = require('../models');
+const { Op } = require('sequelize');
+
+// Helpers
+const toArray = (val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    try { return JSON.parse(val); } catch { return []; }
+  }
+  return [];
+};
+
+const toStagesArray = (val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    try { return JSON.parse(val); } catch { return []; }
+  }
+  return [];
+};
+
+const getCompletedStages = (stages) =>
+  stages.filter((st) => st && (st.isCompleted === true || st.isCompleted === 'true' || st.isCompleted === 1 || st.isCompleted === '1'));
+
+// Day helpers (English names to match schedule.csv/AdminSchedule)
+function getDayNameFromDate(dateStr) {
+  try {
+    // Robust parsing of YYYY-MM-DD to avoid TZ issues
+    const [y, m, d] = String(dateStr).split('-').map((v) => parseInt(v, 10));
+    if (!y || !m || !d) return null;
+    const date = new Date(y, m - 1, d); // local date
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[date.getDay()];
+  } catch {
+    return null;
+  }
+}
+
+function mapEnglishToArabicDay(dayEn) {
+  const DAY_MAP = {
+    'Monday': 'الإثنين',
+    'Tuesday': 'الثلاثاء',
+    'Wednesday': 'الأربعاء',
+    'Thursday': 'الخميس',
+    'Friday': 'الجمعة',
+    'Saturday': 'السبت',
+    'Sunday': 'الأحد'
+  };
+  return DAY_MAP[dayEn] || dayEn;
+}
+
+async function pickScheduleFor(sectionId, dateStr, sessionNumber) {
+  try {
+    const dayNameEn = getDayNameFromDate(dateStr);
+    const dayNameAr = mapEnglishToArabicDay(dayNameEn);
+    if (!dayNameEn) return null;
+    const entries = await AdminScheduleEntry.findAll({
+      where: { sectionId: String(sectionId), day: dayNameAr },
+      order: [['startTime', 'ASC']],
+    });
+    if (!entries || entries.length === 0) {
+      console.warn(`[schedule-pick] No entries for section=${sectionId} day=${dayNameAr} (from ${dayNameEn})`);
+      return null;
+    }
+    const idxBase = (Number(sessionNumber) || 1) - 1;
+    const idx = Math.max(0, Math.min(entries.length - 1, idxBase));
+    const picked = entries[idx];
+    console.log(`[schedule-pick] Picked time ${picked.startTime} for section=${sectionId} day=${dayNameAr} session=${sessionNumber} idx=${idx}/${entries.length}`);
+    return picked;
+  } catch {
+    return null;
+  }
+}
+
+function computeEndTime(startTime, durationHours) {
+  try {
+    if (!startTime) return null;
+    const [hh, mm] = String(startTime).split(':').map((v) => parseInt(v, 10));
+    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+    const minsToAdd = Math.round(Number(durationHours || 1) * 60);
+    let totalMins = hh * 60 + mm + minsToAdd;
+    totalMins = ((totalMins % (24 * 60)) + (24 * 60)) % (24 * 60); // wrap 24h
+    const eh = Math.floor(totalMins / 60);
+    const em = totalMins % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(eh)}:${pad(em)}`;
+  } catch {
+    return null;
+  }
+}
+
+async function upsertTextbookEntriesForLesson(lesson) {
+  try {
+    const assigned = toArray(lesson.assignedSections).map(String);
+    const stagesArr = toStagesArray(lesson.stages);
+    const completedStages = getCompletedStages(stagesArr);
+
+    // If no assigned sections or no completed stages, delete existing entries for this lesson
+    if (!assigned.length || !completedStages.length) {
+      await TextbookEntry.destroy({ where: { originalLessonId: String(lesson.id) } });
+      return { updated: 0, deleted: 1 };
+    }
+
+    let updated = 0;
+    for (const secId of assigned) {
+      let secName = String(secId);
+      try {
+        const sec = await Section.findByPk(String(secId));
+        if (sec) secName = sec.name;
+      } catch {}
+
+      const entryId = `${lesson.id}_${secId}`;
+      const lessonTitle = lesson.customTitle || lesson.subject || '';
+      const lessonContent = completedStages
+        .map((stage, idx) => `✓ المرحلة ${idx + 1}: ${stage.title || stage.name || `المرحلة ${idx + 1}`}`)
+        .join('\n');
+
+      // Determine accurate time from AdminSchedule if available
+      const picked = await pickScheduleFor(secId, lesson.date, lesson.manualSessionNumber);
+      const computedStartTime = picked?.startTime || lesson.startTime || '08:00';
+      const computedDuration = picked?.duration != null ? Number(picked.duration) : 1.0;
+
+      const payload = {
+        id: entryId,
+        date: lesson.date,
+        startTime: computedStartTime,
+        duration: computedDuration,
+        sectionId: String(secId),
+        sectionName: secName,
+        lessonTitle: lessonTitle || 'حصة دراسية',
+        sessionNumber: lesson.manualSessionNumber || 1,
+        completedStages: completedStages,
+        lessonContent,
+        isAutoGenerated: true,
+        originalLessonId: String(lesson.id),
+      };
+
+      const existing = await TextbookEntry.findByPk(entryId);
+      if (existing) await existing.update(payload);
+      else await TextbookEntry.create(payload);
+      updated += 1;
+    }
+    return { updated, deleted: 0 };
+  } catch (e) {
+    console.warn('[textbook] upsert helper failed:', e?.message || e);
+    return { updated: 0, deleted: 0, error: e?.message || String(e) };
+  }
+}
+
+// GET all scheduled lessons
+router.get('/', async (req, res) => {
+  try {
+    console.log('📋 [ScheduledLessons] GET request received');
+    const lessons = await ScheduledLesson.findAll();
+    console.log(`✅ [ScheduledLessons] Found ${lessons.length} lessons`);
+    res.json(lessons);
+  } catch (error) {
+    console.error('❌ [ScheduledLessons] GET error:', error);
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
+});
+
+// GET textbook data from scheduled lessons
+router.get('/textbook', async (req, res) => {
+  try {
+    const { sectionId, level, dateFrom, dateTo } = req.query;
+
+    let where = {};
+    
+    // Filter by section
+    if (sectionId && sectionId !== 'all') {
+      where.sectionId = sectionId;
+    }
+    
+    // Filter by educational level (normalize stored values to handle stray newlines/whitespace)
+    if (level && level !== 'all') {
+      const normalize = (s) => {
+        if (typeof s !== 'string') return '';
+        let t = s.normalize('NFC').replace(/\s+/g, ''); // remove all whitespace
+        // common spelling variants
+        t = t.replace(/باكالوريا/g, 'بكالوريا');
+        return t.trim();
+      };
+      const wanted = normalize(level);
+
+      // Fetch candidate sections and filter in JS using normalized comparison
+  const allSections = await Section.findAll({ attributes: ['id', 'educationalLevel'] });
+  const sectionsForLevel = allSections.filter(s => normalize(s.educationalLevel) === wanted);
+      const sectionIds = sectionsForLevel.map(s => s.id);
+
+      if (sectionIds.length > 0) {
+        if (where.sectionId) {
+          // If section is already filtered, ensure it's in the level filter
+          if (!sectionIds.includes(where.sectionId)) {
+            return res.json([]); // No results if section doesn't match level
+          }
+        } else {
+          // Apply level filter
+          where.sectionId = { [Op.in]: sectionIds };
+        }
+      } else {
+        return res.json([]); // No sections for this level
+      }
+    }
+
+    // Date range filter
+    if (dateFrom || dateTo) {
+      where.date = {};
+      if (dateFrom) where.date[Op.gte] = dateFrom;
+      if (dateTo) where.date[Op.lte] = dateTo;
+    }
+
+    const entries = await TextbookEntry.findAll({
+      where,
+      order: [['date', 'DESC'], ['startTime', 'ASC']],
+    });
+
+    // Ensure startTime aligns with AdminSchedule when possible (display-level correction)
+    const mapped = await Promise.all(entries.map(async (e) => {
+      const completedStages = Array.isArray(e.completedStages) ? e.completedStages : [];
+      const subjectDetails = e.lessonTitle
+        ? `${e.lessonTitle}:\n${completedStages.map((st, i) => `✓ المرحلة ${i + 1}: ${st.title || st.name || `المرحلة ${i + 1}`}`).join('\n')}`
+        : completedStages.map((st, i) => `✓ المرحلة ${i + 1}: ${st.title || st.name || `المرحلة ${i + 1}`}`).join('\n');
+
+      let startTime = e.startTime;
+      let duration = e.duration != null ? Number(e.duration) : 1;
+      try {
+        const picked = await pickScheduleFor(e.sectionId, e.date, e.sessionNumber || 1);
+        if (picked?.startTime) startTime = picked.startTime;
+        if (picked?.duration != null) duration = Number(picked.duration);
+      } catch {}
+      const endTime = computeEndTime(startTime, duration);
+
+      return {
+        id: e.id,
+        date: e.date,
+        startTime,
+        endTime,
+        duration,
+        sectionId: e.sectionId,
+        sectionName: e.sectionName,
+        lessonNumber: e.sessionNumber || 'غير محدد',
+        subjectDetails,
+        teacherSignature: e.teacherSignature || '',
+        completedStagesCount: completedStages.length,
+        totalStages: completedStages.length, // لا نملك العدد الكلي هنا، نعرض عدد المنجزة فقط
+      };
+    }));
+
+    res.json(mapped);
+  } catch (error) {
+    console.error('Error fetching textbook data:', error);
+    res.status(500).json({ message: 'Failed to fetch textbook data', error: error.message });
+  }
+});
+
+// DELETE all scheduled lessons (place before parameterized route to avoid conflicts)
+router.delete('/all', async (req, res) => {
+  try {
+    await ScheduledLesson.destroy({ truncate: true });
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST a new scheduled lesson
+router.post('/', async (req, res) => {
+  try {
+    console.log('📝 [ScheduledLessons] POST request received:', req.body);
+    const payload = { ...req.body };
+    if (!payload.id) {
+      payload.id = Date.now().toString();
+    }
+    console.log('📝 [ScheduledLessons] Creating with payload:', payload);
+    const lesson = await ScheduledLesson.create(payload);
+    console.log('✅ [ScheduledLessons] Created lesson:', lesson.toJSON());
+    // attempt upsert textbook entries for this new lesson (in case it already has completed stages)
+    await upsertTextbookEntriesForLesson(lesson);
+    res.status(201).json(lesson);
+  } catch (error) {
+    console.error('❌ [ScheduledLessons] POST error:', error);
+    res.status(400).json({ error: error.message, stack: error.stack });
+  }
+});
+
+// PUT update a scheduled lesson
+router.put('/:id', async (req, res) => {
+  try {
+    console.log('🔧 [Backend] PUT /scheduled-lessons/:id - Request Body:', req.body); // ADD THIS LINE
+    const lesson = await ScheduledLesson.findByPk(req.params.id);
+    if (!lesson) return res.status(404).json({ error: 'Scheduled lesson not found' });
+    await lesson.update(req.body);
+
+    // بعد التحديث: حدّث/أنشئ إدخالات دفتر النصوص
+    await upsertTextbookEntriesForLesson(lesson);
+
+    res.json(lesson);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// DELETE a scheduled lesson
+router.delete('/:id', async (req, res) => {
+  try {
+    const lesson = await ScheduledLesson.findByPk(req.params.id);
+    if (!lesson) return res.status(404).json({ error: 'Scheduled lesson not found' });
+    // Clean up related textbook entries
+    await TextbookEntry.destroy({ where: { originalLessonId: String(lesson.id) } });
+    await lesson.destroy();
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Generate/Backfill textbook entries from all scheduled lessons
+router.post('/textbook/backfill', async (req, res) => {
+  try {
+    const lessons = await ScheduledLesson.findAll();
+    let updated = 0, deleted = 0;
+    for (const l of lessons) {
+      const result = await upsertTextbookEntriesForLesson(l);
+      updated += result.updated || 0;
+      deleted += result.deleted || 0;
+    }
+    res.json({ message: 'Backfill completed', updated, deleted, totalLessons: lessons.length });
+  } catch (e) {
+    console.error('Backfill failed:', e);
+    res.status(500).json({ message: 'Backfill failed', error: e?.message || String(e) });
+  }
+});
+
+module.exports = router;
