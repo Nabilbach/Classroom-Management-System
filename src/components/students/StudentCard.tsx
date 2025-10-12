@@ -101,25 +101,52 @@ function useCount(target: number, duration = 700) {
 const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess }: StudentCardProps) => {
   const totalXp = Math.round(student.total_xp ?? 0);
   const { level, xpInCurrentLevel, xpForNextLevel, progressPercentage } = getLevelInfo(totalXp);
-  
-  // Use the optimistically updated score if available, otherwise use a placeholder.
-  const lastScore = student.score !== undefined ? `${student.score}%` : 'N/A';
 
-  // Determine latest assessment scores safely (support multiple possible key names)
-  const latest = student.assessments && student.assessments.length > 0 ? student.assessments[student.assessments.length - 1] : undefined;
-  const getLatestScore = (keys: string[]) => {
-    if (!latest || !latest.scores) return '—';
-    for (const k of keys) {
-      if (typeof latest.scores[k] !== 'undefined' && latest.scores[k] !== null && latest.scores[k] !== '') return latest.scores[k];
-    }
-    return '—';
-  };
+  // رقم التلميذ في القسم
+  const studentNumber = student.classOrder ?? student.studentNumberInSection ?? '—';
 
-  const attendancePoints = getLatestScore(['attendance', 'presence', 'حضور']);
-  const notebookPoints = getLatestScore(['notebook', 'دفتر']);
-  const homeworkPoints = getLatestScore(['homework', 'واجب', 'assignments']);
-  const behaviorPoints = getLatestScore(['behavior', 'سلوك']);
-  
+  // ربط عناصر التقييم الفعلية من آخر تقييم
+  const [latestAssessment, setLatestAssessment] = useState<any | null>(null);
+  // إذا لم تُرجع واجهة /students التقييمات، فنجلب آخر تقييم عبر endpoint خاص
+  useEffect(() => {
+    let mounted = true;
+    const controller = new AbortController();
+    const fetchLatest = async () => {
+      try {
+        if (student.assessments && student.assessments.length > 0) return; // already present
+        const res = await fetch(`http://localhost:3000/api/students/${student.id}/assessments`, { signal: controller.signal });
+        if (!res.ok) return;
+        const arr = await res.json();
+        if (!mounted) return;
+        if (Array.isArray(arr) && arr.length > 0) {
+          // API returns assessments ordered desc (server-side), take first
+          setLatestAssessment(arr[0]);
+        }
+      } catch (e) {
+        // ignore abort or fetch errors
+      }
+    };
+    fetchLatest();
+    return () => { mounted = false; controller.abort(); };
+  }, [student.id, student.assessments]);
+
+  let attendancePoints = '—', notebookPoints = '—', homeworkPoints = '—', behaviorPoints = '—';
+  let lastScore = 'N/A';
+  const latest = (student.assessments && student.assessments.length > 0) ? student.assessments[student.assessments.length - 1] : latestAssessment;
+  if (latest && latest.scores) {
+    const att = latest.scores.attendance ?? latest.scores.presence ?? latest.scores['حضور'];
+    attendancePoints = (att !== undefined && att !== null && att !== '') ? att : '—';
+    const nb = latest.scores.notebook ?? latest.scores['دفتر'];
+    notebookPoints = (nb !== undefined && nb !== null && nb !== '') ? nb : '—';
+    const hw = latest.scores.homework ?? latest.scores['واجب'] ?? latest.scores.assignments;
+    homeworkPoints = (hw !== undefined && hw !== null && hw !== '') ? hw : '—';
+    const bh = latest.scores.behavior ?? latest.scores['سلوك'];
+    behaviorPoints = (bh !== undefined && bh !== null && bh !== '') ? bh : '—';
+    lastScore = typeof latest.new_score !== 'undefined' ? `${latest.new_score}%` : (typeof latest.score !== 'undefined' ? `${latest.score}%` : (student.score !== undefined ? `${student.score}%` : 'N/A'));
+  } else {
+    lastScore = student.score !== undefined ? `${student.score}%` : 'N/A';
+  }
+
   const animatedTotalXp = useCount(totalXp, 1000);
 
   // pulse effect for progress bar when progressPercentage changes (used only in modal)
@@ -166,7 +193,7 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess }: StudentC
       <div className="flex justify-between items-start mb-4">
         <div className="w-10 h-10 flex-shrink-0">
           <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-lg font-bold border-2 border-gray-200">
-            {student.studentNumberInSection ?? 0}
+            {studentNumber}
           </div>
         </div>
         <div className="flex-1 text-center">
@@ -207,28 +234,28 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess }: StudentC
         <div className="flex items-center gap-2 bg-gray-50 p-2 rounded border border-gray-200 text-sm">
           <FaClipboard className="text-amber-500" />
           <div className="flex flex-col">
-            <span className="font-semibold text-gray-800">{attendancePoints ?? '—'}</span>
+            <span className="font-semibold text-gray-800">{attendancePoints}</span>
             <span className="text-xs text-gray-500">نقاط الحضور</span>
           </div>
         </div>
         <div className="flex items-center gap-2 bg-gray-50 p-2 rounded border border-gray-200 text-sm">
           <FaBook className="text-amber-500" />
           <div className="flex flex-col">
-            <span className="font-semibold text-gray-800">{notebookPoints ?? '—'}</span>
+            <span className="font-semibold text-gray-800">{notebookPoints}</span>
             <span className="text-xs text-gray-500">نقاط الدفتر</span>
           </div>
         </div>
         <div className="flex items-center gap-2 bg-gray-50 p-2 rounded border border-gray-200 text-sm">
           <FaTasks className="text-amber-500" />
           <div className="flex flex-col">
-            <span className="font-semibold text-gray-800">{homeworkPoints ?? '—'}</span>
+            <span className="font-semibold text-gray-800">{homeworkPoints}</span>
             <span className="text-xs text-gray-500">الواجبات</span>
           </div>
         </div>
         <div className="flex items-center gap-2 bg-gray-50 p-2 rounded border border-gray-200 text-sm">
           <FaSmile className="text-amber-500" />
           <div className="flex flex-col">
-            <span className="font-semibold text-gray-800">{behaviorPoints ?? '—'}</span>
+            <span className="font-semibold text-gray-800">{behaviorPoints}</span>
             <span className="text-xs text-gray-500">السلوك</span>
           </div>
         </div>
