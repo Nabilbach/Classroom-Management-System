@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, ReactNode, useRef } from 'react';
 
 // This interface should match the Student model in your backend
 interface Student {
@@ -56,7 +56,12 @@ export const StudentsProvider = ({ children }: StudentsProviderProps) => {
     }
   }, []);
 
+  // Run initial fetch once. In React StrictMode during development effects may run twice,
+  // so guard with a ref to avoid duplicate network requests.
+  const didInitialFetchRef = useRef(false);
   useEffect(() => {
+    if (didInitialFetchRef.current) return;
+    didInitialFetchRef.current = true;
     fetchStudents();
   }, [fetchStudents]);
 

@@ -603,31 +603,35 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
 
               <Grid item xs={12} sm={6} md={2}>
                 <Tooltip title="تحديث البيانات">
-                  <Button 
-                    variant="contained" 
-                    onClick={fetchData} 
-                    startIcon={<RefreshIcon />}
-                    fullWidth
-                    size="small"
-                    sx={{ borderRadius: 2 }}
-                  >
-                    تحديث
-                  </Button>
+                  <span style={{ display: 'block', width: '100%' }}>
+                    <Button 
+                      variant="contained" 
+                      onClick={fetchData} 
+                      startIcon={<RefreshIcon />}
+                      fullWidth
+                      size="small"
+                      sx={{ borderRadius: 2 }}
+                    >
+                      تحديث
+                    </Button>
+                  </span>
                 </Tooltip>
               </Grid>
 
               <Grid item xs={12} sm={6} md={2}>
                 <Tooltip title="طباعة التقرير">
-                  <Button
-                    variant="outlined"
-                    onClick={triggerPrint}
-                    startIcon={<PrintIcon />}
-                    fullWidth
-                    size="small"
-                    sx={{ borderRadius: 2 }}
-                  >
-                    طباعة
-                  </Button>
+                  <span style={{ display: 'block', width: '100%' }}>
+                    <Button
+                      variant="outlined"
+                      onClick={triggerPrint}
+                      startIcon={<PrintIcon />}
+                      fullWidth
+                      size="small"
+                      sx={{ borderRadius: 2 }}
+                    >
+                      طباعة
+                    </Button>
+                  </span>
                 </Tooltip>
               </Grid>
 
@@ -636,18 +640,20 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
                   ? `حذف سجلات قسم ${selectedSection?.name || selectedSectionId}` 
                   : 'يرجى اختيار قسم محدد للحذف'
                 }>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={() => setDeleteConfirmOpen(true)}
-                    startIcon={<DeleteIcon />}
-                    disabled={records.length === 0 || !selectedSectionId || selectedSectionId === 'ALL'}
-                    fullWidth
-                    size="small"
-                    sx={{ borderRadius: 2 }}
-                  >
-                    {selectedSectionId && selectedSectionId !== 'ALL' ? 'حذف القسم' : 'حذف'}
-                  </Button>
+                  <span style={{ display: 'block', width: '100%' }}>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      onClick={() => setDeleteConfirmOpen(true)}
+                      startIcon={<DeleteIcon />}
+                      disabled={records.length === 0 || !selectedSectionId || selectedSectionId === 'ALL'}
+                      fullWidth
+                      size="small"
+                      sx={{ borderRadius: 2 }}
+                    >
+                      {selectedSectionId && selectedSectionId !== 'ALL' ? 'حذف القسم' : 'حذف'}
+                    </Button>
+                  </span>
                 </Tooltip>
               </Grid>
             </Grid>

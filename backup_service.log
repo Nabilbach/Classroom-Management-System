@@ -27,3 +27,5 @@
 {"timestamp":"2025-10-08T09:45:38.770Z","type":"BACKUP_DELETED","message":"تم حذف النسخة القديمة: auto_backup_2025-10-03T08-50-22-740Z","data":{"createdAt":"2025-10-03T08:50:22.742Z"},"user":"nabil"}
 {"timestamp":"2025-10-08T15:45:39.380Z","type":"BACKUP_CREATED","message":"تم إنشاء النسخة الاحتياطية: auto_backup_2025-10-08T15-45-38-488Z","data":{"totalSize":1905520,"fileCount":10,"directoryCount":5},"user":"nabil"}
 {"timestamp":"2025-10-08T15:45:39.855Z","type":"BACKUP_DELETED","message":"تم حذف النسخة القديمة: auto_backup_2025-10-03T18-18-55-146Z","data":{"createdAt":"2025-10-03T18:18:55.149Z"},"user":"nabil"}
+{"timestamp":"2025-10-12T09:30:22.966Z","type":"BACKUP_CREATED","message":"تم إنشاء النسخة الاحتياطية: auto_backup_2025-10-12T09-30-20-469Z","data":{"totalSize":2047417,"fileCount":10,"directoryCount":5},"user":"nabil"}
+{"timestamp":"2025-10-12T09:30:24.351Z","type":"BACKUP_DELETED","message":"تم حذف النسخة القديمة: auto_backup_2025-10-11T20-00-47-065Z","data":{"createdAt":"2025-10-11T20:00:47.068Z"},"user":"nabil"}

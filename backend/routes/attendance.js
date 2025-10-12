@@ -191,24 +191,38 @@ router.get('/', async (req, res) => {
 router.delete('/', async (req, res) => {
   try {
     let { date, sectionId, deleteAll } = req.query;
-    const { student_id, section_id } = req.body;
+    const body = req.body || {};
+  // Accept multiple possible names from various clients (body or query)
+  const student_id = body.student_id ?? body.studentId ?? body.student ?? body.studentid ?? undefined;
+  const qStudentId = req.query.student_id ?? req.query.studentId ?? req.query.student ?? req.query.studentid ?? undefined;
+  const effectiveStudentId = student_id ?? qStudentId;
+    const section_id = body.section_id ?? body.sectionId ?? body.section ?? body.sectionid ?? body.section_id;
+    // Allow callers to provide `date` in the request body for student-specific deletes
+    const bodyDate = body.date ?? body.Date ?? body.DATE ? String(body.date || body.Date || body.DATE).slice(0, 10) : undefined;
+    // Prefer query `date` but fall back to bodyDate for single-student deletes
+    const effectiveDate = date ? String(date).slice(0, 10) : bodyDate;
+
+    // Log inputs to help diagnose mismatched shapes from frontend
+    console.log('DELETE /api/attendance incoming', { query: req.query, body: body });
     
-    // Handle delete specific student attendance
-    if (req.body && student_id && date) {
-      console.log(`🗑️ Request to delete attendance for student ${student_id} on ${date}`);
+    // Handle delete specific student attendance (accept date from body or query, and accept student id in body or query)
+    if (effectiveStudentId && effectiveDate) {
+      console.log(`🗑️ Request to delete attendance for student ${effectiveStudentId} on ${effectiveDate}`);
       
       const whereClause = { 
-        studentId: student_id,
-        date: date
+        studentId: effectiveStudentId,
+        date: effectiveDate
       };
       
-      if (section_id) {
-        whereClause.sectionId = section_id;
+      // Prefer explicit body section_id, fall back to query sectionId
+      const effectiveSection = section_id || sectionId;
+      if (effectiveSection) {
+        whereClause.sectionId = effectiveSection;
       }
       
       const deletedCount = await Attendance.destroy({ where: whereClause });
       
-      console.log(`✅ Deleted ${deletedCount} attendance record(s) for student ${student_id}`);
+      console.log(`✅ Deleted ${deletedCount} attendance record(s) for student ${effectiveStudentId}`);
       
       return res.json({ 
         message: 'Student attendance record deleted successfully',
@@ -243,29 +257,47 @@ router.delete('/', async (req, res) => {
       });
     }
     
-    // Handle delete by date/section
-    if (!date) {
+    // Handle delete by date/section (date may have come from query or earlier bodyDate fallback)
+    if (!effectiveDate) {
       return res.status(400).json({ message: 'date is required' });
     }
+
+    // Normalize date to YYYY-MM-DD (defensive)
+    date = String(effectiveDate).slice(0, 10);
 
     const whereClause = { date };
 
     // Only filter by section if sectionId is provided
-    if (sectionId) {
+    if (typeof sectionId !== 'undefined' && sectionId !== null && String(sectionId).trim() !== '') {
       // Resolve section by name if necessary
-      if (isNaN(sectionId)) {
-        const section = await findSectionByName(sectionId);
-        if (!section) return res.status(400).json({ message: `Section "${sectionId}" not found` });
-        sectionId = section.id;
+      try {
+        if (isNaN(sectionId)) {
+          const section = await findSectionByName(sectionId);
+          if (!section) return res.status(400).json({ message: `Section "${sectionId}" not found` });
+          sectionId = section.id;
+        }
+        // Ensure sectionId is a string (model stores IDs as strings in many places)
+        sectionId = String(sectionId);
+        whereClause.sectionId = sectionId;
+      } catch (e) {
+        console.error('Error resolving sectionId for deletion:', e);
+        return res.status(500).json({ message: 'Failed to resolve sectionId', error: e.message });
       }
-      whereClause.sectionId = sectionId;
     }
 
-    const deletedCount = await Attendance.destroy({ where: whereClause });
-    return res.json({ 
-      message: sectionId ? 'Attendance records deleted for section' : 'Attendance records deleted for all sections', 
-      deletedCount 
-    });
+    // Log the delete action for debugging
+    console.log('Deleting attendance records with whereClause:', whereClause);
+
+    try {
+      const deletedCount = await Attendance.destroy({ where: whereClause });
+      return res.json({ 
+        message: whereClause.sectionId ? 'Attendance records deleted for section' : 'Attendance records deleted for all sections', 
+        deletedCount 
+      });
+    } catch (e) {
+      console.error('Sequelize error while deleting attendance records:', e);
+      return res.status(500).json({ message: 'Failed to delete attendance records', error: e.message });
+    }
   } catch (error) {
     console.error('Error deleting attendance:', error);
     res.status(500).json({ 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Typography, Button, Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions, Box, Chip, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import FilterDrawer from '../components/students/FilterDrawer';
+import { useSnackbar } from 'notistack';
 import { Student } from '../types/student';
 import { useSections } from '../contexts/SectionsContext';
 import { useStudents } from '../contexts/StudentsContext';
@@ -103,6 +104,7 @@ function StudentManagement() {
   const { sections, currentSection, setCurrentSection } = useSections();
   const { students, deleteStudent, isLoading, fetchStudents, updateStudentLocal } = useStudents();
   const { recommendedSectionId, displayMessage, isTeachingTime } = useCurrentLesson();
+  const { enqueueSnackbar } = useSnackbar();
 
   // لا نطبق اختيار القسم الذكي تلقائياً - المستخدم يختار بنفسه
   useEffect(() => {
@@ -699,31 +701,29 @@ function StudentManagement() {
 
   // دالة إلغاء الغياب لطالب معين
   const handleCancelAbsence = async (studentId: number) => {
-    if (!window.confirm('هل تريد إلغاء غياب هذا الطالب وتسجيله كحاضر؟')) {
-      return;
-    }
-
+    // No browser confirmation required; perform delete and show a toast notification
     try {
       const today = new Date().toISOString().split('T')[0];
-      
-      // حذف سجل الغياب الحالي
-      const deleteResponse = await fetch(`http://localhost:3000/api/attendance`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          student_id: studentId, 
-          date: today,
-          section_id: currentSection?.id 
-        }),
+
+      // Use query params for DELETE to avoid some clients/proxies stripping DELETE bodies
+      const params = new URLSearchParams();
+      params.set('student_id', String(studentId));
+      params.set('date', today);
+      if (currentSection?.id) params.set('sectionId', String(currentSection.id));
+
+      const deleteUrl = `http://localhost:3000/api/attendance?${params.toString()}`;
+      const deleteResponse = await fetch(deleteUrl, {
+        method: 'DELETE'
       });
 
       if (!deleteResponse.ok) {
-        throw new Error('Failed to delete absence record');
+        const bodyText = await deleteResponse.text().catch(() => '');
+        throw new Error(`Failed to delete absence record: ${deleteResponse.status} ${bodyText}`);
       }
 
       // تسجيل الطالب كحاضر
       const attendanceData = [{
-        student_id: studentId,
+        studentId: studentId,
         isPresent: true,
         sectionId: currentSection?.id,
         date: today,
@@ -736,28 +736,30 @@ function StudentManagement() {
       });
 
       if (!saveResponse.ok) {
-        throw new Error('Failed to save new attendance record');
+        const bodyText = await saveResponse.text().catch(() => '');
+        throw new Error(`Failed to save new attendance record: ${saveResponse.status} ${bodyText}`);
       }
 
       // تحديث القائمة المحلية
       const updatedAbsentStudents = absentStudents.filter(s => s.id !== studentId);
       setAbsentStudents(updatedAbsentStudents);
-      
+
       // إذا لم يعد هناك غائبين، أغلق النافذة
       if (updatedAbsentStudents.length === 0) {
         setShowAbsentListModal(false);
       }
 
-      alert('تم إلغاء الغياب وتسجيل الطالب كحاضر بنجاح.');
-      
+      // Show a small toast instead of browser confirm/alert
+      enqueueSnackbar('تم إلغاء الغياب وتسجيل الطالب كحاضر بنجاح.', { variant: 'success' });
+
       // تحديث بيانات الطلاب
       fetchStudents();
-    // تحديث مؤشر حالة الغياب بعد التغيير
-    try { checkTodaysAttendance(); } catch (e) { /* ignore */ }
+      // تحديث مؤشر حالة الغياب بعد التغيير
+      try { checkTodaysAttendance(); } catch (e) { /* ignore */ }
 
     } catch (error) {
       console.error('Error canceling absence:', error);
-      alert('فشل في إلغاء الغياب.');
+      enqueueSnackbar('فشل في إلغاء الغياب. تحقق من الاتصال وحاول مجدداً.', { variant: 'error' });
     }
   };
 
