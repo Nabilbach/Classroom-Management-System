@@ -13,7 +13,7 @@ import StudentTable from '../components/students/StudentTable';
 import StudentDetailModal from '../components/students/StudentDetailModal';
 import BackToTopButton from '../components/BackToTopButton';
 import QuickEvaluation from '../components/evaluation/QuickEvaluation';
-import BulkEvaluation from '../components/evaluation/BulkEvaluation';
+// حذف الاستيراد الخاص بتقييم البولك
 import StudentTableSkeleton from '../components/students/StudentTableSkeleton';
 import StudentCardSkeleton from '../components/students/StudentCardSkeleton';
 import ExcelUploadModal from '../components/students/ExcelUploadModal';
@@ -170,7 +170,7 @@ function StudentManagement() {
   const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState<boolean>(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isExcelUploadModalOpen, setIsExcelUploadModalOpen] = useState<boolean>(false);
-  const [isBulkEvalOpen, setIsBulkEvalOpen] = useState<boolean>(false);
+  // حذف حالة نافذة البولك
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState<boolean>(false);
   const [confirmModalMessage, setConfirmModalMessage] = useState<string>('');
   const [confirmModalAction, setConfirmModalAction] = useState<(() => void) | null>(null);
@@ -184,8 +184,9 @@ function StudentManagement() {
   // Attendance State
   const [isAttendanceMode, setIsAttendanceMode] = useState(false);
   const [attendanceStatus, setAttendanceStatus] = useState<Record<string, boolean>>({});
-  // indicator for whether today's attendance is recorded for the current section
+  // نسبة الحضور والغياب منذ بداية التسجيل
   const [hasAttendanceToday, setHasAttendanceToday] = useState<boolean | null>(null);
+  const [attendanceStats, setAttendanceStats] = useState<{ present: number; absent: number; total: number }>({ present: 0, absent: 0, total: 0 });
   const [showAbsentListModal, setShowAbsentListModal] = useState(false);
   const [absentStudents, setAbsentStudents] = useState<Student[]>([]);
 
@@ -640,27 +641,44 @@ function StudentManagement() {
   };
 
   // Check if attendance has been recorded for the current section today
-  const checkTodaysAttendance = useCallback(async () => {
+  // دالة لجلب كل سجلات الحضور للقسم وحساب النسب
+  const checkAttendanceStats = useCallback(async () => {
     if (!currentSection) {
       setHasAttendanceToday(null);
+      setAttendanceStats({ present: 0, absent: 0, total: 0 });
       return;
     }
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const resp = await fetch(`http://localhost:3000/api/attendance?date=${today}&sectionId=${encodeURIComponent(String(currentSection.id))}`);
-      if (!resp.ok) { setHasAttendanceToday(null); return; }
+      const resp = await fetch(`http://localhost:3000/api/attendance?sectionId=${encodeURIComponent(String(currentSection.id))}`);
+      if (!resp.ok) {
+        setHasAttendanceToday(null);
+        setAttendanceStats({ present: 0, absent: 0, total: 0 });
+        return;
+      }
       const data = await resp.json();
       const records = Array.isArray(data) ? data : (data.value || data.records || []);
-      setHasAttendanceToday((records || []).length > 0);
+      // احسب فقط سجلات القسم الحالي
+      const sectionRecords = records.filter(r => String(r.sectionId) === String(currentSection.id));
+      let present = 0, absent = 0;
+      for (const rec of sectionRecords) {
+        if (rec.isPresent) present++;
+        else absent++;
+      }
+      setAttendanceStats({ present, absent, total: sectionRecords.length });
+      // نسبة اليوم فقط (للتوافق مع الكود القديم)
+      const today = new Date().toISOString().split('T')[0];
+      const todayRecords = records.filter(r => r.date === today);
+      setHasAttendanceToday(todayRecords.length > 0);
     } catch (e) {
-      console.warn('Failed to check todays attendance', e);
+      console.warn('Failed to check attendance stats', e);
       setHasAttendanceToday(null);
+      setAttendanceStats({ present: 0, absent: 0, total: 0 });
     }
   }, [currentSection]);
 
   useEffect(() => {
-    checkTodaysAttendance();
-  }, [checkTodaysAttendance]);
+    checkAttendanceStats();
+  }, [checkAttendanceStats]);
 
   const handleSaveAttendance = async () => {
     if (!currentSection) return;
@@ -783,9 +801,7 @@ function StudentManagement() {
               <Button onClick={() => setIsExcelUploadModalOpen(true)} variant="outlined" color="primary">
                 رفع Excel
               </Button>
-              <Button onClick={() => setIsBulkEvalOpen(true)} variant="contained" color="primary">
-                تقييم الكل (بلوك)
-              </Button>
+              {/* زر تقييم البولك تم حذفه */}
               <Button onClick={handleDeleteAllStudents} color="error" variant="outlined" sx={{ fontWeight: 'bold' }}>
                 حذف جميع الطلاب
               </Button>
@@ -839,7 +855,30 @@ function StudentManagement() {
       {/* Statistic Cards */}
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 mt-2">
                 <Card onClick={openFollowupDialog} className="bg-blue-50 p-4 cursor-pointer hover:shadow-lg"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">متابعات مفتوحة</Typography><ChartBarIcon className="h-5 w-5 text-blue-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{sectionFollowupCount}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">عدد المتابعات المفتوحة · متوسط القسم: {Number(averageScore).toFixed(1)}</Typography></CardContent></Card>
-                <Card onClick={() => { setQuickFilter({ type: 'top', label: 'المتفوقون (18+)' }); /* apply in-memory filter below */ }} className="bg-green-50 p-4 cursor-pointer"><CardContent className="p-0"><div className="flex items-center justify-between mb-2"><Typography variant="h6" color="textPrimary">المتفوقون</Typography><UserGroupIcon className="h-5 w-5 text-green-600" /></div><Typography variant="h4" color="textPrimary" className="font-bold" sx={{ fontWeight: 'bold' }}>{topStudents}</Typography><Typography variant="body2" color="textSecondary" className="mt-1">18+ نقطة</Typography></CardContent></Card>
+                {/* بطاقة نظرة عامة عن القسم */}
+                <Card className="bg-green-50 p-4 cursor-pointer hover:shadow-lg">
+                  <CardContent className="p-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <Typography variant="h6" color="textPrimary">نظرة عامة على القسم</Typography>
+                      <UserGroupIcon className="h-5 w-5 text-green-600" />
+                    </div>
+                    <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 'bold', mb: 1 }}>
+                      المعدل العام: {Number(averageScore).toFixed(1)}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                      نسبة الحضور: {attendanceStats.total > 0 ? Math.round((attendanceStats.present/attendanceStats.total)*100) : 0}%
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                      نسبة الغياب: {attendanceStats.total > 0 ? Math.round((attendanceStats.absent/attendanceStats.total)*100) : 0}%
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                      نسبة المتابعات: {sectionFollowupCount}/{sectionStudents.length} ({sectionStudents.length > 0 ? Math.round((sectionFollowupCount/sectionStudents.length)*100) : 0}%)
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                      التطور عن الأسبوع الماضي: {/* يمكن حسابه بدقة لاحقًا */} قيد التطوير
+                    </Typography>
+                  </CardContent>
+                </Card>
                 <Card onClick={() => {
                   // prepare full leaderboard and open dialog
                   const list = sectionStudents.slice().sort((a,b) => {
@@ -1146,18 +1185,7 @@ function StudentManagement() {
     />
   </Dialog>
   {/* Bulk evaluation dialog */}
-  <BulkEvaluation
-    open={isBulkEvalOpen}
-    onClose={() => setIsBulkEvalOpen(false)}
-    sectionStudents={sectionStudents.map(s => ({ id: Number(s.id), name: `${s.firstName} ${s.lastName}` }))}
-    sectionName={currentSection?.name}
-    onDone={async (result) => {
-      console.log('Bulk evaluation finished', result);
-      // refresh students to show updated XP/assessments
-      try { await fetchStudents(); } catch (e) { console.warn('Failed to refresh students after bulk eval', e); }
-      setIsBulkEvalOpen(false);
-    }}
-  />
+  {/* نافذة تقييم البولك تم حذفها */}
       <ExcelUploadModal isOpen={isExcelUploadModalOpen} onClose={() => setIsExcelUploadModalOpen(false)} />
       <AbsentStudentsModal 
         isOpen={showAbsentListModal} 
