@@ -113,16 +113,28 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess }: StudentC
     const controller = new AbortController();
     const fetchLatest = async () => {
       try {
-        if (student.assessments && student.assessments.length > 0) return; // already present
+        if (student.assessments && student.assessments.length > 0) {
+          console.log('🔍 Student already has assessments:', student.id, student.assessments);
+          return; // already present
+        }
+        console.log('🔍 Fetching assessments for student:', student.id);
         const res = await fetch(`http://localhost:3000/api/students/${student.id}/assessments`, { signal: controller.signal });
-        if (!res.ok) return;
+        if (!res.ok) {
+          console.log('❌ Failed to fetch assessments:', res.status);
+          return;
+        }
         const arr = await res.json();
+        console.log('✅ Assessments received:', arr);
         if (!mounted) return;
         if (Array.isArray(arr) && arr.length > 0) {
           // API returns assessments ordered desc (server-side), take first
+          console.log('📊 Latest assessment:', arr[0]);
           setLatestAssessment(arr[0]);
+        } else {
+          console.log('⚠️ No assessments found for student:', student.id);
         }
       } catch (e) {
+        console.log('❌ Error fetching assessments:', e);
         // ignore abort or fetch errors
       }
     };
@@ -133,15 +145,22 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess }: StudentC
   let attendancePoints = '—', notebookPoints = '—', homeworkPoints = '—', behaviorPoints = '—';
   let lastScore = 'N/A';
   const latest = (student.assessments && student.assessments.length > 0) ? student.assessments[student.assessments.length - 1] : latestAssessment;
+  
   if (latest && latest.scores) {
-    const att = latest.scores.attendance ?? latest.scores.presence ?? latest.scores['حضور'];
-    attendancePoints = (att !== undefined && att !== null && att !== '') ? att : '—';
-    const nb = latest.scores.notebook ?? latest.scores['دفتر'];
-    notebookPoints = (nb !== undefined && nb !== null && nb !== '') ? nb : '—';
-    const hw = latest.scores.homework ?? latest.scores['واجب'] ?? latest.scores.assignments;
-    homeworkPoints = (hw !== undefined && hw !== null && hw !== '') ? hw : '—';
-    const bh = latest.scores.behavior ?? latest.scores['سلوك'];
-    behaviorPoints = (bh !== undefined && bh !== null && bh !== '') ? bh : '—';
+    // Extract scores using actual database field names (with _score suffix)
+    const att = latest.scores.attendance_score ?? latest.scores.attendance ?? latest.scores.presence ?? latest.scores['حضور'];
+    attendancePoints = (att !== undefined && att !== null && att !== '') ? String(att) : '—';
+    
+    const nb = latest.scores.notebook_score ?? latest.scores.notebook ?? latest.scores['دفتر'];
+    notebookPoints = (nb !== undefined && nb !== null && nb !== '') ? String(nb) : '—';
+    
+    // portfolio_score is used for homework/assignments in QuickEvaluation
+    const hw = latest.scores.portfolio_score ?? latest.scores.homework_score ?? latest.scores.homework ?? latest.scores['واجب'] ?? latest.scores.assignments;
+    homeworkPoints = (hw !== undefined && hw !== null && hw !== '') ? String(hw) : '—';
+    
+    const bh = latest.scores.behavior_score ?? latest.scores.behavior ?? latest.scores['سلوك'];
+    behaviorPoints = (bh !== undefined && bh !== null && bh !== '') ? String(bh) : '—';
+    
     lastScore = typeof latest.new_score !== 'undefined' ? `${latest.new_score}%` : (typeof latest.score !== 'undefined' ? `${latest.score}%` : (student.score !== undefined ? `${student.score}%` : 'N/A'));
   } else {
     lastScore = student.score !== undefined ? `${student.score}%` : 'N/A';
