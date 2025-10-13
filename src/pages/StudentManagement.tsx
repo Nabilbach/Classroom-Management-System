@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Typography, Button, Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions, Box, Chip, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import FilterDrawer from '../components/students/FilterDrawer';
 import { useSnackbar } from 'notistack';
@@ -229,6 +230,8 @@ function StudentManagement() {
     load();
   }, []);
 
+  const navigate = useNavigate();
+
   // Tick every 30s to refresh countdowns
   useEffect(() => {
     const t = setInterval(() => setNowTick(Date.now()), 30000);
@@ -287,11 +290,12 @@ function StudentManagement() {
         mode: 'active' as const,
         text: `أنت الآن في حصة مع قسم: ${secName} · بقي على إنتهاء الحصة: ${niceRemaining(rem)} · القسم التالي: ${nextName}`,
         color: '#ef4444', // red-500
+        targetSectionId: active.sectionId,
       };
     }
 
     if (!next) {
-      return { mode: 'none' as const, text: 'لا توجد حصص متبقية اليوم', color: '#9e9e9e' };
+      return { mode: 'none' as const, text: 'لا توجد حصص متبقية اليوم', color: '#9e9e9e', targetSectionId: undefined };
     }
 
     const secName = sections.find(s => String(s.id) === String(next.sectionId))?.name || String(next.sectionId);
@@ -301,6 +305,7 @@ function StudentManagement() {
       mode: 'idle' as const,
       text: `الحصة القادمة: ${secName} · ${startLabel}-${endLabel}`,
       color: '#3b82f6', // blue-500
+      targetSectionId: next.sectionId,
     };
   }, [todayScheduleSorted, nowTick, sections]);
 
@@ -954,8 +959,8 @@ function StudentManagement() {
       </div>
 
       {/* Schedule Alert Banner under tabs */}
-      <div className="w-full mb-3 px-2">
-        <div className="flex items-center gap-3 rounded-md border border-gray-200 bg-white px-3 py-2 shadow-sm" dir="rtl">
+      <div className="w-full mb-3 px-0">
+        <div className="flex items-center justify-start gap-3 rounded-md border border-gray-200 bg-white px-0 py-2 shadow-sm" dir="ltr">
           <div className="relative h-3 w-3">
             {scheduleBanner.mode === 'active' ? (
               <>
@@ -966,7 +971,29 @@ function StudentManagement() {
               <span className="relative inline-flex rounded-full h-3 w-3" style={{ backgroundColor: scheduleBanner.color }}></span>
             )}
           </div>
-          <Typography variant="body1" sx={{ fontWeight: 600 }}>{scheduleBanner.text}</Typography>
+          <Typography variant="body1" sx={{ fontWeight: 600, textAlign: 'left', ml: 2 }}>{scheduleBanner.text}</Typography>
+          <div style={{ marginLeft: 'auto' }}>
+            <Button
+              size="small"
+              variant="outlined"
+              color="primary"
+              onClick={() => {
+                try {
+                  const target = (scheduleBanner as any).targetSectionId;
+                  if (target) {
+                    navigate(`/learning-progress?section=${encodeURIComponent(String(target))}`);
+                  } else {
+                    navigate('/learning-progress');
+                  }
+                } catch (e) {
+                  navigate('/learning-progress');
+                }
+              }}
+              sx={{ mr: 0 }}
+            >
+              انتقال إلى إدارة التعلم
+            </Button>
+          </div>
         </div>
       </div>
 
