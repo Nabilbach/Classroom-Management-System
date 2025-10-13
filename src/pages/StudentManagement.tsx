@@ -708,8 +708,9 @@ function StudentManagement() {
       setAbsentStudents(absent);
       setShowAbsentListModal(true);
       setIsAttendanceMode(false);
-      // تحديث حالة تسجيل الغياب للعرض
-      checkTodaysAttendance();
+  // تحديث حالة تسجيل الغياب للعرض
+  // use existing checkAttendanceStats() helper to refresh today's attendance summary
+  try { await checkAttendanceStats(); } catch (e) { /* ignore */ }
 
     } catch (error) {
       console.error('Error saving attendance:', error);
@@ -772,8 +773,8 @@ function StudentManagement() {
 
       // تحديث بيانات الطلاب
       fetchStudents();
-      // تحديث مؤشر حالة الغياب بعد التغيير
-      try { checkTodaysAttendance(); } catch (e) { /* ignore */ }
+  // تحديث مؤشر حالة الغياب بعد التغيير
+  try { await checkAttendanceStats(); } catch (e) { /* ignore */ }
 
     } catch (error) {
       console.error('Error canceling absence:', error);
