@@ -314,23 +314,46 @@ app.get('/api/students', async (req, res) => {
     res.json(studentsWithScores);
   } catch (error) {
     console.error('Error retrieving students:', error);
-    res.status(500).json({ message: 'Error retrieving students', error: error.message, stack: error.stack });
+    res.status(500).json({ 
+      success: false,
+      message: 'خطأ في جلب بيانات الطلاب',
+      error: error.message, 
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+    });
   }
 });
 
 app.get('/api/students/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'رقم الطالب غير صحيح',
+        error: 'Valid student ID is required' 
+      });
+    }
+
     const student = await db.Student.findByPk(id);
     if (student) {
       const score = await getCurrentScore(student.id);
       res.json({ ...student.toJSON(), score });
     } else {
-      res.status(404).json({ message: 'Student not found' });
+      res.status(404).json({ 
+        success: false,
+        message: 'الطالب غير موجود',
+        error: 'Student not found' 
+      });
     }
   } catch (error) {
     console.error('Error retrieving student:', error);
-    res.status(500).json({ message: 'Error retrieving student', error: error.message, stack: error.stack });
+    res.status(500).json({ 
+      success: false,
+      message: 'خطأ في جلب بيانات الطالب',
+      error: error.message, 
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+    });
   }
 });
 
@@ -355,20 +378,41 @@ app.post('/api/students', async (req, res) => {
     const sectionId = sectionIdRaw != null ? String(sectionIdRaw) : null;
 
     if (!firstName || !lastName) {
-      return res.status(400).json({ message: 'firstName and lastName are required.' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'الاسم الأول والأخير مطلوبان',
+        error: 'firstName and lastName are required' 
+      });
     }
     const payload = { firstName, lastName, pathwayNumber, birthDate, classOrder, gender, sectionId };
     const newStudent = await db.Student.create(payload);
     res.status(201).json(newStudent);
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({ message: 'Duplicate pathway number detected. Ensure pathwayNumber is unique or blank.', error: error.message, stack: error.stack });
+      return res.status(400).json({ 
+        success: false,
+        message: 'رقم المسار مكرر. يجب أن يكون رقم المسار فريداً',
+        error: 'Duplicate pathway number detected',
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+      });
     }
     const errMsg = `${error?.message || ''} ${error?.original?.message || ''}`;
     if (error instanceof SequelizeLib.ForeignKeyConstraintError || error.name === 'SequelizeForeignKeyConstraintError' || /FOREIGN KEY constraint failed/i.test(errMsg)) {
-      return res.status(400).json({ message: 'Invalid sectionId. Please choose an existing section.', error: error.message, stack: error.stack });
+      return res.status(400).json({ 
+        success: false,
+        message: 'القسم المحدد غير موجود. اختر قسماً صحيحاً',
+        error: 'Invalid sectionId',
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+      });
     }
-    res.status(500).json({ message: 'Error creating student', error: error.message, stack: error.stack });
+    res.status(500).json({ 
+      success: false,
+      message: 'خطأ في إنشاء الطالب',
+      error: error.message, 
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+    });
   }
 });
 
@@ -558,15 +602,33 @@ app.post('/api/students/bulk', async (req, res) => {
 app.put('/api/students/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'رقم الطالب غير صحيح',
+        error: 'Valid student ID is required' 
+      });
+    }
+
     const [updated] = await db.Student.update(req.body, { where: { id } });
     if (updated) {
       const updatedStudent = await db.Student.findByPk(id);
       res.json(updatedStudent);
     } else {
-      res.status(404).json({ message: 'Student not found' });
+      res.status(404).json({ 
+        success: false,
+        message: 'الطالب غير موجود',
+        error: 'Student not found' 
+      });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Error updating student', error: error.message, stack: error.stack });
+    res.status(500).json({ 
+      success: false,
+      message: 'خطأ في تحديث بيانات الطالب',
+      error: error.message, 
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+    });
   }
 });
 
@@ -589,14 +651,32 @@ app.patch('/api/students/:id', async (req, res) => {
 app.delete('/api/students/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'رقم الطالب غير صحيح',
+        error: 'Valid student ID is required' 
+      });
+    }
+
     const deleted = await db.Student.destroy({ where: { id } });
     if (deleted) {
       res.status(204).send();
     } else {
-      res.status(404).json({ message: 'Student not found' });
+      res.status(404).json({ 
+        success: false,
+        message: 'الطالب غير موجود',
+        error: 'Student not found' 
+      });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Error deleting student', error: error.message, stack: error.stack });
+    res.status(500).json({ 
+      success: false,
+      message: 'خطأ في حذف الطالب',
+      error: error.message, 
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+    });
   }
 });
 

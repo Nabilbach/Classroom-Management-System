@@ -18,8 +18,28 @@ router.post('/', async (req, res) => {
   try {
     const { attendance } = req.body;
 
+    if (!attendance) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'البيانات مفقودة: يجب إرسال حقل attendance',
+        error: 'Missing attendance field in request body' 
+      });
+    }
+
     if (!Array.isArray(attendance)) {
-      return res.status(400).json({ message: 'Invalid data format: expected attendance[]' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'صيغة البيانات غير صحيحة: يجب أن يكون attendance مصفوفة',
+        error: 'Invalid data format: expected attendance to be an array' 
+      });
+    }
+
+    if (attendance.length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'لا توجد بيانات للحفظ',
+        error: 'Empty attendance array' 
+      });
     }
 
     const results = [];
@@ -114,13 +134,30 @@ router.post('/', async (req, res) => {
     }
 
     if (errors.length > 0 && results.length === 0) {
-      return res.status(400).json({ message: 'No attendance records saved', errors });
+      return res.status(400).json({ 
+        success: false,
+        message: 'فشل حفظ جميع سجلات الحضور',
+        error: 'No attendance records saved', 
+        errors,
+        details: errors.map(e => e.error).join(', ')
+      });
     }
     // Return both successes and failures for visibility
-    res.status(errors.length ? 207 : 201).json({ saved: results.length, errors, records: results.map(r => r.toJSON?.() || r) });
+    res.status(errors.length ? 207 : 201).json({ 
+      success: true,
+      message: errors.length ? 'تم حفظ بعض السجلات مع وجود أخطاء' : 'تم حفظ جميع السجلات بنجاح',
+      saved: results.length, 
+      errors, 
+      records: results.map(r => r.toJSON?.() || r) 
+    });
   } catch (error) {
     console.error('Error saving attendance (fatal):', error);
-    res.status(500).json({ message: 'Failed to save attendance', error: error.message, stack: error.stack });
+    res.status(500).json({ 
+      success: false,
+      message: 'خطأ في الخادم: فشل حفظ الحضور', 
+      error: error.message, 
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+    });
   }
 });
 
@@ -137,7 +174,11 @@ router.get('/', async (req, res) => {
       if (isNaN(sectionId)) {
         const section = await findSectionByName(sectionId);
         if (!section) {
-          return res.status(400).json({ message: `Section "${sectionId}" not found` });
+          return res.status(400).json({ 
+            success: false,
+            message: `القسم "${sectionId}" غير موجود`,
+            error: `Section "${sectionId}" not found` 
+          });
         }
         whereClause.sectionId = section.id;
       } else {
@@ -176,10 +217,19 @@ router.get('/', async (req, res) => {
       };
     }));
 
-    res.json(recordsWithAbsences);
+    res.json({
+      success: true,
+      count: recordsWithAbsences.length,
+      records: recordsWithAbsences
+    });
   } catch (error) {
     console.error('Error in GET /api/attendance:', error);
-    res.status(500).json({ message: 'Error fetching attendance' });
+    res.status(500).json({ 
+      success: false,
+      message: 'خطأ في جلب بيانات الحضور',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
@@ -225,7 +275,8 @@ router.delete('/', async (req, res) => {
       console.log(`✅ Deleted ${deletedCount} attendance record(s) for student ${effectiveStudentId}`);
       
       return res.json({ 
-        message: 'Student attendance record deleted successfully',
+        success: true,
+        message: deletedCount > 0 ? 'تم حذف سجل الحضور بنجاح' : 'لم يتم العثور على سجلات للحذف',
         deletedCount 
       });
     }
@@ -259,7 +310,11 @@ router.delete('/', async (req, res) => {
     
     // Handle delete by date/section (date may have come from query or earlier bodyDate fallback)
     if (!effectiveDate) {
-      return res.status(400).json({ message: 'date is required' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'التاريخ مطلوب لحذف سجلات الحضور',
+        error: 'date parameter is required' 
+      });
     }
 
     // Normalize date to YYYY-MM-DD (defensive)
@@ -288,21 +343,19 @@ router.delete('/', async (req, res) => {
     // Log the delete action for debugging
     console.log('Deleting attendance records with whereClause:', whereClause);
 
-    try {
-      const deletedCount = await Attendance.destroy({ where: whereClause });
-      return res.json({ 
-        message: whereClause.sectionId ? 'Attendance records deleted for section' : 'Attendance records deleted for all sections', 
-        deletedCount 
-      });
-    } catch (e) {
-      console.error('Sequelize error while deleting attendance records:', e);
-      return res.status(500).json({ message: 'Failed to delete attendance records', error: e.message });
-    }
+    const deletedCount = await Attendance.destroy({ where: whereClause });
+    return res.json({ 
+      success: true,
+      message: `تم حذف ${deletedCount} سجل حضور بنجاح`,
+      deletedCount 
+    });
   } catch (error) {
     console.error('Error deleting attendance:', error);
     res.status(500).json({ 
-      message: 'Failed to delete attendance records',
-      error: error.message 
+      success: false,
+      message: 'خطأ في حذف سجلات الحضور',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -314,7 +367,11 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
     
     if (!id || isNaN(id)) {
-      return res.status(400).json({ message: 'Valid attendance record ID is required' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'رقم سجل الحضور غير صحيح',
+        error: 'Valid attendance record ID is required' 
+      });
     }
 
     const record = await Attendance.findByPk(id, {
@@ -335,7 +392,11 @@ router.get('/:id', async (req, res) => {
     });
 
     if (!record) {
-      return res.status(404).json({ message: 'Attendance record not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'سجل الحضور غير موجود',
+        error: 'Attendance record not found' 
+      });
     }
 
     // Add absence count for the student
@@ -351,12 +412,17 @@ router.get('/:id', async (req, res) => {
       absences: absenceCount
     };
 
-    res.json(recordWithAbsences);
+    res.json({
+      success: true,
+      record: recordWithAbsences
+    });
   } catch (error) {
     console.error('Error fetching attendance record by ID:', error);
     res.status(500).json({ 
-      message: 'Error fetching attendance record', 
-      error: error.message 
+      success: false,
+      message: 'خطأ في جلب سجل الحضور',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -368,13 +434,21 @@ router.put('/:id', async (req, res) => {
     const { isPresent, sectionId, date } = req.body;
 
     if (!id || isNaN(id)) {
-      return res.status(400).json({ message: 'Valid attendance record ID is required' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'رقم سجل الحضور غير صحيح',
+        error: 'Valid attendance record ID is required' 
+      });
     }
 
     // Find the existing record
     const record = await Attendance.findByPk(id);
     if (!record) {
-      return res.status(404).json({ message: 'Attendance record not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'سجل الحضور غير موجود',
+        error: 'Attendance record not found' 
+      });
     }
 
     // Validate and prepare update data
@@ -391,7 +465,11 @@ router.put('/:id', async (req, res) => {
       if (typeof sectionId === 'string' && isNaN(sectionId)) {
         const section = await findSectionByName(sectionId);
         if (!section) {
-          return res.status(400).json({ message: `Section "${sectionId}" not found` });
+          return res.status(400).json({ 
+            success: false,
+            message: `القسم "${sectionId}" غير موجود`,
+            error: `Section "${sectionId}" not found` 
+          });
         }
         validSectionId = section.id;
       }
@@ -414,7 +492,9 @@ router.put('/:id', async (req, res) => {
         
         if (existing) {
           return res.status(409).json({ 
-            message: 'Attendance record already exists for this student on the specified date' 
+            success: false,
+            message: 'يوجد سجل حضور آخر لهذا الطالب في نفس التاريخ',
+            error: 'Attendance record already exists for this student on the specified date' 
           });
         }
       }
@@ -456,15 +536,18 @@ router.put('/:id', async (req, res) => {
     };
 
     res.json({
-      message: 'Attendance record updated successfully',
+      success: true,
+      message: 'تم تحديث سجل الحضور بنجاح',
       record: recordWithAbsences
     });
 
   } catch (error) {
     console.error('Error updating attendance record:', error);
     res.status(500).json({ 
-      message: 'Error updating attendance record', 
-      error: error.message 
+      success: false,
+      message: 'خطأ في تحديث سجل الحضور',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -475,18 +558,27 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     
     if (!id || isNaN(id)) {
-      return res.status(400).json({ message: 'Valid attendance record ID is required' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'رقم سجل الحضور غير صحيح',
+        error: 'Valid attendance record ID is required' 
+      });
     }
 
     const record = await Attendance.findByPk(id);
     if (!record) {
-      return res.status(404).json({ message: 'Attendance record not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'سجل الحضور غير موجود',
+        error: 'Attendance record not found' 
+      });
     }
 
     await record.destroy();
     
     res.json({ 
-      message: 'Attendance record deleted successfully',
+      success: true,
+      message: 'تم حذف سجل الحضور بنجاح',
       deletedRecord: {
         id: record.id,
         studentId: record.studentId,
@@ -497,8 +589,10 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting attendance record:', error);
     res.status(500).json({ 
-      message: 'Error deleting attendance record', 
-      error: error.message 
+      success: false,
+      message: 'خطأ في حذف سجل الحضور',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
