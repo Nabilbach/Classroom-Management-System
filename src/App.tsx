@@ -4,6 +4,8 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import MainContent from './components/MainContent';
 import BackupStatusIndicator from './components/BackupStatusIndicator';
+import { usePreventSleepReload } from './hooks/usePreventSleepReload';
+import ConnectionStatus from './components/layout/ConnectionStatus';
 import { LessonLogProvider } from './contexts/LessonLogContext';
 
 // Pages
@@ -20,6 +22,8 @@ import SectionProgress from './pages/SectionProgress';
 import TextbookPage from './pages/TextbookPageSimple';
 
 function App() {
+  // Activate soft reconnect/sleep-resume protection
+  usePreventSleepReload();
   return (
     <Router
       future={{
@@ -27,10 +31,13 @@ function App() {
         v7_relativeSplatPath: true,
       }}
     >
-      <BackupStatusIndicator />
-      <div className="flex h-screen w-full overflow-x-hidden" dir="rtl">
+  <BackupStatusIndicator />
+  {/* Connection status indicator (shows briefly on disconnect/restore) */}
+  <ConnectionStatus />
+  {/* eslint-disable-next-line react/style-prop-object */}
+  <div className="flex h-screen w-full overflow-x-hidden" dir="rtl">
         {/* Main content first, sidebar on the right */}
-        <div className="flex-1 flex flex-col min-h-0 min-w-0 w-full transition-all duration-300" style={{ marginRight: 'var(--sidebar-width, 260px)' }}>
+  <div className="flex-1 flex flex-col min-h-0 min-w-0 w-full transition-all duration-300">
           <Header />
           <MainContent>
             <LessonLogProvider>

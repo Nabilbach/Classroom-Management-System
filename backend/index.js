@@ -73,6 +73,16 @@ app.get('/api/backup-status', async (req, res) => {
   }
 });
 
+// Health check endpoints used by frontend to perform soft reconnects
+app.head('/api/health', (req, res) => {
+  // respond quickly with 200 and no body
+  res.status(200).end();
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ success: true, status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Helper function to get the current score for a student
 const getCurrentScore = async (studentId) => {
   try {
