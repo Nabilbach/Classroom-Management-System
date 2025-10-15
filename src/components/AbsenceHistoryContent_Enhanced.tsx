@@ -100,7 +100,10 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
       try {
         const response = await fetch('http://localhost:3000/api/attendance');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const allRecords: AttendanceRecord[] = await response.json();
+        const data = await response.json();
+        
+        // Handle API response format: { success, count, records }
+        const allRecords: AttendanceRecord[] = data.records || (Array.isArray(data) ? data : []);
         
         const dates = [...new Set(allRecords.map((record) => record.date))];
         dates.sort((a, b) => b.localeCompare(a));
@@ -149,15 +152,21 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
       const response = await fetch(`http://localhost:3000/api/attendance?${params.toString()}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       
-      const data: AttendanceRecord[] = await response.json();
-      setRecords(data);
+      const data = await response.json();
+      // Handle API response format: { success, count, records }
+      const recordsArray: AttendanceRecord[] = data.records || (Array.isArray(data) ? data : []);
+      setRecords(recordsArray);
       
-      if (data.length === 0) {
+      if (recordsArray.length === 0) {
         setSearchMessage('لا توجد سجلات حضور للمعايير المحددة');
+      } else if (!data.records && !Array.isArray(data)) {
+        console.warn('API returned unexpected data format:', data);
+        setSearchMessage('تنسيق البيانات غير صحيح من الخادم');
       }
     } catch (error) {
       console.error('Error fetching attendance data:', error);
       setSearchMessage('خطأ في جلب البيانات. يرجى المحاولة مرة أخرى.');
+      setRecords([]); // Clear records on error
     } finally {
       setIsLoadingRecords(false);
     }
