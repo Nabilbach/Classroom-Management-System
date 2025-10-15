@@ -15,6 +15,7 @@ interface Student {
 
 interface StudentsContextType {
   students: Student[];
+  restoredFromCache?: boolean;
   addStudent: (student: Omit<Student, 'id'>) => Promise<void>;
   editStudent: (id: number, updatedData: Partial<Student>) => Promise<void>;
   deleteStudent: (id: number) => Promise<void>;
@@ -34,6 +35,7 @@ const API_URL = 'http://localhost:3000/api';
 export const StudentsProvider = ({ children }: StudentsProviderProps) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [restoredFromCache, setRestoredFromCache] = useState<boolean>(false);
 
   const fetchStudents = useCallback(async () => {
     setIsLoading(true);
@@ -62,6 +64,24 @@ export const StudentsProvider = ({ children }: StudentsProviderProps) => {
   useEffect(() => {
     if (didInitialFetchRef.current) return;
     didInitialFetchRef.current = true;
+
+    // Try restore from sessionStorage to avoid a full reload UX when resuming from sleep
+    try {
+      const raw = sessionStorage.getItem('cms_students_cache');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setStudents(parsed);
+          setRestoredFromCache(true);
+          // Still perform a background fetch to refresh data
+          fetchStudents();
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to restore students from sessionStorage', e);
+    }
+
     fetchStudents();
   }, [fetchStudents]);
 
@@ -146,9 +166,19 @@ export const StudentsProvider = ({ children }: StudentsProviderProps) => {
     setStudents(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
   };
 
+  // Persist to sessionStorage whenever students change
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('cms_students_cache', JSON.stringify(students));
+    } catch (e) {
+      // ignore storage errors
+    }
+  }, [students]);
+
   return (
     <StudentsContext.Provider value={{
       students,
+      restoredFromCache,
       addStudent,
       editStudent,
       deleteStudent,

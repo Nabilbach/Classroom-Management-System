@@ -6,6 +6,7 @@ import MainContent from './components/MainContent';
 import BackupStatusIndicator from './components/BackupStatusIndicator';
 import { usePreventSleepReload } from './hooks/usePreventSleepReload';
 import ConnectionStatus from './components/layout/ConnectionStatus';
+import RestoreNotice from './components/layout/RestoreNotice';
 import { LessonLogProvider } from './contexts/LessonLogContext';
 
 // Pages
@@ -34,6 +35,7 @@ function App() {
   <BackupStatusIndicator />
   {/* Connection status indicator (shows briefly on disconnect/restore) */}
   <ConnectionStatus />
+  <RestoreNotice />
   {/* eslint-disable-next-line react/style-prop-object */}
   <div className="flex h-screen w-full overflow-x-hidden" dir="rtl">
         {/* Main content first, sidebar on the right */}
