@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LessonTemplate, fetchLessonTemplates, addLessonTemplate, deleteLessonTemplate, deleteTemplatesByCourse } from '../services/api/lessonTemplateService';
+import { LessonTemplate, fetchLessonTemplates, addLessonTemplate, deleteLessonTemplate, deleteTemplatesByCourse } from '../services/api/lessonTemplateServiceDB';
 import { Box, Paper, Typography, TextField, InputAdornment, Accordion, AccordionSummary, AccordionDetails, List, ListItem, ListItemText, FormControl, InputLabel, Select, MenuItem, IconButton, Button } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
