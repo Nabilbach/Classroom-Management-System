@@ -41,15 +41,15 @@ const calculateLessonStatus = (stages: LessonStage[] | undefined): 'not-planned'
 const LessonCard = ({ lesson, onDoubleClick, onDelete, allScheduledLessons }: { lesson: AdaptedLesson, onDoubleClick: (lesson: AdaptedLesson) => void, onDelete: (lessonId: string) => void, allScheduledLessons: AdaptedLesson[] }) => {
   const displayStatus = useMemo(() => calculateLessonStatus(lesson.stages), [lesson.stages]);
 
-  const statusColorMap: { [key: string]: string } = {
-    'not-planned': '#E0E0E0', // Gray for not planned
-    planned: '#90CAF9',
-    'in-progress': '#FFD54F',
-    completed: '#A5D6A7',
-    cancelled: '#EF9A9A',
+  const statusColorMap: { [key: string]: { bg: string, border: string, text: string } } = {
+    'not-planned': { bg: '#f3f4f6', border: '#d1d5db', text: '#6b7280' },
+    planned: { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' },
+    'in-progress': { bg: '#fef3c7', border: '#f59e0b', text: '#92400e' },
+    completed: { bg: '#d1fae5', border: '#10b981', text: '#065f46' },
+    cancelled: { bg: '#fee2e2', border: '#ef4444', text: '#991b1b' },
   };
 
-  const borderColor = statusColorMap[displayStatus] || '#E0E0E0';
+  const statusColors = statusColorMap[displayStatus] || statusColorMap['not-planned'];
 
   const sessionNumber = useMemo(() => {
     if (typeof lesson.manualSessionNumber === 'number') {
@@ -88,63 +88,125 @@ const LessonCard = ({ lesson, onDoubleClick, onDelete, allScheduledLessons }: { 
         e.dataTransfer.setData('application/json', JSON.stringify({ type: 'lesson', lessonId: lesson.id }));
       }}
       sx={{
-        p: 1,
+        p: 1.5,
         mb: 1.5,
-        borderRadius: '8px',
-        borderLeft: `4px solid ${borderColor}`,
-        border: '1px solid',
-        borderColor: 'grey.300',
-        cursor: 'pointer',
-        boxShadow: 3,
-        '&:hover': { boxShadow: 6 },
-        transition: 'box-shadow 0.3s ease-in-out, border-color 0.3s ease-in-out',
+        borderRadius: '12px',
+        background: `linear-gradient(135deg, ${statusColors.bg} 0%, #ffffff 100%)`,
+        border: '2px solid',
+        borderColor: statusColors.border,
+        cursor: 'grab',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: '4px',
+          bgcolor: statusColors.border,
+        },
+        '&:active': {
+          cursor: 'grabbing',
+          transform: 'scale(0.98)'
+        },
+        '&:hover': { 
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+          transform: 'translateY(-2px)',
+          borderColor: statusColors.border,
+        },
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', fontSize: '0.875rem' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+        <Typography 
+          variant="subtitle2" 
+          sx={{ 
+            fontWeight: 'bold', 
+            fontSize: '0.9rem',
+            color: statusColors.text,
+            pr: 1
+          }}
+        >
           {lesson.lessonTitle}
         </Typography>
         {sessionNumber !== null && (
-          <Typography
-            variant="caption"
+          <Box
             sx={{
-              ml: 1, // margin left
-              bgcolor: 'primary.main',
+              background: `linear-gradient(135deg, ${statusColors.border} 0%, ${statusColors.text} 100%)`,
               color: 'white',
-              px: 0.8,
-              py: 0.2,
-              borderRadius: '4px',
+              px: 1.2,
+              py: 0.4,
+              borderRadius: '20px',
               fontWeight: 'bold',
               fontSize: '0.7rem',
               whiteSpace: 'nowrap',
+              boxShadow: `0 2px 4px ${statusColors.border}40`,
             }}
           >
             حصة {sessionNumber}
-          </Typography>
+          </Box>
         )}
-        <IconButton onClick={() => onDelete(lesson.id)} size="small" color="error" sx={{ p: 0 }}>
+        <IconButton 
+          onClick={() => onDelete(lesson.id)} 
+          size="small"
+          sx={{ 
+            p: 0.5,
+            color: '#ef4444',
+            bgcolor: 'rgba(239, 68, 68, 0.1)',
+            '&:hover': {
+              bgcolor: '#ef4444',
+              color: 'white',
+              transform: 'rotate(90deg)'
+            },
+            transition: 'all 0.3s ease'
+          }}
+        >
           <DeleteIcon fontSize="small" />
         </IconButton>
       </Box>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
-        {lesson.subject} - {lesson.estimatedSessions} sessions
+      
+      <Typography 
+        variant="caption" 
+        sx={{ 
+          display: 'block', 
+          mt: 1,
+          color: 'text.secondary',
+          fontSize: '0.75rem'
+        }}
+      >
+        📖 {lesson.subject} • {lesson.estimatedSessions} حصص
       </Typography>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.5 }}>
-        <Typography variant="caption" sx={{
-          bgcolor: statusColorMap[displayStatus],
-          color: 'white',
-          px: 0.8,
-          py: 0.2,
-          borderRadius: '4px',
-          fontWeight: 'bold',
-          fontSize: '0.7rem',
-          whiteSpace: 'nowrap',
-        }}>
+      
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+        <Box
+          sx={{
+            bgcolor: statusColors.bg,
+            color: statusColors.text,
+            px: 1,
+            py: 0.3,
+            borderRadius: '6px',
+            fontWeight: 'bold',
+            fontSize: '0.7rem',
+            whiteSpace: 'nowrap',
+            border: `1px solid ${statusColors.border}`,
+          }}
+        >
           {statusTextMap[displayStatus]}
-        </Typography>
-        <Box sx={{ width: '60%', bgcolor: 'grey.300', borderRadius: '9999px', height: '6px' }}>
+        </Box>
+        
+        <Box sx={{ 
+          flex: 1, 
+          mx: 1.5,
+          bgcolor: '#e5e7eb', 
+          borderRadius: '9999px', 
+          height: '8px',
+          overflow: 'hidden',
+          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+        }}>
           <Box sx={{
-            bgcolor: 'primary.main',
+            background: `linear-gradient(90deg, ${statusColors.border} 0%, ${statusColors.text} 100%)`,
             height: '100%',
             borderRadius: 'inherit',
             width: `${lesson.progress}%`,
@@ -415,22 +477,104 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
 
   return (
     <Box sx={{ p: 2 }}>
+      {/* Enhanced Calendar Header */}
+      <Box sx={{ 
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '12px',
+        p: 2,
+        mb: 3,
+        boxShadow: '0 4px 16px rgba(102, 126, 234, 0.2)'
+      }}>
+        <Typography 
+          variant="h6" 
+          sx={{ 
+            color: 'white', 
+            fontWeight: 'bold',
+            textAlign: 'center'
+          }}
+        >
+          📅 جدول التقويم الأسبوعي
+        </Typography>
+      </Box>
+      
       <Box sx={{ display: 'block' }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '100px repeat(6, 1fr)', gap: '4px', minWidth: '100%', overflowY: 'auto', overflowX: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
-          <Paper sx={{ textAlign: 'center', fontWeight: 'bold', position: 'sticky', top: 0, right: 0, bgcolor: 'background.paper', zIndex: 10, p: 1 }}>الأقسام</Paper>
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: '140px repeat(6, 1fr)', 
+          gap: '4px', 
+          minWidth: '100%', 
+          overflowY: 'auto', 
+          overflowX: 'auto', 
+          maxHeight: 'calc(100vh - 160px)',
+          bgcolor: '#f9fafb',
+          p: 1,
+          borderRadius: '12px'
+        }}>
+          {/* Header - القسم */}
+          <Paper sx={{ 
+            textAlign: 'center', 
+            fontWeight: 'bold', 
+            position: 'sticky', 
+            top: 0, 
+            right: 0, 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            zIndex: 10, 
+            p: 1.5,
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
+          }}>
+            🏫 الأقسام
+          </Paper>
+          
+          {/* Headers - الأيام */}
           {weekDays.map(dayDate => (
-              <Paper key={dayDate.toISOString()} sx={{ textAlign: 'center', fontWeight: 'bold', position: 'sticky', top: 0, bgcolor: 'background.paper', zIndex: 9, p: 1 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{format(dayDate, 'EEEE', { locale: ar })}</Typography>
-                  <Typography variant="body2" sx={{ fontSize: '0.85rem', color: 'text.secondary' }}>{format(dayDate, 'd MMMM', { locale: ar })}</Typography>
-              </Paper>
+            <Paper 
+              key={dayDate.toISOString()} 
+              sx={{ 
+                textAlign: 'center', 
+                fontWeight: 'bold', 
+                position: 'sticky', 
+                top: 0, 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                zIndex: 9, 
+                p: 1.5,
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
+              }}
+            >
+              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                {format(dayDate, 'EEEE', { locale: ar })}
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.85rem', opacity: 0.9 }}>
+                {format(dayDate, 'd MMMM', { locale: ar })}
+              </Typography>
+            </Paper>
           ))}
 
           {sections.map(section => (
-              <React.Fragment key={section.id}>
-                  <Paper sx={{ textAlign: 'center', fontWeight: 'bold', p: 2, position: 'sticky', right: 0, bgcolor: 'background.paper', zIndex: 5, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                      {section.name}
-                  </Paper>
-                  {weekDays.map(dayDate => {
+            <React.Fragment key={section.id}>
+              {/* Section Name Cell */}
+              <Paper sx={{ 
+                textAlign: 'center', 
+                fontWeight: 'bold', 
+                p: 2, 
+                position: 'sticky', 
+                right: 0, 
+                background: 'linear-gradient(135deg, #f0f4ff 0%, #e0eaff 100%)',
+                zIndex: 5, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                borderRadius: '8px',
+                borderRight: '4px solid #667eea',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
+              }}>
+                {section.name}
+              </Paper>
+              
+              {weekDays.map(dayDate => {
                       // تحديد ما إذا كان هذا القسم يدرس في هذا اليوم
                       const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
                       const dayName = dayNames[dayDate.getDay()];
@@ -458,28 +602,41 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
                         .filter((l): l is AdaptedLesson => Boolean(l));
 
                       return (
-                          <Paper
-                              key={dayDate.toISOString()}
-                              onDrop={(e) => handleDrop(e, dateString, section.id)}
-                              onDragOver={(e) => handleDragOver(e, cellId)}
-                              onDragLeave={handleDragLeave}
-                              sx={{
-                                  minHeight: '120px',
-                                  p: 1,
-                                  backgroundColor: isDraggedOver 
-                                    ? (isScheduledDay ? backgroundColor.replace('0.5)', '0.8)') : 'rgba(0, 123, 255, 0.2)')
-                                    : backgroundColor,
-                                  transition: 'background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
-                                  border: '1px solid #eee',
-                                  outline: isDraggedOver ? '3px dashed #007bff' : 'none',
-                                  outlineOffset: '-2px',
-                                  boxShadow: isDraggedOver ? '0 4px 12px rgba(0, 123, 255, 0.3)' : 'none',
-                              }}
-                          >
-                {cellLessons.map(lesson => (
-                  <LessonCard key={lesson.id} lesson={lesson} onDoubleClick={setEditingLesson} onDelete={handleDeleteLesson} allScheduledLessons={cellLessons} />
-                              ))}
-                          </Paper>
+                        <Paper
+                          key={dayDate.toISOString()}
+                          onDrop={(e) => handleDrop(e, dateString, section.id)}
+                          onDragOver={(e) => handleDragOver(e, cellId)}
+                          onDragLeave={handleDragLeave}
+                          sx={{
+                            minHeight: '120px',
+                            p: 1.5,
+                            background: isDraggedOver 
+                              ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)'
+                              : (isScheduledDay 
+                                  ? `linear-gradient(135deg, ${backgroundColor} 0%, rgba(255,255,255,0.8) 100%)` 
+                                  : 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)'),
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            border: isDraggedOver ? '2px dashed #667eea' : '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            boxShadow: isDraggedOver 
+                              ? '0 8px 24px rgba(102, 126, 234, 0.3)' 
+                              : '0 2px 4px rgba(0, 0, 0, 0.04)',
+                            '&:hover': {
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                              transform: 'translateY(-1px)'
+                            }
+                          }}
+                        >
+                          {cellLessons.map(lesson => (
+                            <LessonCard 
+                              key={lesson.id} 
+                              lesson={lesson} 
+                              onDoubleClick={setEditingLesson} 
+                              onDelete={handleDeleteLesson} 
+                              allScheduledLessons={cellLessons} 
+                            />
+                          ))}
+                        </Paper>
                       );
                   })}
               </React.Fragment>

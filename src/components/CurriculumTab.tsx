@@ -175,7 +175,7 @@ function CurriculumTab() {
   };
 
   return (
-    <div dir="rtl" className="p-4 bg-gray-50 min-h-screen">
+    <div dir="rtl" className="bg-gray-50 min-h-screen learning-content-dynamic">
       <Typography variant="h4" color="blue-gray" className="mb-6 font-bold text-right">
         البرنامج الدراسي
       </Typography>

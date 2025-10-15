@@ -130,3 +130,9 @@ body > #root {
   padding-right: 1rem;
   margin-left: 1rem;
 }
+
+/* Dynamic spacing for Learning Management - reduces padding when sidebar is open */
+.learning-content-dynamic {
+  padding-right: calc(var(--sidebar-width, 260px) * 0.05);
+  transition: padding-right 0.3s ease;
+}

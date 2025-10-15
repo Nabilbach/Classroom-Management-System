@@ -162,28 +162,129 @@ const LearningAndProgressHub: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto h-full" dir="rtl" style={{ paddingRight: '1rem' }}>
-      <Box sx={{ px: 2 }}>
-        <Box className="flex justify-end items-center mb-1 py-1 px-90 bg-gray-50 rounded-lg">
-          <IconButton onClick={goToPreviousWeek}><ChevronRight /></IconButton>
-          <Typography variant="h6" className="font-semibold" sx={{ fontWeight: 'bold' }}>
-            <Button variant="text" size="small" onClick={goToCurrentWeek} sx={{ p: 0, minWidth: 0, mr: 1, fontWeight: 'bold' }}>
-              الأسبوع الحالي
-            </Button>: {weekRangeText}
-          </Typography>
-          <IconButton onClick={goToNextWeek}><ChevronLeft /></IconButton>
-          <Button variant="contained" color="error" onClick={handleClearCalendar} sx={{ mr: 2, fontWeight: 'bold' }}>
-            مسح التقويم
-          </Button>
+    <div className="w-full h-full px-2" dir="rtl">
+      {/* Modern Header with Gradient */}
+      <Box 
+        sx={{ 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          borderRadius: '16px',
+          p: 3,
+          mb: 3,
+          boxShadow: '0 8px 24px rgba(102, 126, 234, 0.15)',
+        }}
+      >
+        <Typography 
+          variant="h4" 
+          sx={{ 
+            color: 'white',
+            fontWeight: 'bold',
+            mb: 2,
+            textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}
+        >
+          📚 مركز إدارة التعلم والتقدم
+        </Typography>
+        
+        {/* Week Navigation Bar */}
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            bgcolor: 'rgba(255, 255, 255, 0.15)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '12px',
+            p: 2,
+            border: '1px solid rgba(255, 255, 255, 0.2)'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton 
+              onClick={goToPreviousWeek}
+              sx={{ 
+                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                color: 'white',
+                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.3)' }
+              }}
+            >
+              <ChevronRight />
+            </IconButton>
+            
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              gap: 1,
+              bgcolor: 'rgba(255, 255, 255, 0.9)',
+              px: 3,
+              py: 1,
+              borderRadius: '8px'
+            }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#667eea' }}>
+                {weekRangeText}
+              </Typography>
+            </Box>
+            
+            <IconButton 
+              onClick={goToNextWeek}
+              sx={{ 
+                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                color: 'white',
+                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.3)' }
+              }}
+            >
+              <ChevronLeft />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button 
+              variant="contained" 
+              onClick={goToCurrentWeek}
+              sx={{ 
+                bgcolor: 'white',
+                color: '#667eea',
+                fontWeight: 'bold',
+                px: 3,
+                '&:hover': { 
+                  bgcolor: '#f0f0f0',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              📅 الأسبوع الحالي
+            </Button>
+            
+            <Button 
+              variant="contained" 
+              color="error" 
+              onClick={handleClearCalendar}
+              sx={{ 
+                fontWeight: 'bold',
+                px: 3,
+                bgcolor: '#ef4444',
+                '&:hover': { 
+                  bgcolor: '#dc2626',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              🗑️ مسح التقويم
+            </Button>
+          </Box>
         </Box>
       </Box>
 
-      <div className="flex flex-col md:flex-row gap-6 h-full">
-        <div className="w-full md:w-64 bg-white rounded-xl shadow-sm overflow-auto h-full">
+      {/* Main Content Grid */}
+      <div className="flex flex-col md:flex-row gap-4 h-full">
+        <div className="w-full md:w-96 bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg overflow-auto h-full border border-gray-100">
           <TemplateLibrary />
         </div>
 
-        <div className="flex-1 bg-white rounded-xl shadow-sm overflow-auto h-full">
+        <div className="flex-1 bg-gradient-to-br from-white to-blue-50 rounded-xl shadow-lg overflow-auto h-full border border-blue-100">
           <CalendarGrid currentWeekStart={currentWeekStart} scheduledLessons={scheduledLessons} onRefresh={reloadScheduledLessons} />
         </div>
       </div>

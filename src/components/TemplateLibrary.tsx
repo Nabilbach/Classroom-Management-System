@@ -26,28 +26,82 @@ const TemplateItem = ({ template, onDoubleClick, onDelete }: { template: LessonT
         justifyContent: 'space-between',
         alignItems: 'center',
         gap: 1,
-        p: 1,
-        mb: 1,
-        bgcolor: 'background.paper',
-        border: '1px solid',
-        borderColor: 'grey.200',
-        borderRadius: '4px',
-        boxShadow: 1,
+        p: 1.5,
+        mb: 1.5,
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+        border: '2px solid',
+        borderColor: '#e5e7eb',
+        borderRadius: '10px',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
         cursor: 'grab',
-        '&:active': { cursor: 'grabbing' },
-        '&:hover': { bgcolor: 'action.hover', boxShadow: 2 },
-        transition: 'background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: '4px',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        },
+        '&:active': { 
+          cursor: 'grabbing',
+          transform: 'scale(0.98)'
+        },
+        '&:hover': { 
+          bgcolor: '#f0f4ff',
+          borderColor: '#667eea',
+          boxShadow: '0 4px 16px rgba(102, 126, 234, 0.2)',
+          transform: 'translateY(-2px)'
+        },
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
-      <Typography variant="body2" sx={{ flex: 1, fontWeight: 'normal' }}>{template.title}</Typography>
-      <IconButton onClick={() => onDelete(template.id)} size="small" color="error" sx={{ p: 0 }}>
+      <Typography 
+        variant="body2" 
+        sx={{ 
+          flex: 1, 
+          fontWeight: '600',
+          color: '#1f2937',
+          pl: 1.5
+        }}
+      >
+        {template.title}
+      </Typography>
+      
+      {template.weekNumber && (
+        <Box sx={{
+          bgcolor: '#667eea',
+          color: 'white',
+          px: 1.5,
+          py: 0.5,
+          borderRadius: '20px',
+          fontSize: '0.75rem',
+          fontWeight: 'bold',
+          boxShadow: '0 2px 4px rgba(102, 126, 234, 0.3)'
+        }}>
+          أسبوع {template.weekNumber}
+        </Box>
+      )}
+      
+      <IconButton 
+        onClick={() => onDelete(template.id)} 
+        size="small" 
+        sx={{ 
+          p: 0.5,
+          color: '#ef4444',
+          bgcolor: 'rgba(239, 68, 68, 0.1)',
+          '&:hover': {
+            bgcolor: '#ef4444',
+            color: 'white',
+            transform: 'rotate(90deg)'
+          },
+          transition: 'all 0.3s ease'
+        }}
+      >
         <DeleteIcon fontSize="small" />
       </IconButton>
-      {template.weekNumber && (
-        <Typography variant="caption" sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>
-          W{template.weekNumber}
-        </Typography>
-      )}
     </ListItem>
   );
 };
@@ -220,47 +274,106 @@ const TemplateLibrary = () => {
     <Paper
       sx={{
         flexShrink: 0,
-        bgcolor: 'background.paper',
-        borderRight: { md: '1px solid' },
-        borderColor: { md: 'grey.300' },
-        p: 2,
-        m: { xs: 2, md: 0 },
-        boxShadow: 3,
+        background: 'linear-gradient(to bottom, #ffffff, #f9fafb)',
+        borderRight: { md: 'none' },
+        p: 1,
+        m: 0,
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
         flexGrow: 1,
+        borderRadius: '12px',
       }}
     >
-      {/* رأس المكتبة */}
-      <Box sx={{ flexShrink: 0 }}>
-        <Typography variant="h6" sx={{ mb: 2, fontWeight: 'semibold' }}>مكتبة القوالب</Typography>
-        <Typography variant="caption" sx={{ display: 'block', mb: 1 }}>
-          مجموع القوالب: {templates.length}
-        </Typography>
-        <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleFileChange} style={{ display: 'none' }} />
-        <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-          <Button size="small" variant="outlined" startIcon={<UploadFileIcon />} onClick={handleImportClick}>
-            استيراد من Excel
+      {/* رأس المكتبة - تصميم احترافي */}
+      <Box sx={{ 
+        flexShrink: 0,
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '10px',
+        p: 2,
+        mb: 2,
+        boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)'
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>
+            📚 مكتبة القوالب
+          </Typography>
+          <Box sx={{ 
+            bgcolor: 'rgba(255, 255, 255, 0.2)',
+            borderRadius: '20px',
+            px: 2,
+            py: 0.5,
+            backdropFilter: 'blur(10px)'
+          }}>
+            <Typography variant="caption" sx={{ color: 'white', fontWeight: 'bold' }}>
+              {templates.length} قالب
+            </Typography>
+          </Box>
+        </Box>
+        <input 
+          ref={fileInputRef} 
+          type="file" 
+          accept=".xlsx,.xls" 
+          onChange={handleFileChange} 
+          aria-label="استيراد ملف Excel"
+          style={{ display: 'none' }} 
+        />
+        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+          <Button 
+            size="small" 
+            variant="contained"
+            startIcon={<UploadFileIcon />} 
+            onClick={handleImportClick}
+            sx={{
+              bgcolor: 'rgba(255, 255, 255, 0.9)',
+              color: '#667eea',
+              fontWeight: 'bold',
+              '&:hover': {
+                bgcolor: 'white',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              },
+              transition: 'all 0.2s ease'
+            }}
+          >
+            📥 استيراد Excel
           </Button>
         </Box>
+      </Box>
 
-        <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <TextField
-            fullWidth
-            label="ابحث عن قوالب..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            size="small"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-          />
-          <FormControl fullWidth sx={{ minWidth: 140 }}>
+      {/* شريط البحث والفلاتر - تصميم محسن */}
+      <Box sx={{ flexShrink: 0, px: 1, mb: 2 }}>
+        <TextField
+          fullWidth
+          label="ابحث عن قوالب..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          size="small"
+          sx={{
+            mb: 1.5,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '10px',
+              bgcolor: 'white',
+              '&:hover': {
+                boxShadow: '0 2px 8px rgba(102, 126, 234, 0.1)'
+              },
+              '&.Mui-focused': {
+                boxShadow: '0 2px 12px rgba(102, 126, 234, 0.2)'
+              }
+            }
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: '#667eea' }} />
+              </InputAdornment>
+            ),
+          }}
+        />
+        
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <FormControl fullWidth size="small">
             <InputLabel id="level-select-label">المستوى</InputLabel>
             <Select
               labelId="level-select-label"
@@ -268,18 +381,36 @@ const TemplateLibrary = () => {
               value={levelFilter}
               label="المستوى"
               onChange={(e) => setLevelFilter(e.target.value as string)}
-              size="small"
+              sx={{
+                borderRadius: '10px',
+                bgcolor: 'white',
+                '&:hover': {
+                  boxShadow: '0 2px 8px rgba(102, 126, 234, 0.1)'
+                }
+              }}
             >
               {uniqueLevels.map(level => (
                 <MenuItem key={level} value={level}>
-                  {level === 'all' ? 'جميع المستويات' : level}
+                  {level === 'all' ? '🎓 جميع المستويات' : `📖 ${level}`}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
           {levelFilter !== 'all' && (
-            <IconButton onClick={() => setLevelFilter('all')} size="small">
-              <ClearIcon />
+            <IconButton 
+              onClick={() => setLevelFilter('all')} 
+              size="small"
+              sx={{
+                bgcolor: '#ef4444',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: '#dc2626',
+                  transform: 'scale(1.1)'
+                },
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <ClearIcon fontSize="small" />
             </IconButton>
           )}
         </Box>

@@ -187,7 +187,7 @@ const SmartCalendar = () => {
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow">
+    <div className="bg-white rounded-lg shadow">
         <div className="relative h-[75vh]">
             {isLoading && (
                 <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
