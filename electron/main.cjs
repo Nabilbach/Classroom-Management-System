@@ -143,6 +143,7 @@ function createWindow() {
     minHeight: 768,
     title: 'نظام إدارة الفصول الدراسية',
     backgroundColor: '#ffffff',
+    icon: path.join(__dirname, '..', 'build', 'icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
