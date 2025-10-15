@@ -183,7 +183,7 @@ export default function Dashboard() {
   }, [countdownTarget]);
 
   return (
-    <div className="p-6" dir="rtl">
+  <div className="p-6 pr-4" dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div>
           <div className="flex items-center gap-3">

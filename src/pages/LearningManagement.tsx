@@ -28,7 +28,7 @@ function LessonLog() {
   };
 
   return (
-    <div dir="rtl">
+    <div dir="rtl" style={{ paddingRight: '1rem' }}>
       <div className="flex justify-between items-center mb-4">
         <Typography variant="h4" color="blue-gray" sx={{ fontWeight: 'bold' }}>
           Learning Management

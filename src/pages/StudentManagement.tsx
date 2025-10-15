@@ -783,9 +783,9 @@ function StudentManagement() {
   };
 
   return (
-  <div dir="rtl" style={{ paddingTop: 0, background: '#f8f9fa' }}>
+  <div dir="rtl" style={{ paddingTop: 0, paddingRight: '1rem', background: '#f8f9fa' }}>
   {/* Sticky action bar */}
-      <div className="flex flex-wrap justify-between items-center mb-2 sticky top-0 z-20 bg-white shadow-sm py-1 px-2" style={{ borderBottom: '1px solid #eee', marginRight: 0 }}>
+      <div className="flex flex-wrap justify-between items-center mb-2 sticky top-0 z-20 bg-white shadow-sm py-1 px-2" style={{ borderBottom: '1px solid #eee' }}>
         <Typography variant="h4" color="blue-gray" sx={{ fontWeight: 'bold' }}>إدارة الطلاب</Typography>
         <div className="flex flex-wrap gap-2 overflow-x-auto" style={{ maxWidth: '100%' }}>
           {!isAttendanceMode ? (

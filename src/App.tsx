@@ -37,8 +37,8 @@ function App() {
   <ConnectionStatus />
   <RestoreNotice />
   {/* eslint-disable-next-line react/style-prop-object */}
-  <div className="flex h-screen w-full overflow-x-hidden" dir="rtl">
-        {/* Main content first, sidebar on the right */}
+  <div className="flex h-screen w-full overflow-x-hidden reserve-sidebar-space" dir="rtl">
+    {/* Main content first, sidebar on the right */}
   <div className="flex-1 flex flex-col min-h-0 min-w-0 w-full transition-all duration-300">
           <Header />
           <MainContent>

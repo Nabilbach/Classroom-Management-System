@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Box, Button, Typography, IconButton, Tooltip } from '@mui/material';
 import { FaHome, FaUsers, FaThLarge, FaCalendarAlt, FaChartBar, FaChartLine, FaCog, FaChevronLeft, FaChevronRight, FaBook, FaGraduationCap } from 'react-icons/fa';
@@ -8,8 +8,24 @@ function Sidebar() {
   const location = useLocation();
 
   const toggleCollapse = () => {
-    setCollapsed(!collapsed);
+    const newCollapsed = !collapsed;
+    setCollapsed(newCollapsed);
+    // update global CSS variable so main content can reserve the right space
+    try {
+      document.documentElement.style.setProperty('--sidebar-width', newCollapsed ? '80px' : '260px');
+    } catch (err) {
+      // ignore in non-browser environments
+    }
   };
+
+  useEffect(() => {
+    // ensure the CSS variable is set when component mounts
+    try {
+      document.documentElement.style.setProperty('--sidebar-width', collapsed ? '80px' : '260px');
+    } catch (err) {
+      // ignore when rendering on server or tests
+    }
+  }, [collapsed]);
 
   const isActive = (path: string) => location.pathname === path;
 

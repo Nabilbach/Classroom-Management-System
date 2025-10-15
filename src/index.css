@@ -114,3 +114,19 @@ body > #root {
   max-width: 100%;
   overflow-x: hidden;
 }
+
+/* Utility for reserving space for the right sidebar */
+.reserve-sidebar-space {
+  margin-right: var(--sidebar-width, 260px);
+}
+
+/* Add comfortable padding between content and sidebar */
+.sidebar-padding {
+  padding-right: 1.5rem;
+}
+
+/* For pages with direct sidebar adjacency */
+.content-with-sidebar {
+  padding-right: 1rem;
+  margin-left: 1rem;
+}

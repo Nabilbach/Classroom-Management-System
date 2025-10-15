@@ -846,7 +846,7 @@ function Schedule() {
   }, [currentWeekStart]);
 
   return (
-    <div className="p-4" dir="rtl">
+    <div className="p-4 pr-4" dir="rtl">
       <div className="flex justify-between items-center mb-4">
         <Typography variant="h4" sx={{ fontWeight: 'bold' }}>الجدول الأسبوعي</Typography>
         <div className="flex gap-2">

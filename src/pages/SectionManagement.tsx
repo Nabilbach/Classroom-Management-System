@@ -294,7 +294,7 @@ function SectionManagement() {
   };
 
   return (
-  <div dir="rtl" className="pl-4 pr-0 font-cairo w-full min-w-0">
+  <div dir="rtl" className="pl-4 pr-4 font-cairo w-full min-w-0">
       <div className="flex justify-between items-center mb-6">
         <Typography variant="h4" color="blue-gray" sx={{ fontWeight: 'bold' }}>إدارة الأقسام</Typography>
         <div className="flex gap-3">

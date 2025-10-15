@@ -399,7 +399,7 @@ const StatisticsAndReports: React.FC = () => {
   }, [sectionStats, attendanceStats]);
 
   return (
-    <Box sx={{ p: 3, backgroundColor: '#f5f5f5', minHeight: '100vh' }} dir="rtl">
+    <Box sx={{ p: 3, pr: 2, backgroundColor: '#f5f5f5', minHeight: '100vh' }} dir="rtl">
       {/* Header Section */}
       <Paper sx={{ p: 3, mb: 3, background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)', color: 'white' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'between', mb: 2 }}>

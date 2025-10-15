@@ -111,7 +111,7 @@ function SectionProgress() {
 
   if (!currentSection.courseName) {
     return (
-      <div dir="rtl" className="p-4 bg-gray-50 min-h-screen text-center">
+      <div dir="rtl" className="p-4 pr-4 bg-gray-50 min-h-screen text-center">
         <Typography variant="h5" color="blue-gray">هذا القسم غير مرتبط بأي مقرر دراسي.</Typography>
         <Typography variant="paragraph" color="gray">الرجاء تعيين مقرر دراسي لهذا القسم من صفحة إدارة الأقسام.</Typography>
       </div>
@@ -119,7 +119,7 @@ function SectionProgress() {
   }
 
   return (
-    <div dir="rtl" className="p-4 bg-gray-50 min-h-screen">
+    <div dir="rtl" className="p-4 pr-4 bg-gray-50 min-h-screen">
       <Typography variant="h4" color="blue-gray" className="mb-6 font-bold text-right">
         لوحة تقدم القسم: {currentSection.name}
       </Typography>

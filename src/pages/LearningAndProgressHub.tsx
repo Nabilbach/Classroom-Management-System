@@ -162,7 +162,7 @@ const LearningAndProgressHub: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto h-full" dir="rtl">
+    <div className="container mx-auto h-full" dir="rtl" style={{ paddingRight: '1rem' }}>
       <Box sx={{ px: 2 }}>
         <Box className="flex justify-end items-center mb-1 py-1 px-90 bg-gray-50 rounded-lg">
           <IconButton onClick={goToPreviousWeek}><ChevronRight /></IconButton>
