@@ -89,9 +89,15 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
   // Find selected section object
   const selectedSection = useMemo(() => sections.find(s => s.id === selectedSectionId), [sections, selectedSectionId]);
 
-  // لا نختار أي قسم تلقائياً - المستخدم يجب أن يختار بنفسه
+  // اختيار القسم الحالي تلقائياً عند فتح النافذة
   useEffect(() => {
-    // تم إزالة الاختيار التلقائي للقسم لتجنب عرض بيانات غير مرغوب فيها
+    if (recommendedSectionId && !selectedSectionId && sections.length > 0) {
+      const currentSection = sections.find(s => s.id === recommendedSectionId);
+      if (currentSection) {
+        setSelectedSectionId(recommendedSectionId);
+        setFiltersExpanded(true); // فتح لوحة الفلاتر لإظهار القسم المختار
+      }
+    }
   }, [recommendedSectionId, sections, selectedSectionId]);
 
   // Fetch available dates on component mount
@@ -547,6 +553,18 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
           >
             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
               {displayMessage}
+            </Typography>
+          </Alert>
+        )}
+
+        {/* تنبيه عند الاختيار التلقائي للقسم */}
+        {recommendedSectionId && selectedSectionId === recommendedSectionId && !isTeachingTime && (
+          <Alert 
+            severity="info"
+            sx={{ mb: 2, borderRadius: 2 }}
+          >
+            <Typography variant="body2">
+              تم اختيار قسم <strong>{selectedSection?.name}</strong> تلقائياً بناءً على جدولك الدراسي
             </Typography>
           </Alert>
         )}
