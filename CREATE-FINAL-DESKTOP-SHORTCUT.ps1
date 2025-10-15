@@ -6,7 +6,8 @@ $ShortcutPath = Join-Path $Desktop "Classroom Desktop App.lnk"
 
 # إنشاء الاختصار
 $Shortcut = $WScriptShell.CreateShortcut($ShortcutPath)
-$Shortcut.TargetPath = "C:\Users\nabil\Projects\Classroom-Management-System\START-DESKTOP-APP-SAFE.bat"
+$Shortcut.TargetPath = "C:\Windows\System32\wscript.exe"
+$Shortcut.Arguments = "`"C:\Users\nabil\Projects\Classroom-Management-System\START-DESKTOP-APP.vbs`""
 $Shortcut.WorkingDirectory = "C:\Users\nabil\Projects\Classroom-Management-System"
 $Shortcut.Description = "Classroom Management System - Desktop Application"
 $Shortcut.IconLocation = "C:\Users\nabil\Projects\Classroom-Management-System\build\icon.ico,0"
