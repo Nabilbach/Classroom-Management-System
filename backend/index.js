@@ -27,6 +27,9 @@ app.use('/api/scheduled-lessons', scheduledLessonsRoutes);
 // Section statistics API
 const sectionStatsRoutes = require('./routes/sectionStats');
 app.use('/api/sections/stats', sectionStatsRoutes);
+// Lesson templates API
+const lessonTemplatesRoutes = require('./routes/lessonTemplatesRoutes');
+app.use('/api/lesson-templates', lessonTemplatesRoutes);
 
 // Backup status API
 const fs = require('fs');
