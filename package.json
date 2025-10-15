@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "electron:dev": "cross-env NODE_ENV=development concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "npm run build && electron-builder",
     "dev:backend": "cd backend && node index.dev.js",
     "dev:frontend": "vite --port 5174",
     "prod:backend": "cd backend && node index.js",
@@ -55,6 +57,11 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "electron": "^26.0.0",
+    "electron-builder": "^24.6.0",
+    "concurrently": "^8.2.0",
+    "wait-on": "^7.0.1",
+    "cross-env": "^7.0.3",
     "@types/luxon": "^3.7.1",
     "@types/react": "^18.2.31",
     "@types/react-dom": "^18.2.14",
