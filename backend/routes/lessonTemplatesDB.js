@@ -138,34 +138,19 @@ const deleteLessonTemplate = (req, res) => {
   
   console.log('🗑️ حذف القالب:', id);
 
-  // التحقق من وجود حصص مرتبطة بهذا القالب
-  db.get('SELECT COUNT(*) as count FROM ScheduledLessons WHERE templateId = ?', [id], (err, result) => {
+  // حذف القالب مباشرة
+  db.run('DELETE FROM LessonTemplates WHERE id = ?', [id], function(err) {
     if (err) {
-      console.error('❌ خطأ في التحقق من الحصص المرتبطة:', err.message);
-      return res.status(500).json({ error: 'خطأ في التحقق من الحصص المرتبطة' });
+      console.error('❌ خطأ في حذف القالب:', err.message);
+      return res.status(500).json({ error: 'خطأ في حذف قالب الدرس' });
     }
     
-    if (result.count > 0) {
-      return res.status(400).json({ 
-        error: `لا يمكن حذف القالب لأن هناك ${result.count} حصة مرتبطة به`,
-        linkedLessons: result.count
-      });
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'قالب الدرس غير موجود' });
     }
     
-    // حذف القالب
-    db.run('DELETE FROM LessonTemplates WHERE id = ?', [id], function(err) {
-      if (err) {
-        console.error('❌ خطأ في حذف القالب:', err.message);
-        return res.status(500).json({ error: 'خطأ في حذف قالب الدرس' });
-      }
-      
-      if (this.changes === 0) {
-        return res.status(404).json({ error: 'قالب الدرس غير موجود' });
-      }
-      
-      console.log('✅ تم حذف القالب بنجاح');
-      res.json({ message: 'تم حذف قالب الدرس بنجاح' });
-    });
+    console.log('✅ تم حذف القالب بنجاح');
+    res.json({ message: 'تم حذف قالب الدرس بنجاح' });
   });
 };
 
