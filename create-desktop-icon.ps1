@@ -14,7 +14,7 @@ $ShortcutPath = Join-Path $DesktopPath "ClassroomApp.lnk"
 $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
 
 # Point directly to the BAT file
-$BatPath = Join-Path $ProjectPath "launch-app.bat"
+$BatPath = Join-Path $ProjectPath "start-simple.bat"
 $Shortcut.TargetPath = $BatPath
 $Shortcut.WorkingDirectory = $ProjectPath
 $Shortcut.Description = "Classroom Management System"

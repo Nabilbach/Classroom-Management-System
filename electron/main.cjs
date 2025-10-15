@@ -7,13 +7,33 @@ let backendProcess = null;
 
 function startBackend() {
   if (backendProcess) return;
+  
   const backendPath = path.join(__dirname, '..', 'backend', 'index.js');
-  backendProcess = spawn(process.execPath, [backendPath], {
+  const isDev = process.env.NODE_ENV === 'development';
+  
+  console.log('Starting backend server...');
+  console.log('Backend path:', backendPath);
+  console.log('Mode:', isDev ? 'development' : 'production');
+  
+  backendProcess = spawn('node', [backendPath], {
     stdio: 'inherit',
-    env: Object.assign({}, process.env, { NODE_ENV: process.env.NODE_ENV || 'production' })
+    cwd: path.join(__dirname, '..', 'backend'),
+    env: Object.assign({}, process.env, { 
+      NODE_ENV: isDev ? 'development' : 'production',
+      PORT: '3000'
+    })
   });
-  backendProcess.on('error', (err) => console.error('Backend process error:', err));
-  backendProcess.on('exit', (code) => console.log('Backend exited with code', code));
+  
+  backendProcess.on('error', (err) => {
+    console.error('Backend process error:', err);
+  });
+  
+  backendProcess.on('exit', (code) => {
+    console.log('Backend exited with code', code);
+    backendProcess = null;
+  });
+  
+  console.log('Backend process started with PID:', backendProcess.pid);
 }
 
 function stopBackend() {
@@ -154,10 +174,13 @@ app.whenReady().then(() => {
   // Start backend first
   startBackend();
 
-  // Give backend a little time to start in production; in dev frontend runs separately
+  // Give backend time to start (3 seconds for dev, 2 for prod)
+  const waitTime = process.env.NODE_ENV === 'development' ? 3000 : 2000;
+  console.log(`Waiting ${waitTime}ms for backend to start...`);
+  
   setTimeout(() => {
     createWindow();
-  }, process.env.NODE_ENV === 'development' ? 1000 : 1500);
+  }, waitTime);
 
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
