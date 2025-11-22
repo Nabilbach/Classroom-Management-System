@@ -58,18 +58,12 @@ const defaultTemplate: LessonTemplate = {
 // التحقق من اتصال الخادم
 const checkServerConnection = async (): Promise<boolean> => {
   try {
-    // Use AbortController to implement a 3s timeout
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3000);
-
-    const response = await fetch(`${API_BASE_URL}/api/health`, {
+    const response = await fetch(`${API_BASE_URL}/health`, { 
       method: 'GET',
-      signal: controller.signal,
+      timeout: 3000 
     });
-
-    clearTimeout(timer);
     return response.ok;
-  } catch (err) {
+  } catch {
     return false;
   }
 };

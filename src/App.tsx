@@ -1,4 +1,5 @@
 // React import not required with new JSX transform
+import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -22,9 +23,25 @@ import AssessmentSettings from './pages/AssessmentSettings';
 import SectionProgress from './pages/SectionProgress';
 import TextbookPage from './pages/TextbookPageSimple';
 
+import PresentationModeBanner from './components/layout/PresentationModeBanner';
+
 function App() {
   // Activate soft reconnect/sleep-resume protection
   usePreventSleepReload();
+
+  const [isPresentationMode, setIsPresentationMode] = React.useState(false);
+
+  React.useEffect(() => {
+    fetch('http://localhost:3000/api/config')
+      .then(res => res.json())
+      .then(data => {
+        if (data.presentationMode) {
+          setIsPresentationMode(true);
+        }
+      })
+      .catch(err => console.error('Failed to fetch config:', err));
+  }, []);
+
   return (
     <Router
       future={{
@@ -32,14 +49,15 @@ function App() {
         v7_relativeSplatPath: true,
       }}
     >
-  <BackupStatusIndicator />
-  {/* Connection status indicator (shows briefly on disconnect/restore) */}
-  <ConnectionStatus />
-  <RestoreNotice />
-  {/* eslint-disable-next-line react/style-prop-object */}
-  <div className="flex h-screen w-full overflow-x-hidden reserve-sidebar-space" dir="rtl">
-    {/* Main content first, sidebar on the right */}
-  <div className="flex-1 flex flex-col min-h-0 min-w-0 w-full transition-all duration-300">
+      <BackupStatusIndicator />
+      <PresentationModeBanner isVisible={isPresentationMode} />
+      {/* Connection status indicator (shows briefly on disconnect/restore) */}
+      <ConnectionStatus />
+      <RestoreNotice />
+      {/* eslint-disable-next-line react/style-prop-object */}
+      <div className="flex h-screen w-full overflow-x-hidden reserve-sidebar-space" dir="rtl">
+        {/* Main content first, sidebar on the right */}
+        <div className="flex-1 flex flex-col min-h-0 min-w-0 w-full transition-all duration-300 pb-12"> {/* Added pb-12 for banner space */}
           <Header />
           <MainContent>
             <LessonLogProvider>

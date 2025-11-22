@@ -105,6 +105,9 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess }: StudentC
   // رقم التلميذ في القسم
   const studentNumber = student.classOrder ?? student.studentNumberInSection ?? '—';
 
+  // featured works count (support both camelCase and snake_case from DB)
+  const featuredCount = typeof (student as any).featuredWorks !== 'undefined' ? (student as any).featuredWorks : ((student as any).featured_works || 0);
+
   // ربط عناصر التقييم الفعلية من آخر تقييم
   const [latestAssessment, setLatestAssessment] = useState<any | null>(null);
   // إذا لم تُرجع واجهة /students التقييمات، فنجلب آخر تقييم عبر endpoint خاص
@@ -244,7 +247,10 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess }: StudentC
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-2 mb-4">
-  <StatCard icon={<FaStar size={20} />} value={animatedTotalXp} label="إجمالي XP" animate />
+      <div className="relative">
+            <StatCard icon={<FaStar size={20} />} value={animatedTotalXp} label="إجمالي XP" animate />
+            <div className="absolute -top-2 -right-2 bg-yellow-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold shadow">{featuredCount}</div>
+          </div>
         <StatCard icon={<FaChartLine size={20} />} value={lastScore} label="آخر تقييم" />
       </div>
 

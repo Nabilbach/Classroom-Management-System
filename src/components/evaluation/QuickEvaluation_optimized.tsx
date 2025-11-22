@@ -70,6 +70,7 @@ const QuickEvaluationOptimized: React.FC<QuickEvaluationOptimizedProps> = ({
   const [newFollowup, setNewFollowup] = useState('');
   const [behaviorComment, setBehaviorComment] = useState('');
   const [loading, setLoading] = useState(false);
+  const [featured, setFeatured] = useState(false);
 
   // حساب المجموع والمستوى
   const calculateTotalXP = (eval: EvaluationData) => {
@@ -130,6 +131,7 @@ const QuickEvaluationOptimized: React.FC<QuickEvaluationOptimizedProps> = ({
           total_xp: evaluation.total_xp,
           student_level: evaluation.student_level,
           notes: evaluation.notes,
+          featured,
           behavior_comment: behaviorComment
         })
       });
@@ -182,6 +184,10 @@ const QuickEvaluationOptimized: React.FC<QuickEvaluationOptimizedProps> = ({
                   {LEVEL_NAMES[evaluation.student_level]}
                 </div>
                 <div className="text-xs text-gray-600">💎 {evaluation.total_xp} XP</div>
+              </div>
+              <div className="flex items-center ml-4">
+                <label className="text-sm mr-2">عمل مميز</label>
+                <input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)} />
               </div>
               
               <Button size="sm" color="red" variant="outlined" onClick={onClose}>✕</Button>

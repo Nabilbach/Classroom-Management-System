@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogHeader, DialogBody, DialogFooter, Typography, Button, Input, Textarea, IconButton } from "@material-tailwind/react";
+import { Dialog, DialogHeader, DialogBody, DialogFooter, Typography, Button, Input, Textarea, IconButton, Checkbox } from "@material-tailwind/react";
 import { useStudents } from '../../contexts/StudentsContext';
 import { useSettings } from '../../contexts/SettingsContext';
 
@@ -17,6 +17,7 @@ function AssessmentModal({ isOpen, onClose, studentId }: AssessmentModalProps) {
 
   const [scores, setScores] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState('');
+  const [featured, setFeatured] = useState(false);
 
   // Effect to reset state when modal opens or elements change
   useEffect(() => {
@@ -41,6 +42,7 @@ function AssessmentModal({ isOpen, onClose, studentId }: AssessmentModalProps) {
       date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
       scores: scores,
       notes: notes,
+      featured,
     };
 
     // Note: Badge calculation logic might need adjustment based on new scoring types
@@ -94,6 +96,10 @@ function AssessmentModal({ isOpen, onClose, studentId }: AssessmentModalProps) {
           ))}
           
           <Textarea label="ملاحظات" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <div className="flex items-center gap-2">
+            <Checkbox id="featured" checked={featured} onChange={(e) => setFeatured((e.target as HTMLInputElement).checked)} />
+            <label htmlFor="featured" className="text-sm">عمل مميز (Featured work) — +60 XP</label>
+          </div>
         </DialogBody>
         <DialogFooter className="justify-start p-0 mt-4">
           <Button variant="text" color="red" onClick={onClose} className="mr-1">

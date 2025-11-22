@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import AnalogClock from '../components/AnalogClock';
 import {
   Typography,
   Card,
@@ -59,8 +60,8 @@ function HeaderTime() {
 
   return (
     <div className="flex flex-col items-start">
-      <Typography variant="small" className="text-gray-600">{greg}</Typography>
-      <Typography variant="small" className="text-gray-500">{hij}</Typography>
+      <Typography variant="h4" className="text-blue-700 font-bold mb-1">{greg}</Typography>
+      <Typography variant="h4" className="text-green-700 font-bold">{hij}</Typography>
     </div>
   );
 }
@@ -185,13 +186,16 @@ export default function Dashboard() {
   return (
   <div className="p-6 pr-4" dir="rtl">
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <div className="flex items-center gap-3">
+        <div className="flex-1 flex items-center gap-6">
+          <div className="flex items-center">
+            <div className="ml-4">
+              <AnalogClock size={120} />
+            </div>
             <div>
               <Typography variant="h4" className="font-bold">مركز القيادة الشخصي</Typography>
               <Typography className="text-gray-600">نظرة شاملة وسريعة لأنشطتك التعليمية</Typography>
+              <div className="text-sm text-gray-700 mt-2">مرحباً، <strong>{userName}</strong></div>
             </div>
-            <div className="text-sm text-gray-700">مرحباً، <strong>{userName}</strong></div>
           </div>
         </div>
         <div className="flex items-center gap-4">

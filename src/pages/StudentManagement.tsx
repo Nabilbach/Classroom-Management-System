@@ -22,6 +22,7 @@ import useDebounce from '../hooks/useDebounce';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { ChartBarIcon, UserGroupIcon, ExclamationCircleIcon, CalendarDaysIcon, PencilSquareIcon } from "@heroicons/react/24/solid";
+import AssessmentGridRTL from '../components/assessment/AssessmentGridRTL';
 
 // Absent Students Modal Component
 interface AbsentStudentsModalProps {
@@ -1360,6 +1361,13 @@ function StudentManagement() {
           <Button onClick={() => setLeaderboardOpen(false)}>إغلاق</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Assessment Grid Section */}
+      {currentSection && (
+        <Box sx={{ mt: 5 }}>
+          <AssessmentGridRTL sectionId={currentSection.id} />
+        </Box>
+      )}
 
       <BackToTopButton />
     </div>

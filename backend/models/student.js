@@ -37,6 +37,12 @@ const Student = sequelize.define('Student', {
     type: DataTypes.STRING,
     allowNull: true,
     field: 'section_id'
+  },
+  featuredWorks: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    field: 'featured_works'
   }
 });
 

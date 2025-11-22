@@ -25,8 +25,17 @@ LessonLog.belongsTo(Section, { foreignKey: 'sectionId' });
 Section.hasMany(Student, { foreignKey: 'sectionId' });
 Student.belongsTo(Section, { foreignKey: 'sectionId' });
 
-Student.hasMany(StudentAssessment, { foreignKey: 'studentId' });
-StudentAssessment.belongsTo(Student, { foreignKey: 'studentId' });
+// ✅ إصلاح العلاقة بين Student و StudentAssessment مع field mapping الصحيح
+Student.hasMany(StudentAssessment, { 
+  foreignKey: 'studentId',
+  sourceKey: 'id',
+  as: 'assessments'
+});
+StudentAssessment.belongsTo(Student, { 
+  foreignKey: 'studentId',
+  targetKey: 'id',
+  as: 'student'
+});
 
 // FollowUp association
 Student.hasMany(FollowUp, { foreignKey: 'studentId' });

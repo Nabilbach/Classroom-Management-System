@@ -48,6 +48,18 @@ const StudentAssessment = sequelize.define('StudentAssessment', {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
+  // ✅ إضافة الحقل الأجنبي - الإصلاح الرئيسي
+  studentId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    field: 'studentId',  // العمود في قاعدة البيانات باسم studentId
+    references: {
+      model: 'Students',
+      key: 'id'
+    },
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE'
+  }
 });
 
 module.exports = StudentAssessment;

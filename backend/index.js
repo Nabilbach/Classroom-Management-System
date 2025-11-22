@@ -86,6 +86,29 @@ app.get('/api/health', (req, res) => {
   res.json({ success: true, status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// ✅ اختبار الإصلاح - endpoint للتحقق من أن جميع التقييمات تظهر بشكل صحيح
+app.get('/api/test-assessment-fix', async (req, res) => {
+  try {
+    const count = await db.StudentAssessment.count();
+    const sample = await db.StudentAssessment.findOne({
+      include: [{ model: db.Student, as: 'student' }]
+    });
+    
+    res.json({
+      success: true,
+      total_assessments: count,
+      sample_with_student: sample,
+      status: count > 0 ? '✅ الإصلاح نجح!' : '❌ المشكلة لا تزال موجودة'
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      success: false,
+      error: err.message,
+      stack: err.stack 
+    });
+  }
+});
+
 // Helper function to get the current score for a student
 const getCurrentScore = async (studentId) => {
   try {
@@ -322,6 +345,8 @@ app.get('/api/students', async (req, res) => {
       score: scoreMap[student.id] || 0,
       lastAssessmentDate: lastAssessmentDateMap[student.id] || null,
       total_xp: totalXpMap[student.id] || 0,
+      // Ensure frontend receives featured works count even if DB column missing (fallback to 0)
+      featuredWorks: typeof student.featuredWorks !== 'undefined' ? student.featuredWorks : (student.featured_works || 0),
     }));
 
     res.json(studentsWithScores);
@@ -351,7 +376,9 @@ app.get('/api/students/:id', async (req, res) => {
     const student = await db.Student.findByPk(id);
     if (student) {
       const score = await getCurrentScore(student.id);
-      res.json({ ...student.toJSON(), score });
+      const s = student.toJSON();
+      s.featuredWorks = typeof s.featuredWorks !== 'undefined' ? s.featuredWorks : (s.featured_works || 0);
+      res.json({ ...s, score });
     } else {
       res.status(404).json({ 
         success: false,
@@ -478,7 +505,7 @@ app.get('/api/sections/:sectionId/followups-count', async (req, res) => {
   try {
     const { sectionId } = req.params;
     // find students in section
-    const students = await db.Student.findAll({ where: { sectionId } });
+  const students = await db.Student.findAll({ where: { sectionId }, attributes: ['id','firstName','lastName','pathwayNumber','sectionId'] });
     const studentIds = students.map(s => s.id);
     if (studentIds.length === 0) return res.json({ count: 0 });
     const count = await db.FollowUp.count({ where: { studentId: studentIds, is_open: true } });
@@ -494,7 +521,7 @@ app.get('/api/sections/:sectionId/followups-students', async (req, res) => {
   try {
     const { sectionId } = req.params;
     // find students in section
-    const students = await db.Student.findAll({ where: { sectionId } });
+  const students = await db.Student.findAll({ where: { sectionId }, attributes: ['id','firstName','lastName','pathwayNumber','classOrder','sectionId'] });
     const studentIds = students.map(s => s.id);
     if (studentIds.length === 0) return res.json([]);
 
@@ -748,35 +775,134 @@ app.use('/api/student-transfer', studentTransferRoutes);
 app.post('/api/students/:studentId/assessment', async (req, res) => {
   try {
     const { studentId } = req.params;
-    const { new_score, notes, scores, total_xp, student_level } = req.body;
+    const { new_score, notes, scores, total_xp, student_level, featured } = req.body;
 
     console.log('[Assessment] Creating for student:', studentId);
     console.log('[Assessment] Payload:', { new_score, notes, scores, total_xp, student_level });
+    // Basic validation: studentId must be present and numeric
+    if (!studentId || isNaN(Number(studentId))) {
+      return res.status(400).json({ message: 'Invalid studentId parameter' });
+    }
 
-    const old_score = await getCurrentScore(studentId);
-    const score_change = new_score - old_score;
+    // Ensure student exists before creating assessment
+    const studentRecord = await db.Student.findByPk(studentId);
+    if (!studentRecord) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
 
-    console.log('[Assessment] Scores:', { old_score, new_score, score_change });
+    // Use a transaction to avoid race conditions between reading last score, creating the assessment and incrementing counters
+    const t = await db.sequelize.transaction();
+    try {
+      // Read last assessment inside the transaction
+      const lastAssessmentRecord = await db.StudentAssessment.findOne({ where: { studentId }, order: [['date', 'DESC']], transaction: t });
+      const old_score = lastAssessmentRecord ? Number(lastAssessmentRecord.new_score) : 0;
+      const newScoreNum = typeof new_score === 'number' ? new_score : Number(new_score);
+      const score_change = Number.isFinite(newScoreNum) ? (newScoreNum - old_score) : null;
 
-    const newAssessment = await db.StudentAssessment.create({
-      studentId,
-      date: new Date().toISOString(),
-      old_score,
-      new_score,
-      score_change,
-      notes,
-      scores: scores || null,
-      total_xp: typeof total_xp === 'number' ? Math.round(total_xp) : null,
-      student_level: typeof student_level === 'number' ? student_level : null,
-    });
+      console.log('[Assessment] Scores:', { old_score, new_score: newScoreNum, score_change });
 
-    console.log('[Assessment] Created successfully:', newAssessment.id);
-    res.status(201).json(newAssessment);
+      // If this assessment is marked as a featured work, award 60 XP and increment student's featuredWorks counter
+      const FEATURED_XP = 60;
+
+      // Compute base total XP: prefer provided total_xp, otherwise prefer lastAssessment.total_xp, otherwise map new_score to XP
+      let baseTotalXp = null;
+      if (typeof total_xp === 'number' && Number.isFinite(total_xp)) {
+        baseTotalXp = Math.round(total_xp);
+      } else if (lastAssessmentRecord && lastAssessmentRecord.total_xp != null) {
+        baseTotalXp = Math.round(Number(lastAssessmentRecord.total_xp));
+      } else if (Number.isFinite(newScoreNum)) {
+        baseTotalXp = Math.round(newScoreNum * 25);
+      }
+
+      const assessmentPayload = {
+        studentId: Number(studentId),
+        date: new Date().toISOString(),
+        old_score: old_score,
+        new_score: Number.isFinite(newScoreNum) ? newScoreNum : null,
+        score_change: Number.isFinite(score_change) ? score_change : null,
+        notes,
+        scores: scores || null,
+        // snapshot total_xp: if we can compute baseTotalXp, add FEATURED_XP when featured
+        total_xp: baseTotalXp != null ? (baseTotalXp + (featured ? FEATURED_XP : 0)) : (typeof total_xp === 'number' ? Math.round(total_xp) : null),
+        student_level: typeof student_level === 'number' ? student_level : null,
+      };
+
+      const newAssessment = await db.StudentAssessment.create(assessmentPayload, { transaction: t });
+
+      // If featured flag set, increment student.featuredWorks (safe ALTER handled at startup)
+      if (featured) {
+        try {
+          await db.Student.increment({ featuredWorks: 1 }, { where: { id: studentId }, transaction: t });
+        } catch (incErr) {
+          try {
+            await db.sequelize.query("UPDATE Students SET featured_works = COALESCE(featured_works, 0) + 1 WHERE id = ?;", { replacements: [studentId], transaction: t });
+          } catch (rawErr) {
+            console.warn('Failed to increment featuredWorks for student', studentId, incErr?.message || incErr, rawErr?.message || rawErr);
+          }
+        }
+      }
+
+      // Insert an audit row (non-destructive)
+      try {
+        const payloadSnapshot = JSON.stringify({ assessmentPayload });
+        await db.sequelize.query(
+          'INSERT INTO AssessmentAudits (assessmentId, action, actor, payload) VALUES (?, ?, ?, ?);',
+          { replacements: [newAssessment.id, 'create', (req.user && req.user.id) ? String(req.user.id) : 'system', payloadSnapshot], transaction: t }
+        );
+      } catch (auditErr) {
+        console.warn('Failed to insert assessment audit:', auditErr?.message || auditErr);
+        // don't fail the whole operation for audit errors
+      }
+
+      await t.commit();
+      console.log('[Assessment] Created successfully:', newAssessment.id);
+      res.status(201).json(newAssessment);
+    } catch (innerErr) {
+      await t.rollback();
+      throw innerErr;
+    }
   } catch (error) {
     console.error('[Assessment] Error:', error);
     res.status(500).json({ message: 'Error creating assessment', error: error.message, stack: error.stack });
   }
 });
+
+// Ensure Students table has featured_works column (SQLite ALTER TABLE ADD COLUMN is safe)
+const ensureStudentFeaturedWorksColumn = async () => {
+  try {
+    const [cols] = await db.sequelize.query("PRAGMA table_info('Students');");
+    const existing = Array.isArray(cols) ? cols.map(c => c.name) : [];
+    if (!existing.includes('featured_works')) {
+      try {
+        await db.sequelize.query('ALTER TABLE Students ADD COLUMN featured_works INTEGER DEFAULT 0;');
+        console.log('Applied migration: added featured_works to Students');
+      } catch (e) {
+        console.warn('Failed to add featured_works column:', e?.message || e);
+      }
+    }
+  } catch (e) {
+    console.warn('ensureStudentFeaturedWorksColumn warning:', e?.message || e);
+  }
+};
+
+// Ensure AssessmentAudits table exists (append-only audit log)
+const ensureAssessmentAuditsTable = async () => {
+  try {
+    await db.sequelize.query(`
+      CREATE TABLE IF NOT EXISTS AssessmentAudits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        assessmentId INTEGER,
+        action TEXT NOT NULL,
+        actor TEXT,
+        payload TEXT,
+        createdAt DATETIME DEFAULT (datetime('now'))
+      );
+    `);
+    console.log('Ensured AssessmentAudits table exists');
+  } catch (e) {
+    console.warn('Failed to ensure AssessmentAudits table:', e?.message || e);
+  }
+};
 
 // Delete all assessments for a student (used to clear XP/history)
 app.delete('/api/students/:studentId/assessments', async (req, res) => {
@@ -812,6 +938,386 @@ app.get('/api/students/:studentId/assessments', async (req, res) => {
     res.json(assessments);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving assessments', error: error.message, stack: error.stack });
+  }
+});
+
+// GET /api/sections/:sectionId/assessment-grid
+// Returns for a section the latest per-student per-element scores and final score normalized to 0..10
+app.get('/api/sections/:sectionId/assessment-grid', async (req, res) => {
+  try {
+    const { sectionId } = req.params;
+    if (!sectionId) return res.status(400).json({ message: 'sectionId is required' });
+
+    // Find students in this section
+    const students = await db.Student.findAll({ where: { sectionId } });
+    const studentIds = students.map(s => s.id);
+
+    if (studentIds.length === 0) return res.json({ students: [] });
+
+    // Fetch latest assessment for each student (take the most recent by date)
+    const assessments = await db.StudentAssessment.findAll({
+      where: { studentId: studentIds },
+      order: [['date', 'DESC']]
+    });
+
+    // Map latest per student
+    const latestByStudent = {};
+    assessments.forEach(a => {
+      if (!latestByStudent[a.studentId]) latestByStudent[a.studentId] = a;
+    });
+
+    // Helper: normalize element value to 0..10
+    const normalizeTo10 = (v) => {
+      if (v == null) return null;
+      const n = Number(v);
+      if (!Number.isFinite(n)) return null;
+      if (n <= 1) return Math.round(n * 10 * 100) / 100;
+      if (n <= 10) return Math.round(n * 100) / 100;
+      if (n <= 100) return Math.round((n / 100) * 10 * 100) / 100;
+      return Math.round(Math.max(0, Math.min(10, n)) * 100) / 100;
+    };
+
+    // Collect all keys and compute per-key maxima (based on latest assessments)
+    const allKeys = new Set();
+    students.forEach(s => {
+      const a = latestByStudent[s.id];
+      if (a && a.scores) {
+        try {
+          const obj = typeof a.scores === 'string' ? JSON.parse(a.scores) : a.scores;
+          Object.keys(obj || {}).forEach(k => allKeys.add(k));
+        } catch (e) {}
+      }
+    });
+    const keys = Array.from(allKeys);
+
+    const maxPerKey = {};
+    keys.forEach(k => { maxPerKey[k] = 0; });
+    students.forEach(s => {
+      const a = latestByStudent[s.id];
+      if (!a || !a.scores) return;
+      let obj = {};
+      try { obj = typeof a.scores === 'string' ? JSON.parse(a.scores) : a.scores; } catch (e) { obj = a.scores || {}; }
+      keys.forEach(k => {
+        const v = normalizeTo10(obj[k]);
+        if (v != null && v > (maxPerKey[k] || 0)) maxPerKey[k] = v;
+      });
+    });
+
+    const sumMax = keys.reduce((acc, k) => acc + (maxPerKey[k] || 0), 0);
+    const scaleFactor = sumMax > 0 ? (10 / sumMax) : 1;
+
+    const grid = students.map(s => {
+      const latest = latestByStudent[s.id];
+      let elementScores = {};
+      let finalScore = null;
+      if (latest && latest.scores) {
+        let scoresObj = {};
+        try {
+          scoresObj = typeof latest.scores === 'string' ? JSON.parse(latest.scores) : latest.scores;
+        } catch (e) {
+          scoresObj = latest.scores || {};
+        }
+
+        const scaledVals = [];
+        keys.forEach(k => {
+          const raw = normalizeTo10(scoresObj[k]);
+          if (raw == null) {
+            elementScores[k] = null;
+          } else {
+            const scaled = Math.round(raw * scaleFactor * 100) / 100;
+            elementScores[k] = scaled;
+            scaledVals.push(scaled);
+          }
+        });
+
+        if (scaledVals.length > 0) {
+          finalScore = Math.round(Math.min(10, scaledVals.reduce((a, b) => a + b, 0)) * 100) / 100;
+        }
+      }
+
+      return {
+        studentId: s.id,
+        familyName: s.lastName || '',
+        fullName: `${s.firstName || ''} ${s.lastName || ''}`.trim(),
+        pathwayNumber: s.pathwayNumber || s.pathway_number || '',
+        classOrder: s.classOrder || s.class_order || null,
+        latestAssessmentDate: latest ? latest.date : null,
+        elementScores,
+        finalScore
+      };
+    });
+
+    res.json({ sectionId, grid, generatedAt: new Date().toISOString() });
+  } catch (error) {
+    console.error('Error building assessment grid:', error);
+    res.status(500).json({ message: 'Error building assessment grid', error: error.message });
+  }
+});
+
+// GET Excel export: /api/sections/:sectionId/assessment-grid.xlsx?cutoff=...
+app.get('/api/sections/:sectionId/assessment-grid.xlsx', async (req, res) => {
+  try {
+    const Excel = require('exceljs');
+    const { sectionId } = req.params;
+    const cutoff = req.query.cutoff ? new Date(req.query.cutoff) : null;
+    if (!sectionId) return res.status(400).json({ message: 'sectionId is required' });
+
+    const students = await db.Student.findAll({ where: { sectionId } });
+    const studentIds = students.map(s => s.id);
+    if (studentIds.length === 0) return res.status(200).send('No students in section');
+
+    // Build latest assessments using cutoff if provided
+    const assessments = await db.StudentAssessment.findAll({ where: { studentId: studentIds }, order: [['date', 'DESC']] });
+    const latestByStudent = {};
+    assessments.forEach(a => {
+      const ad = new Date(a.date);
+      if (cutoff && ad > cutoff) return; // skip assessments after cutoff
+      if (!latestByStudent[a.studentId]) latestByStudent[a.studentId] = a;
+    });
+
+    const normalizeTo10 = (v) => {
+      if (v == null) return null;
+      const n = Number(v);
+      if (!Number.isFinite(n)) return null;
+      if (n <= 1) return Math.round(n * 10 * 100) / 100;
+      if (n <= 10) return Math.round(n * 100) / 100;
+      if (n <= 100) return Math.round((n / 100) * 10 * 100) / 100;
+      return Math.round(Math.max(0, Math.min(10, n)) * 100) / 100;
+    };
+
+    // collect all element keys present in latest assessments to create consistent columns
+    const allKeys = new Set();
+    students.forEach(s => {
+      const a = latestByStudent[s.id];
+      if (a && a.scores) {
+        try {
+          const obj = typeof a.scores === 'string' ? JSON.parse(a.scores) : a.scores;
+          Object.keys(obj || {}).forEach(k => allKeys.add(k));
+        } catch (e) {}
+      }
+    });
+
+    const keys = Array.from(allKeys);
+
+    // header translations for common keys
+    const keyMap = {
+      attendance: 'الحضور', attendance_score: 'الحضور', presence: 'الحضور', 'حضور': 'الحضور',
+      notebook: 'الدفتر', notebook_score: 'الدفتر', 'دفتر': 'الدفتر',
+      homework: 'الواجب', homework_score: 'الواجب', portfolio_score: 'الملف', assignments: 'الواجب',
+      behavior: 'السلوك', behavior_score: 'السلوك', 'سلوك': 'السلوك',
+      quiz: 'اختبار', test: 'اختبار', project: 'مشروع'
+    };
+
+    // Compute max per key using latestByStudent
+    const maxPerKey = {};
+    keys.forEach(k => { maxPerKey[k] = 0; });
+    students.forEach(s => {
+      const a = latestByStudent[s.id];
+      if (!a || !a.scores) return;
+      let obj = {};
+      try { obj = typeof a.scores === 'string' ? JSON.parse(a.scores) : a.scores; } catch (e) { obj = a.scores || {}; }
+      keys.forEach(k => {
+        const val = normalizeTo10(obj[k]);
+        if (val != null && val > (maxPerKey[k] || 0)) maxPerKey[k] = val;
+      });
+    });
+
+    const sumMax = keys.reduce((acc, k) => acc + (maxPerKey[k] || 0), 0);
+    const scaleFactor = sumMax > 0 ? (10 / sumMax) : 1;
+
+    const workbook = new Excel.Workbook();
+    const sheet = workbook.addWorksheet('شبكة التقييم');
+
+    // Build headers: الرقم (id), الرمز (pathwayNumber), اسم التلميذ, تاريخ آخر تقييم, ...elements..., النقطة النهائية (على 10)
+    const headers = ['الرقم', 'الرمز', 'اسم التلميذ', 'تاريخ آخر تقييم', ...keys.map(k => (keyMap[k] || k.replace(/_/g, ' '))), 'النقطة النهائية (على 10)'];
+    sheet.addRow(headers);
+
+    // Fill rows with scaled values
+    students.forEach(s => {
+      const a = latestByStudent[s.id];
+      let scoresObj = {};
+      if (a && a.scores) {
+        try { scoresObj = typeof a.scores === 'string' ? JSON.parse(a.scores) : a.scores; } catch (e) { scoresObj = a.scores || {}; }
+      }
+
+      const scaled = keys.map(k => {
+        const raw = normalizeTo10(scoresObj[k]);
+        if (raw == null) return null;
+        return Math.round(raw * scaleFactor * 100) / 100;
+      });
+
+      const vals = [s.id, s.pathwayNumber ?? s.pathway_number ?? '', `${s.firstName || ''} ${s.lastName || ''}`.trim(), s.lastName || '', s.classOrder ?? s.class_order ?? '', a ? a.date : ''];
+      vals.push(...scaled.map(v => (v == null ? '' : v)));
+      const nonNullVals = scaled.filter(v => v != null);
+      const finalScore = nonNullVals.length ? Math.round(Math.min(10, nonNullVals.reduce((a, b) => a + b, 0)) * 100) / 100 : '';
+      vals.push(finalScore);
+      sheet.addRow(vals);
+    });
+
+    // adjust column widths
+    sheet.columns.forEach(col => { col.width = Math.min(30, Math.max(12, (col.header || '').toString().length + 5)); });
+
+    // send workbook
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="assessment-grid-section-${sectionId}.xlsx"`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Error exporting assessment grid xlsx:', error);
+    res.status(500).json({ message: 'Error exporting xlsx', error: error.message });
+  }
+});
+
+// GET PDF export: /api/sections/:sectionId/assessment-grid.pdf
+app.get('/api/sections/:sectionId/assessment-grid.pdf', async (req, res) => {
+  try {
+    const PDFDocument = require('pdfkit');
+    const { sectionId } = req.params;
+    const cutoff = req.query.cutoff ? new Date(req.query.cutoff) : null;
+    if (!sectionId) return res.status(400).json({ message: 'sectionId is required' });
+
+    const students = await db.Student.findAll({ where: { sectionId } });
+    const studentIds = students.map(s => s.id);
+    if (studentIds.length === 0) return res.status(200).send('No students in section');
+
+    // Build latest assessments using cutoff if provided
+    const assessments = await db.StudentAssessment.findAll({ where: { studentId: studentIds }, order: [['date', 'DESC']] });
+    const latestByStudent = {};
+    assessments.forEach(a => {
+      const ad = new Date(a.date);
+      if (cutoff && ad > cutoff) return;
+      if (!latestByStudent[a.studentId]) latestByStudent[a.studentId] = a;
+    });
+
+    const normalizeTo10 = (v) => {
+      if (v == null) return null;
+      const n = Number(v);
+      if (!Number.isFinite(n)) return null;
+      if (n <= 1) return Math.round(n * 10 * 100) / 100;
+      if (n <= 10) return Math.round(n * 100) / 100;
+      if (n <= 100) return Math.round((n / 100) * 10 * 100) / 100;
+      return Math.round(Math.max(0, Math.min(10, n)) * 100) / 100;
+    };
+
+    // Collect all element keys
+    const allKeys = new Set();
+    students.forEach(s => {
+      const a = latestByStudent[s.id];
+      if (a && a.scores) {
+        try {
+          const obj = typeof a.scores === 'string' ? JSON.parse(a.scores) : a.scores;
+          Object.keys(obj || {}).forEach(k => allKeys.add(k));
+        } catch (e) {}
+      }
+    });
+    const keys = Array.from(allKeys);
+
+    // Key map for Arabic translations
+    const keyMap = {
+      attendance: 'الحضور', attendance_score: 'الحضور', presence: 'الحضور',
+      notebook: 'الدفتر', notebook_score: 'الدفتر',
+      homework: 'الواجب', homework_score: 'الواجب', portfolio_score: 'الملف', assignments: 'الواجب',
+      behavior: 'السلوك', behavior_score: 'السلوك',
+      quiz: 'اختبار', test: 'اختبار', project: 'مشروع'
+    };
+
+    // Compute max per key
+    const maxPerKey = {};
+    keys.forEach(k => { maxPerKey[k] = 0; });
+    students.forEach(s => {
+      const a = latestByStudent[s.id];
+      if (!a || !a.scores) return;
+      let obj = {};
+      try { obj = typeof a.scores === 'string' ? JSON.parse(a.scores) : a.scores; } catch (e) { obj = a.scores || {}; }
+      keys.forEach(k => {
+        const val = normalizeTo10(obj[k]);
+        if (val != null && val > (maxPerKey[k] || 0)) maxPerKey[k] = val;
+      });
+    });
+
+    const sumMax = keys.reduce((acc, k) => acc + (maxPerKey[k] || 0), 0);
+    const scaleFactor = sumMax > 0 ? (10 / sumMax) : 1;
+
+    // Create PDF
+    const doc = new PDFDocument({ bufferPages: true });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="assessment-grid-section-${sectionId}.pdf"`);
+    doc.pipe(res);
+
+    // Title
+    doc.fontSize(16).text('شبكة التقييم', { align: 'center' });
+    doc.fontSize(10).text(`القسم: ${sectionId}`, { align: 'center' });
+    doc.fontSize(9).text(`التاريخ: ${new Date().toLocaleDateString('ar-SA')}`, { align: 'center' });
+    doc.moveDown();
+
+    // Table headers and data
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    const margin = 20;
+    const contentWidth = pageWidth - 2 * margin;
+    const colCount = 5 + keys.length; // رقم + رمز + اسم + تاريخ + نقطة + عناصر
+    const colWidth = contentWidth / colCount;
+
+    doc.fontSize(8);
+    let y = doc.y;
+    const rowHeight = 20;
+
+    // Headers
+    const headers = ['النقطة النهائية', ...keys.reverse().map(k => (keyMap[k] || k)), 'تاريخ آخر تقييم', 'اسم التلميذ', 'الرمز', 'الرقم'];
+    let x = pageWidth - margin;
+    headers.forEach(h => {
+      doc.text(h, x - colWidth, y, { width: colWidth, align: 'right', lineBreak: false });
+      x -= colWidth;
+    });
+
+    y += rowHeight;
+    doc.lineWidth(0.5).moveTo(margin, y).lineTo(pageWidth - margin, y).stroke();
+    y += 5;
+
+    // Rows
+    students.forEach(s => {
+      if (y > pageHeight - margin - 40) {
+        doc.addPage();
+        y = margin;
+      }
+
+      const a = latestByStudent[s.id];
+      let scoresObj = {};
+      if (a && a.scores) {
+        try { scoresObj = typeof a.scores === 'string' ? JSON.parse(a.scores) : a.scores; } catch (e) { scoresObj = a.scores || {}; }
+      }
+
+      const scaled = keys.reverse().map(k => {
+        const raw = normalizeTo10(scoresObj[k]);
+        if (raw == null) return '';
+        return Math.round(raw * scaleFactor * 100) / 100;
+      });
+
+      const nonNullVals = scaled.filter(v => v !== '');
+      const finalScore = nonNullVals.length ? Math.round(Math.min(10, nonNullVals.reduce((a, b) => a + (Number(b) || 0), 0)) * 100) / 100 : '';
+
+      const rowData = [
+        finalScore,
+        ...scaled,
+        a ? new Date(a.date).toLocaleDateString('ar-SA') : '',
+        `${s.firstName || ''} ${s.lastName || ''}`.trim(),
+        s.pathwayNumber || s.pathway_number || '',
+        s.id
+      ];
+
+      x = pageWidth - margin;
+      rowData.forEach(val => {
+        doc.text(String(val), x - colWidth, y, { width: colWidth, align: 'right', lineBreak: false });
+        x -= colWidth;
+      });
+
+      y += rowHeight;
+    });
+
+    doc.end();
+  } catch (error) {
+    console.error('Error exporting assessment grid pdf:', error);
+    res.status(500).json({ message: 'Error exporting pdf', error: error.message });
   }
 });
 
@@ -963,6 +1469,8 @@ preMigrateCleanup()
   // Use sync to create tables if they don't exist
   .then(() => db.sequelize.sync({ force: false })) // Don't force recreate, just sync
   .then(async () => {
+    // Ensure Students table has featured_works column before other migrations
+    await ensureStudentFeaturedWorksColumn();
     // Instead of sequelize.sync({ alter: true }) which may attempt destructive
     // operations on SQLite and trigger FK constraint errors, perform targeted
     // migrations for the StudentAssessments table by adding missing columns.
