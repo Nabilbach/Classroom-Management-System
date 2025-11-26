@@ -1,9 +1,17 @@
 const { Sequelize } = require('sequelize');
 const path = require('path');
 
+// Use DB_PATH from environment, default to classroom.db (production)
+const dbPath = process.env.DB_PATH || 'classroom.db';
+const dbFilePath = path.join(__dirname, '..', '..', dbPath);
+
+console.log(`📦 Database Configuration:`);
+console.log(`   Environment: ${process.env.NODE_ENV || 'production'}`);
+console.log(`   Database: ${dbPath}`);
+
 const sequelize = new Sequelize({
   dialect: 'sqlite',
-  storage: path.join(__dirname, '..', '..', 'classroom.db'),
+  storage: dbFilePath,
   logging: false,
   dialectOptions: {
     charset: 'utf8mb4',
@@ -15,3 +23,4 @@ const sequelize = new Sequelize({
 });
 
 module.exports = sequelize;
+
