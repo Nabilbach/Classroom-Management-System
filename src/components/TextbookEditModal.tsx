@@ -62,6 +62,8 @@ const TextbookEditModal: React.FC<TextbookEditModalProps> = ({
 
   // تهيئة البيانات عند فتح المودال
   useEffect(() => {
+    if (!open) return;
+    
     if (entry) {
       setFormData({ ...entry });
       setCompletedStages(entry.completedStages || []);
@@ -238,8 +240,30 @@ const TextbookEditModal: React.FC<TextbookEditModalProps> = ({
         </Box>
       </DialogTitle>
 
-      <DialogContent>
-        <Box sx={{ mt: 2 }}>
+      <DialogContent
+        sx={{
+          flex: 1,
+          overflow: 'auto',
+          overflowX: 'hidden',
+          maxHeight: 'calc(100vh - 200px)',
+          pb: 2,
+          '&::-webkit-scrollbar': {
+            width: '8px'
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#f1f1f1',
+            borderRadius: '10px'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#888',
+            borderRadius: '10px',
+            '&:hover': {
+              background: '#555'
+            }
+          }
+        }}
+      >
+        <Box sx={{ mt: 0 }}>
           {/* معلومات أساسية */}
           <Accordion 
             expanded={expandedAccordion === 'basic'} 
@@ -248,7 +272,7 @@ const TextbookEditModal: React.FC<TextbookEditModalProps> = ({
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6">المعلومات الأساسية</Typography>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={{ display: 'block' }}>
               <Grid container spacing={3}>
                 {/* التاريخ والوقت */}
                 <Grid item xs={12} sm={6}>
@@ -375,7 +399,7 @@ const TextbookEditModal: React.FC<TextbookEditModalProps> = ({
                 مراحل الدرس ({completedStages.length})
               </Typography>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={{ display: 'block' }}>
               <Box>
                 {/* قائمة المراحل الموجودة */}
                 {completedStages.length > 0 && (

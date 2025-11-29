@@ -54,6 +54,20 @@ const modalStyle = {
   textAlign: 'right' as 'right',
   maxHeight: '90vh',
   overflowY: 'auto',
+  '&::-webkit-scrollbar': {
+    width: '8px'
+  },
+  '&::-webkit-scrollbar-track': {
+    background: '#f1f1f1',
+    borderRadius: '10px'
+  },
+  '&::-webkit-scrollbar-thumb': {
+    background: '#888',
+    borderRadius: '10px',
+    '&:hover': {
+      background: '#555'
+    }
+  }
 };
 
 const SortableStageItem: React.FC<SortableStageItemProps> = ({
@@ -182,6 +196,8 @@ const EditLessonModal: React.FC<EditLessonModalProps> = ({ lesson, onClose, onSa
   );
 
   useEffect(() => {
+    if (!open) return;
+    
     if (lesson) {
       setEditedLessonTitle(lesson.lessonTitle || '');
       setManualSessionNumber(lesson.manualSessionNumber);
@@ -191,7 +207,7 @@ const EditLessonModal: React.FC<EditLessonModalProps> = ({ lesson, onClose, onSa
       setLessonNotes(mappedNotes);
       setLessonStages(ensureStageIds(lesson.stages));
     }
-  }, [lesson]);
+  }, [lesson, open]);
 
   if (!lesson) {
     return null;

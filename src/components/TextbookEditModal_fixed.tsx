@@ -91,6 +91,8 @@ const TextbookEditModal: React.FC<TextbookEditModalProps> = ({
 
   // Initialize form data when entry changes
   useEffect(() => {
+    if (!open) return;
+    
     if (entry) {
       setFormData({ ...entry });
     } else if (isNew) {
@@ -115,7 +117,7 @@ const TextbookEditModal: React.FC<TextbookEditModalProps> = ({
         isManuallyEdited: true
       });
     }
-  }, [entry, isNew]);
+  }, [entry, isNew, open]);
 
   // Update completion rate when stages change
   useEffect(() => {
@@ -331,7 +333,15 @@ const TextbookEditModal: React.FC<TextbookEditModalProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
+      PaperProps={{
+        sx: {
+          maxHeight: '95vh',
+          display: 'flex',
+          flexDirection: 'column'
+        }
+      }}
+    >
       <DialogTitle>
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Typography variant="h6">
@@ -348,7 +358,28 @@ const TextbookEditModal: React.FC<TextbookEditModalProps> = ({
         </Box>
       </DialogTitle>
 
-      <DialogContent>
+      <DialogContent
+        sx={{
+          flex: 1,
+          overflow: 'auto',
+          overflowX: 'hidden',
+          pb: 2,
+          '&::-webkit-scrollbar': {
+            width: '8px'
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#f1f1f1',
+            borderRadius: '10px'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#888',
+            borderRadius: '10px',
+            '&:hover': {
+              background: '#555'
+            }
+          }
+        }}
+      >
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}
