@@ -112,7 +112,7 @@ const QuickEvaluationOptimized: React.FC<QuickEvaluationOptimizedProps> = ({
   const handleSave = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/api/students/${studentId}/assessment`, {
+      const response = await fetch(`http://localhost:4200/api/students/${studentId}/assessment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

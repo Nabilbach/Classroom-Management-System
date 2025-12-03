@@ -80,7 +80,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
   useEffect(() => {
     const fetchAvailableDates = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/attendance');
+        const response = await fetch('http://localhost:4200/api/attendance');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const allRecords: AttendanceRecord[] = await response.json();
         
@@ -138,7 +138,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
       setRecords([]);
       setIsLoadingRecords(true);
 
-      let url = 'http://localhost:3000/api/attendance';
+      let url = 'http://localhost:4200/api/attendance';
       const params: string[] = [];
 
       // Add date parameter only if a specific date is selected (not empty for "all dates")
@@ -220,7 +220,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
   const togglePresence = async (record: AttendanceRecord, newIsPresent: boolean) => {
     try {
       const payload = { attendance: [{ studentId: record.studentId, sectionId: record.sectionId, date: record.date, isPresent: newIsPresent }] };
-      const res = await fetch(`http://localhost:3000/api/attendance`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const res = await fetch(`http://localhost:4200/api/attendance`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       // Optimistically update local list
       setRecords(prev => prev.map(r => {
@@ -323,7 +323,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
     if (!confirmed) return;
     try {
   const sectionParam = encodeURIComponent(selectedSectionId || selectedSection?.id || '');
-  const res = await fetch(`http://localhost:3000/api/attendance?sectionId=${sectionParam}&date=${encodeURIComponent(selectedDate)}`, { method: 'DELETE' });
+  const res = await fetch(`http://localhost:4200/api/attendance?sectionId=${sectionParam}&date=${encodeURIComponent(selectedDate)}`, { method: 'DELETE' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       // Clear local records and refetch to be safe
       setRecords([]);
@@ -354,7 +354,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
       setIsDeleting(true);
       console.log('🗑️ Starting delete all records...');
       
-      const response = await fetch('http://localhost:3000/api/attendance?deleteAll=true', {
+      const response = await fetch('http://localhost:4200/api/attendance?deleteAll=true', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'

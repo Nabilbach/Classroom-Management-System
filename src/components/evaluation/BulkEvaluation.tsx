@@ -134,7 +134,7 @@ const BulkEvaluation: React.FC<BulkEvaluationProps> = ({ open, onClose, sectionS
       payload.notes = evalState.notes || '';
 
       try {
-        const res = await fetch(`http://localhost:3000/api/students/${s.id}/assessment`, {
+        const res = await fetch(`http://localhost:4200/api/students/${s.id}/assessment`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),

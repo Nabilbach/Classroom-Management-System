@@ -111,13 +111,23 @@ type TemplateTree = { [subject: string]: { [level: string]: { [week: string]: Le
 const TemplateLibrary = () => {
   const [templates, setTemplates] = useState<LessonTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     setIsLoading(true);
+    setLoadError(null);
+    console.log('🔄 TemplateLibrary: Starting to load templates...');
     try {
       const data = await fetchLessonTemplates();
+      console.log('📦 TemplateLibrary: Received data:', data?.length, 'templates');
+      if (data && data.length > 0) {
+        console.log('📋 First template:', JSON.stringify(data[0], null, 2));
+      }
       setTemplates(data || []);
+    } catch (error) {
+      console.error('❌ TemplateLibrary: Error loading templates:', error);
+      setLoadError(String(error));
     } finally {
       setIsLoading(false);
     }
@@ -231,8 +241,9 @@ const TemplateLibrary = () => {
   const uniqueLevels = useMemo(() => {
     const levels = new Set<string>();
     templates?.forEach(template => {
-      if (template.level) {
-        levels.add(template.level);
+      const level = template.level || template.grade;
+      if (level) {
+        levels.add(level);
       }
     });
     return ['all', ...Array.from(levels).sort()];
@@ -246,12 +257,13 @@ const TemplateLibrary = () => {
     ) || [];
     for (const template of filtered) {
       const { level, courseName, weekNumber } = template;
-      const subject = courseName || 'Uncategorized';
-      const week = `Week ${weekNumber}`;
+      const subject = courseName || 'غير مصنف';
+      const levelKey = level || 'غير محدد';
+      const week = weekNumber ? `الأسبوع ${weekNumber}` : 'بدون أسبوع';
       if (!tree[subject]) tree[subject] = {};
-      if (!tree[subject][level]) tree[subject][level] = {};
-      if (!tree[subject][level][week]) tree[subject][level][week] = [];
-      tree[subject][level][week].push(template);
+      if (!tree[subject][levelKey]) tree[subject][levelKey] = {};
+      if (!tree[subject][levelKey][week]) tree[subject][levelKey][week] = [];
+      tree[subject][levelKey][week].push(template);
     }
     return tree;
   }, [templates, searchTerm, levelFilter]);
@@ -262,6 +274,10 @@ const TemplateLibrary = () => {
 
   if (isLoading) {
     return <Box sx={{ p: 2 }}><Typography>جاري التحميل...</Typography></Box>;
+  }
+
+  if (loadError) {
+    return <Box sx={{ p: 2 }}><Typography color="error">خطأ: {loadError}</Typography></Box>;
   }
 
   if (!templates) {

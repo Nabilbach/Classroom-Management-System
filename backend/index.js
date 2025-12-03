@@ -1,3 +1,7 @@
+// ⚠️ PRODUCTION SERVER - Uses classroom.db (REAL DATA)
+// Load production environment FIRST before anything else
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env.production') });
+
 const express = require('express');
 const cors = require('cors');
 const db = require('./models');
@@ -5,10 +9,14 @@ const SequelizeLib = require('sequelize');
 const { Op } = require('sequelize');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4200; // Production port
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*', // Allow all origins for Electron/Localhost
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json({ charset: 'utf-8' }));
 app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
 

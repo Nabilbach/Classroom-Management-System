@@ -5,7 +5,7 @@
 
 import { TextbookEntry, TextbookFilter, TextbookStats } from '../types/textbookTypes';
 
-const API_BASE_URL = 'http://localhost:3000/api/textbook';
+const API_BASE_URL = 'http://localhost:4200/api/textbook';
 
 class TextbookService {
   

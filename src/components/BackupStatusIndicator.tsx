@@ -20,7 +20,7 @@ const BackupStatusIndicator: React.FC = () => {
 
 	const checkBackupStatus = async () => {
 		try {
-			const response = await fetch('http://localhost:3000/api/backup-status');
+			const response = await fetch('http://localhost:4200/api/backup-status');
 			if (response.ok) {
 				const data = await response.json();
 				setStatus(data);

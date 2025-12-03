@@ -10,7 +10,7 @@ interface Section {
   color?: string;
 }
 
-const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:4200';
 const SECTIONS_ENDPOINT = `${API_BASE_URL}/api/sections`;
 
 // Helper for handling responses

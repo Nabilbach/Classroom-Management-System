@@ -121,7 +121,7 @@ const StudentCard = ({ student, onEdit, onDelete, onDetail, onAssess }: StudentC
           return; // already present
         }
         console.log('🔍 Fetching assessments for student:', student.id);
-        const res = await fetch(`http://localhost:3000/api/students/${student.id}/assessments`, { signal: controller.signal });
+        const res = await fetch(`http://localhost:4200/api/students/${student.id}/assessments`, { signal: controller.signal });
         if (!res.ok) {
           console.log('❌ Failed to fetch assessments:', res.status);
           return;

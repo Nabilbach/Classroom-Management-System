@@ -1,3 +1,7 @@
+// ⚠️ DEVELOPMENT SERVER - Uses classroom_dev.db
+// Load development environment FIRST before anything else
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env.development') });
+
 const express = require('express');
 const cors = require('cors');
 const db = require('./models');
@@ -5,7 +9,7 @@ const SequelizeLib = require('sequelize');
 const { Op } = require('sequelize');
 
 const app = express();
-const PORT = process.env.PORT || 3001; // Different port for development
+const PORT = process.env.PORT || 4201; // Development port
 
 // Middleware
 app.use(cors());

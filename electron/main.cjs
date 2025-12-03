@@ -20,7 +20,7 @@ function startBackend() {
     cwd: path.join(__dirname, '..', 'backend'),
     env: Object.assign({}, process.env, { 
       NODE_ENV: isDev ? 'development' : 'production',
-      PORT: '3000'
+      PORT: '4200'
     })
   });
   
@@ -159,7 +159,7 @@ function createWindow() {
   });
 
   if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://localhost:4201');
     // DevTools can be opened manually with Ctrl+Shift+I or from menu
   } else {
     mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));

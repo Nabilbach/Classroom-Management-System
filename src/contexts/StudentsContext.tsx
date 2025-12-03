@@ -30,7 +30,7 @@ interface StudentsProviderProps {
   children: ReactNode;
 }
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:4200/api';
 
 export const StudentsProvider = ({ children }: StudentsProviderProps) => {
   const [students, setStudents] = useState<Student[]>([]);

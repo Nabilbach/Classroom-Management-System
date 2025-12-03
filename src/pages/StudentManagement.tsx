@@ -218,7 +218,7 @@ function StudentManagement() {
   useEffect(() => {
     const load = async () => {
       try {
-        const resp = await fetch('http://localhost:3000/api/admin-schedule');
+        const resp = await fetch('http://localhost:4200/api/admin-schedule');
         if (!resp.ok) throw new Error('failed');
         const data = await resp.json();
         setAdminSchedule(Array.isArray(data) ? data : (data.value || []));
@@ -388,7 +388,7 @@ function StudentManagement() {
     const load = async () => {
       if (!currentSection) { setSectionFollowupCount(0); return; }
       try {
-        const resp = await fetch(`http://localhost:3000/api/sections/${currentSection.id}/followups-count`);
+        const resp = await fetch(`http://localhost:4200/api/sections/${currentSection.id}/followups-count`);
         if (!resp.ok) { setSectionFollowupCount(0); return; }
         const data = await resp.json();
         setSectionFollowupCount(data.count || 0);
@@ -403,7 +403,7 @@ function StudentManagement() {
   const openFollowupDialog = async () => {
     if (!currentSection) return;
     try {
-      const resp = await fetch(`http://localhost:3000/api/sections/${currentSection.id}/followups-students`);
+      const resp = await fetch(`http://localhost:4200/api/sections/${currentSection.id}/followups-students`);
       if (!resp.ok) { setFollowupStudents([]); setFollowupDialogOpen(true); return; }
       const data = await resp.json();
       setFollowupStudents(Array.isArray(data) ? data : []);
@@ -435,7 +435,7 @@ function StudentManagement() {
       // Optimistically update local order for instant UI feedback
       setLocalOrderIds(updatedWithOrder.map(s => s.id as number));
 
-      const response = await fetch(`http://localhost:3000/api/students/reorder`, {
+      const response = await fetch(`http://localhost:4200/api/students/reorder`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderedIds: updatedWithOrder.map(s => s.id) }),
@@ -608,7 +608,7 @@ function StudentManagement() {
       `هل أنت متأكد أنك تريد حذف جميع طلاب قسم ${currentSection.name}؟ هذا الإجراء لا يمكن التراجع عنه.`,
       async () => {
         try {
-          const response = await fetch(`http://localhost:3000/api/sections/${currentSection.id}/students`, { method: 'DELETE' });
+          const response = await fetch(`http://localhost:4200/api/sections/${currentSection.id}/students`, { method: 'DELETE' });
           if (!response.ok) throw new Error('فشل في الحذف');
           fetchStudents(); // Refresh the list
           alert(`تم حذف جميع طلاب قسم ${currentSection.name} من السيرفر والواجهة.`);
@@ -650,7 +650,7 @@ function StudentManagement() {
       return;
     }
     try {
-      const resp = await fetch(`http://localhost:3000/api/attendance?sectionId=${encodeURIComponent(String(currentSection.id))}`);
+      const resp = await fetch(`http://localhost:4200/api/attendance?sectionId=${encodeURIComponent(String(currentSection.id))}`);
       if (!resp.ok) {
         setHasAttendanceToday(null);
         setAttendanceStats({ present: 0, absent: 0, total: 0 });
@@ -692,7 +692,7 @@ function StudentManagement() {
     }));
 
     try {
-      const response = await fetch(`http://localhost:3000/api/attendance`, {
+      const response = await fetch(`http://localhost:4200/api/attendance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ attendance: attendanceData }),
@@ -731,7 +731,7 @@ function StudentManagement() {
       params.set('date', today);
       if (currentSection?.id) params.set('sectionId', String(currentSection.id));
 
-      const deleteUrl = `http://localhost:3000/api/attendance?${params.toString()}`;
+      const deleteUrl = `http://localhost:4200/api/attendance?${params.toString()}`;
       const deleteResponse = await fetch(deleteUrl, {
         method: 'DELETE'
       });
@@ -749,7 +749,7 @@ function StudentManagement() {
         date: today,
       }];
 
-      const saveResponse = await fetch(`http://localhost:3000/api/attendance`, {
+      const saveResponse = await fetch(`http://localhost:4200/api/attendance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ attendance: attendanceData }),

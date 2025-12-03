@@ -104,7 +104,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
   useEffect(() => {
     const fetchAvailableDates = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/attendance');
+        const response = await fetch('http://localhost:4200/api/attendance');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         
@@ -155,7 +155,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
       if (selectedDate) params.append('date', selectedDate);
       if (selectedSectionId && selectedSectionId !== 'ALL') params.append('sectionId', selectedSectionId);
 
-      const response = await fetch(`http://localhost:3000/api/attendance?${params.toString()}`);
+      const response = await fetch(`http://localhost:4200/api/attendance?${params.toString()}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       
       const data = await response.json();
@@ -212,7 +212,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
 
   const togglePresence = async (record: AttendanceRecord, newPresence: boolean) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/attendance/${record.id}`, {
+      const response = await fetch(`http://localhost:4200/api/attendance/${record.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isPresent: newPresence }),
@@ -262,7 +262,7 @@ const AbsenceHistoryContent: React.FC<AbsenceHistoryContentProps> = ({ onClose }
         params.append('date', selectedDate);
       }
 
-      const response = await fetch(`http://localhost:3000/api/attendance?${params.toString()}`, {
+      const response = await fetch(`http://localhost:4200/api/attendance?${params.toString()}`, {
         method: 'DELETE',
       });
 

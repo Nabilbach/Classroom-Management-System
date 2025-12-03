@@ -8,21 +8,35 @@
  * It will refuse to run against the production database.
  */
 
+// CRITICAL: Load development environment FIRST
+require('dotenv').config({ path: require('path').join(__dirname, '.env.development') });
+
 const path = require('path');
 const db = require('./backend/models');
 
 // Safety check: Prevent running on production database
 const ENV = process.env.NODE_ENV || 'development';
-const isProduction = ENV === 'production' || process.env.DATABASE_PATH?.includes('classroom.db');
+const DB_PATH = process.env.DB_PATH || '';
+
+// Multiple safety checks
+const isProduction = ENV === 'production' || 
+                     DB_PATH === 'classroom.db' || 
+                     DB_PATH === '' ||
+                     !DB_PATH.includes('_dev');
 
 if (isProduction) {
   console.error('\n❌ SAFETY ERROR: Refusing to seed production database!');
   console.error('📍 Environment: ' + ENV);
-  console.error('💾 Database: ' + process.env.DATABASE_PATH);
+  console.error('💾 Database: ' + DB_PATH);
   console.error('\n⚠️  This script is ONLY for development (classroom_dev.db)');
-  console.error('✅ To use: Set NODE_ENV=development and ensure classroom_dev.db is configured');
+  console.error('✅ DB_PATH must contain "_dev" to proceed');
   process.exit(1);
 }
+
+console.log('\n✅ SAFETY CHECK PASSED:');
+console.log('   Environment: ' + ENV);
+console.log('   Database: ' + DB_PATH);
+console.log('');
 
 const seedData = async () => {
   try {

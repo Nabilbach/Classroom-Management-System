@@ -1,6 +1,6 @@
 // React import not required with new JSX transform
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { HashRouter as Router, Route, Routes } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import MainContent from './components/MainContent';
@@ -32,7 +32,7 @@ function App() {
   const [isPresentationMode, setIsPresentationMode] = React.useState(false);
 
   React.useEffect(() => {
-    fetch('http://localhost:3000/api/config')
+    fetch('http://localhost:4200/api/config')
       .then(res => res.json())
       .then(data => {
         if (data.presentationMode) {

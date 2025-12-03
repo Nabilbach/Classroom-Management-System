@@ -1,7 +1,7 @@
 import type { LessonStage } from '../../types/lessonLogTypes';
 
 // إعدادات API - تم الإصلاح: استخدام المنفذ الصحيح 3000
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'http://localhost:4200';
 
 export interface LessonTemplate {
   id: string;
@@ -82,14 +82,20 @@ const fetchFromDatabase = async (): Promise<LessonTemplate[]> => {
     
     const templates = await response.json();
     
-    // تحويل للتوافق مع النظام القديم
+    // تحويل للتوافق - الحقول الفعلية في قاعدة البيانات هي courseName و level
     return templates.map((template: any) => ({
       ...template,
-      description: template.content || '',
-      estimatedSessions: Math.ceil(template.duration / 50) || 1,
-      courseName: template.subject,
-      level: template.grade,
-      scheduledSections: []
+      // تعيين الحقول المتوقعة من الحقول الفعلية
+      subject: template.courseName || template.subject || 'غير محدد',
+      grade: template.level || template.grade || 'غير محدد',
+      duration: template.duration || (template.estimatedSessions || 1) * 50,
+      content: template.content || template.description || '',
+      // للتوافق مع النظام القديم
+      description: template.description || template.content || '',
+      estimatedSessions: template.estimatedSessions || Math.ceil((template.duration || 50) / 50),
+      courseName: template.courseName || template.subject || 'غير محدد',
+      level: template.level || template.grade || 'غير محدد',
+      scheduledSections: template.scheduledSections || []
     }));
   } catch (error) {
     console.error('❌ خطأ في جلب القوالب من قاعدة البيانات:', error);

@@ -22,7 +22,7 @@ function StudentProfile() {
 
   const fetchStudentData = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/students/${studentId}`);
+      const response = await fetch(`http://localhost:4200/api/students/${studentId}`);
       const data = await response.json();
       setStudent(data);
       if (data && data.score) {
@@ -36,7 +36,7 @@ function StudentProfile() {
 
   const fetchAssessments = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/students/${studentId}/assessments`);
+      const response = await fetch(`http://localhost:4200/api/students/${studentId}/assessments`);
       const data = await response.json();
       setAssessments(data);
     } catch (error) {
@@ -46,7 +46,7 @@ function StudentProfile() {
 
   const handleSaveAssessment = async () => {
     try {
-      await fetch(`http://localhost:3000/api/students/${studentId}/assessment`, {
+      await fetch(`http://localhost:4200/api/students/${studentId}/assessment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -96,7 +96,7 @@ const TextbookPage: React.FC = () => {
         params.append('dateTo', dateTo);
       }
       
-      const response = await fetch(`http://localhost:3000/api/scheduled-lessons/textbook?${params.toString()}`);
+      const response = await fetch(`http://localhost:4200/api/scheduled-lessons/textbook?${params.toString()}`);
       if (!response.ok) {
         throw new Error('فشل في تحميل البيانات');
       }
@@ -105,10 +105,10 @@ const TextbookPage: React.FC = () => {
       // إذا لم توجد بيانات وحاولنا لمرة واحدة التوليد، قم بنداء backfill ثم أعد التحميل
       if ((!entries || entries.length === 0) && !didBackfill) {
         try {
-          await fetch(`http://localhost:3000/api/scheduled-lessons/textbook/backfill`, { method: 'POST' });
+          await fetch(`http://localhost:4200/api/scheduled-lessons/textbook/backfill`, { method: 'POST' });
           setDidBackfill(true);
           // أعد التحميل بعد التوليد
-          const retryResp = await fetch(`http://localhost:3000/api/scheduled-lessons/textbook?${params.toString()}`);
+          const retryResp = await fetch(`http://localhost:4200/api/scheduled-lessons/textbook?${params.toString()}`);
           if (retryResp.ok) {
             const retryEntries = await retryResp.json();
             setTextbookEntries(retryEntries);

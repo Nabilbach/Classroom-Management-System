@@ -103,7 +103,7 @@ function ExcelUploadModal({ isOpen, onClose }: ExcelUploadModalProps) {
           return null;
         }).filter((s) => s !== null);
 
-        const response = await fetch('http://localhost:3000/api/students/bulk', {
+        const response = await fetch('http://localhost:4200/api/students/bulk', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

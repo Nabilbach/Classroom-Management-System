@@ -71,7 +71,7 @@ function StudentEvaluationBoard() {
   useEffect(() => {
     const fetchSections = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/sections');
+        const response = await fetch('http://localhost:4200/api/sections');
         if (response.ok) {
           const data = await response.json();
           setSections(data);
@@ -94,7 +94,7 @@ function StudentEvaluationBoard() {
       setLoading(true);
       try {
         // جلب الطلاب
-        const studentsResponse = await fetch(`http://localhost:3000/api/students/section/${selectedSection}`);
+        const studentsResponse = await fetch(`http://localhost:4200/api/students/section/${selectedSection}`);
         if (studentsResponse.ok) {
           const studentsDataRaw = await studentsResponse.json();
           // Normalize shape: backend returns firstName/lastName and sectionId (camelCase)
@@ -115,7 +115,7 @@ function StudentEvaluationBoard() {
           
           for (const student of studentsData) {
             try {
-              const evalResponse = await fetch(`http://localhost:3000/api/evaluation/student/${student.id}`);
+              const evalResponse = await fetch(`http://localhost:4200/api/evaluation/student/${student.id}`);
               if (evalResponse.ok) {
                 const evalData = await evalResponse.json();
                 evaluationsData[student.id] = evalData;

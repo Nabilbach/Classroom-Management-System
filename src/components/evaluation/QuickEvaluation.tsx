@@ -377,9 +377,9 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
   const fetchAbsencesCount = async (id: string) : Promise<number | null> => {
     if (!id) return null;
     const candidates = [
-      `http://localhost:3000/api/students/${id}/absences`,
-      `http://localhost:3000/api/students/${id}/attendance/absences`,
-      `http://localhost:3000/api/attendance/students/${id}/absences`
+      `http://localhost:4200/api/students/${id}/absences`,
+      `http://localhost:4200/api/students/${id}/attendance/absences`,
+      `http://localhost:4200/api/attendance/students/${id}/absences`
     ];
     for (const url of candidates) {
       try {
@@ -416,7 +416,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
         if (!Array.isArray(sectionStudents) || sectionStudents.length === 0) return;
         const sectionId = sectionStudents[0].sectionId ?? sectionStudents[0].section_id ?? null;
         if (!sectionId) return;
-        const res = await fetch(`http://localhost:3000/api/sections/${sectionId}/followups-students`);
+        const res = await fetch(`http://localhost:4200/api/sections/${sectionId}/followups-students`);
         if (!res.ok) return;
         const data = await res.json().catch(() => []);
         const map: Record<string, number> = {};
@@ -486,7 +486,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
     if (!studentId) return;
     setAssessmentsLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/students/${studentId}/assessments`, { signal });
+      const res = await fetch(`http://localhost:4200/api/students/${studentId}/assessments`, { signal });
       if (!res.ok) {
         try {
           const text = await res.text();
@@ -578,7 +578,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
     if (!studentId) return;
     setFollowupLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/students/${studentId}/followups`, { signal });
+      const res = await fetch(`http://localhost:4200/api/students/${studentId}/followups`, { signal });
       if (!res.ok) {
         try { const text = await res.text(); console.error('[QE] loadFollowups failed', { studentId, status: res.status, body: text }); } catch (e) { console.error('[QE] loadFollowups failed', { studentId, status: res.status }); }
         return;
@@ -673,8 +673,8 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
 
       // Try patching to assessment endpoint; fallback to student update endpoints
       const endpoints = [
-        `http://localhost:3000/api/students/${studentId}/assessment`,
-        `http://localhost:3000/api/students/${studentId}`,
+        `http://localhost:4200/api/students/${studentId}/assessment`,
+        `http://localhost:4200/api/students/${studentId}`,
       ];
       let savedBody: any = null;
       for (const url of endpoints) {
@@ -731,7 +731,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
 
     try {
       // First try the convenience reset endpoint
-      const res = await fetch(`http://localhost:3000/api/students/${studentId}/assessments/reset`, { method: 'POST' });
+      const res = await fetch(`http://localhost:4200/api/students/${studentId}/assessments/reset`, { method: 'POST' });
       if (res.ok) {
         const body = await res.json().catch(() => null);
         setEvaluation(ZERO_EVALUATION);
@@ -743,7 +743,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
       }
 
       // Fallback: fetch existing assessments, then call delete-bulk for student
-      const listRes = await fetch(`http://localhost:3000/api/students/${studentId}/assessments`);
+      const listRes = await fetch(`http://localhost:4200/api/students/${studentId}/assessments`);
       if (!listRes.ok) {
         enqueueSnackbar('تعذر الوصول إلى سجلات التقييم على الخادم. لم يتم الحذف.', { variant: 'error' });
         return;
@@ -761,7 +761,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
       }
 
       // Try student-scoped bulk delete first
-      const deleteRes = await fetch(`http://localhost:3000/api/students/${studentId}/assessments/delete-bulk`, {
+      const deleteRes = await fetch(`http://localhost:4200/api/students/${studentId}/assessments/delete-bulk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids })
@@ -778,7 +778,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
       }
 
       // As a last resort, try the global bulk-delete endpoint
-      const globalRes = await fetch(`http://localhost:3000/api/assessments/bulk-delete`, {
+      const globalRes = await fetch(`http://localhost:4200/api/assessments/bulk-delete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids })
@@ -803,7 +803,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
 
   const createQuickFollowup = async (type: string) => {
     try {
-      const resp = await fetch(`http://localhost:3000/api/students/${studentId}/followups`, {
+      const resp = await fetch(`http://localhost:4200/api/students/${studentId}/followups`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type, description: `${type} - created from QuickEvaluation` })
@@ -850,7 +850,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
       return;
     }
     try {
-      const resp = await fetch(`http://localhost:3000/api/students/${studentId}/followups`, {
+      const resp = await fetch(`http://localhost:4200/api/students/${studentId}/followups`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: followupDialogType, notes: followupDialogNotes })
@@ -880,7 +880,7 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
 
   const closeFollowup = async (id: number) => {
     try {
-      const resp = await fetch(`http://localhost:3000/api/followups/${id}`, {
+      const resp = await fetch(`http://localhost:4200/api/followups/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'closed' })
@@ -911,9 +911,9 @@ function QuickEvaluation({ studentId, studentName, onClose, onSave, sectionStude
 
       const results = await Promise.all(followups.map(async (f) => {
         try {
-          const r = await fetch(`http://localhost:3000/api/students/${studentId}/followups/${f.id}/close`, { method: 'PATCH' });
+          const r = await fetch(`http://localhost:4200/api/students/${studentId}/followups/${f.id}/close`, { method: 'PATCH' });
           if (r.ok) return { id: f.id, ok: true };
-          const r2 = await fetch(`http://localhost:3000/api/followups/${f.id}`, { 
+          const r2 = await fetch(`http://localhost:4200/api/followups/${f.id}`, { 
             method: 'PATCH', 
             headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify({ is_open: 0 }) 
