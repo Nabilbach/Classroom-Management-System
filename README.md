@@ -1,60 +1,329 @@
-# Learning Management System
+# 📚 نظام إدارة الفصول الدراسية
+## Classroom Management System
 
-This is a web application designed to help manage lessons, sections, and track student progress within a curriculum.
+> نظام شامل لإدارة العملية التعليمية - تتبع الحضور والتقييم والمناهج الدراسية
 
-## Features:
+![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20MacOS%20%7C%20Linux-lightgrey)
 
-### 1. Curriculum Management (`/learning-management`)
-- **View Lessons:** See a list of all lessons.
-- **Add New Lesson:** Create new lessons with details like title, description, date, estimated sessions, assigned sections, and stages.
-- **Edit Lesson:** Modify existing lesson details.
-- **Delete Lesson:** Remove lessons from the curriculum.
-- **Filter Lessons:** Filter lessons by status (all, planned, in-progress, completed), assigned section, and course name.
-- **Search Lessons:** Search lessons by title or description.
-- **Export to Excel:** Export all lesson data to an Excel file for backup or external use.
-- **Import from Excel:** Import lesson data from an Excel file to quickly populate the curriculum.
+---
 
-### 2. Section Management (`/section-management`)
-- **View Sections:** See a list of all created sections/classes.
-- **Add New Section:** Create new sections with details like name, educational level, specialization, room number, and teacher name.
-- **Edit Section:** Modify existing section details.
-- **Delete Section:** Remove sections from the system.
-- **Assign Course to Section:** Link a section to a specific course using a dropdown selector.
-- **View Section Progress:** Navigate to a dedicated dashboard to track the progress of a section through its assigned course.
+## 🎯 الميزات الرئيسية
 
-### 3. Section Progress Dashboard (`/section-progress/:sectionId`)
-- **Overview:** Displays the name of the section and its assigned course.
-- **Progress Percentage:** Shows the overall completion percentage of the course for that specific section, with a progress bar.
-- **Lesson List with Status Controls:** Lists all lessons belonging to the section's assigned course.
-- **Update Lesson Status:** Allows teachers to update the status of each lesson for that section (لم يبدأ, قيد الإنجاز, مكتمل).
+### 📊 إدارة الحضور والغياب
+- تسجيل الحضور والغياب تلقائي
+- تقارير إحصائية للحضور
+- تنبيهات للغياب المتكرر
 
-## Getting Started:
+### 📖 إدارة المناهج الدراسية
+- **68 قالب درسي** جاهز للاستخدام
+- إنشاء وتحرير وحذف قوالب دراسية
+- تنظيم المناهج حسب المستويات والفترات
 
-1.  **Install Dependencies:**
-    ```bash
-    npm install
-    cd backend && npm install
-    ```
-2.  **Start the Backend Server:**
-    ```bash
-    cd backend
-    node index.js
-    ```
-    (Ensure the server is running on `http://localhost:3000`)
-3.  **Start the Frontend Application:**
-    ```bash
-    npm run dev
-    ```
-    (The application will typically run on `http://localhost:5173`)
+### 📝 التقييم والعلامات
+- تسجيل العلامات للطلاب
+- حساب المعدلات التراكمية
+- تحليل الأداء الأكاديمي
 
-## Data Persistence:
+### 📅 الجدول الزمني
+- جدول زمني ديناميكي
+- جدولة الدروس الأسبوعية
+- إدارة الفترات الدراسية
 
--   Lesson data is stored in `backend/lessons.json`.
--   Section data is stored in `backend/sections.json`.
--   Lesson logs are stored in `backend/lessonLogs.json`.
+### 🔒 نظام النسخ الاحتياطية
+- نسخ احتياطية تلقائية يومية
+- استعادة البيانات في حالة الطوارئ
+- حماية البيانات المهمة
 
-## Development Notes:
+### 🖥️ واجهات متعددة
+- **تطبيق سطح مكتب** (Electron)
+- **تطبيق ويب** (React)
+- واجهة سهلة وجذابة
 
--   The application uses React with Vite for the frontend and Express.js for the backend.
--   Styling is handled by Tailwind CSS and Material Tailwind React components.
--   Data is managed through React Contexts for global state management.
+---
+
+## 🛠️ المتطلبات
+
+### النظام
+- **Windows 10+** أو **macOS 10.13+** أو **Linux**
+- **RAM**: 4GB الحد الأدنى (8GB موصى)
+- **Disk Space**: 500MB للتطبيق + مساحة إضافية للبيانات
+
+### البرامج المطلوبة
+- **Node.js**: v16.0.0 أو أحدث ([تحميل](https://nodejs.org))
+- **npm**: v7.0.0 أو أحدث (يأتي مع Node.js)
+- **Git**: v2.0.0 أو أحدث (اختياري)
+
+### التحقق من التثبيت
+```bash
+node --version    # يجب أن يظهر v16+
+npm --version     # يجب أن يظهر v7+
+```
+
+---
+
+## 🚀 البدء السريع
+
+### 1️⃣ استنساخ المشروع
+```bash
+git clone https://github.com/Nabilbach/Classroom-Management-System.git
+cd Classroom-Management-System
+```
+
+### 2️⃣ تثبيت المكتبات
+```bash
+npm install
+```
+
+### 3️⃣ تشغيل بيئة التطوير
+
+#### خيار 1: تطبيق Electron (موصى)
+```bash
+npm run electron:dev
+```
+
+#### خيار 2: تطبيق الويب فقط
+```bash
+npm run dev
+```
+ثم افتح المتصفح على: `http://localhost:4201`
+
+#### خيار 3: الخادم الخلفي فقط
+```bash
+npm run dev:backend
+```
+
+---
+
+## 📦 البناء للإنتاج
+
+### بناء تطبيق Electron
+```bash
+npm run electron:build
+```
+سيتم إنشاء ملف المثبت في مجلد `release/`
+
+### بناء تطبيق الويب
+```bash
+npm run build
+```
+سيتم إنشاء الملفات في مجلد `dist/`
+
+---
+
+## 📂 بنية المشروع
+
+```
+Classroom-Management-System/
+├── src/                          # كود React الأمامي
+│   ├── components/               # مكونات React
+│   ├── pages/                    # صفحات التطبيق
+│   ├── services/                 # خدمات API
+│   ├── contexts/                 # React Context
+│   ├── utils/                    # دوال مساعدة
+│   └── App.tsx                   # المكون الرئيسي
+│
+├── backend/                      # خادم Node.js
+│   ├── models/                   # نماذج قاعدة البيانات
+│   ├── routes/                   # نقاط النهاية (Endpoints)
+│   ├── config/                   # إعدادات قاعدة البيانات
+│   ├── middleware/               # معالجات الطلبات
+│   └── index.js                  # الخادم الرئيسي
+│
+├── electron/                     # تطبيق Electron
+│   ├── main.cjs                  # العملية الرئيسية
+│   └── preload.cjs               # سكريبت التحضير
+│
+├── public/                       # ملفات عامة
+├── dist/                         # مخرجات الإنتاج
+├── classroom.db                  # قاعدة البيانات
+├── package.json                  # المكتبات والإعدادات
+└── README.md                     # هذا الملف
+```
+
+---
+
+## 🔧 الأوامر المتاحة
+
+```bash
+# التطوير
+npm run dev                 # تشغيل بيئة التطوير (React)
+npm run dev:backend       # تشغيل الخادم فقط
+npm run electron:dev      # تشغيل Electron مع الخادم
+
+# البناء والإنتاج
+npm run build             # بناء تطبيق الويب
+npm run electron:build    # بناء تطبيق Electron
+
+# النسخ الاحتياطية والمراقبة
+npm run backup:start      # بدء نظام النسخ الاحتياطية
+npm run backup:immediate  # إجراء نسخة احتياطية فورية
+npm run backup:status     # عرض حالة النسخ الاحتياطية
+npm run system:health     # فحص صحة النظام
+```
+
+---
+
+## 📊 قاعدة البيانات
+
+### الجداول الرئيسية
+
+| الجدول | الوصف |
+|--------|--------|
+| **Students** | بيانات الطلاب |
+| **Teachers** | بيانات المعلمين |
+| **LessonTemplates** | قوالب الدروس (68 قالب) |
+| **Attendance** | سجلات الحضور |
+| **Grades** | العلامات والتقييمات |
+| **Schedules** | الجداول الزمنية |
+| **Sections** | الأقسام والفصول |
+| **Events** | الأحداث الدراسية |
+
+### النسخ الاحتياطية
+تتم النسخ الاحتياطية تلقائياً يومياً في مجلد `./backups/`
+
+---
+
+## 🔐 الأمان
+
+### أفضل الممارسات المطبقة
+✅ CORS معطل للعمليات الخارجية  
+✅ متغيرات البيئة للبيانات الحساسة  
+✅ SQLite مع Sequelize ORM  
+✅ Validation middleware للـ API  
+
+### متغيرات البيئة المطلوبة
+أنشئ ملف `.env` في الجذر:
+```env
+# Database
+DB_PATH=./classroom.db
+
+# Server
+PORT=4200
+NODE_ENV=production
+
+# Security
+API_KEY=your-api-key-here
+```
+
+---
+
+## 🐛 استكشاف الأخطاء
+
+### المشكلة: الخادم لا يبدأ
+```bash
+# تحقق من أن المنفذ 4200 متاح
+netstat -ano | findstr :4200
+
+# أيقف أي عملية Node.js قديمة
+Get-Process -Name node | Stop-Process -Force
+```
+
+### المشكلة: قاعدة البيانات تالفة
+```bash
+# استعد من نسخة احتياطية
+cp classroom_backup_*.db classroom.db
+```
+
+### المشكلة: المكتبات غير متوفرة
+```bash
+# أعد تثبيت المكتبات
+rm -r node_modules package-lock.json
+npm install
+```
+
+### المشكلة: الواجهة لا تحمل
+```bash
+# امسح الـ cache وأعد البناء
+npm run build
+npm run electron:dev
+```
+
+---
+
+## 📖 التوثيق
+
+### API Documentation
+جميع النقاط النهائية موثقة في:
+- `backend/routes/` - تعليقات معلنة للدوال
+- `src/services/api/` - العملاء API في الأمام
+
+### معايير الترميز
+- **Frontend**: React Hooks + TypeScript
+- **Backend**: Express + Sequelize ORM
+- **Styling**: Material-UI + Tailwind CSS
+
+---
+
+## 🤝 المساهمة
+
+نرحب بالمساهمات! اتبع الخطوات التالية:
+
+1. **Fork** المشروع
+2. أنشئ فرع للميزة (`git checkout -b feature/amazing-feature`)
+3. **Commit** التغييرات (`git commit -m 'Add amazing feature'`)
+4. **Push** إلى الفرع (`git push origin feature/amazing-feature`)
+5. افتح **Pull Request**
+
+### معايير الكود
+- استخدم `prettier` لتنسيق الكود
+- اتبع `ESLint` rules
+- أضف تعليقات للأجزاء المعقدة
+- اختبر الميزات الجديدة محلياً
+
+---
+
+## 📋 خريطة الطريق
+
+### Q1 2026 🎯
+- [ ] نظام الاختبارات الآلية
+- [ ] توثيق API شامل (Swagger)
+- [ ] نظام logging متقدم
+- [ ] تحسين الأداء
+
+### Q2 2026 🚀
+- [ ] Dark Mode
+- [ ] تطبيق Mobile
+- [ ] نظام التنبيهات المتقدم
+- [ ] Progressive Web App (PWA)
+
+---
+
+## 📞 الدعم والاتصال
+
+- 📧 البريد الإلكتروني: `nabilbach@example.com`
+- 🐛 الإبلاغ عن الأخطاء: [GitHub Issues](https://github.com/Nabilbach/Classroom-Management-System/issues)
+- 💬 النقاشات: [GitHub Discussions](https://github.com/Nabilbach/Classroom-Management-System/discussions)
+
+---
+
+## 📄 الترخيص
+
+هذا المشروع مرخص تحت **MIT License** - انظر ملف [LICENSE](LICENSE) للتفاصيل.
+
+---
+
+## 🙏 شكر خاص
+
+شكراً لجميع المساهمين والمستخدمين الذين ساعدوا في تحسين هذا المشروع.
+
+---
+
+## 📈 الإحصائيات
+
+```
+📊 المشروع:
+├── React Components:     ~45 مكون
+├── Backend Routes:       ~15 نقطة نهاية
+├── Database Tables:      ~12 جدول
+├── Lesson Templates:     68 قالب درس
+├── Code Lines:           ~50,000 سطر
+└── Last Update:          5 ديسمبر 2025
+```
+
+---
+
+**صُنع بـ ❤️ بواسطة Nabil Bach**
+
+آخر تحديث: 5 ديسمبر 2025 | الإصدار: 2.1.0

@@ -4,9 +4,11 @@ require('dotenv').config({ path: require('path').join(__dirname, '..', '.env.pro
 
 const express = require('express');
 const cors = require('cors');
+const morgan = require('morgan');
 const db = require('./models');
 const SequelizeLib = require('sequelize');
 const { Op } = require('sequelize');
+const logger = require('./config/logger');
 
 const app = express();
 const PORT = process.env.PORT || 4200; // Production port
@@ -17,6 +19,14 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// HTTP request logging with Morgan
+app.use(morgan('combined', {
+  stream: {
+    write: (message) => logger.info(message.trim())
+  }
+}));
+
 app.use(express.json({ charset: 'utf-8' }));
 app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
 
@@ -1518,6 +1528,9 @@ preMigrateCleanup()
   .then(() => ensureAttendanceIndexes())
   .then(() => {
     app.listen(PORT, () => {
+      logger.info(`Backend server running on http://localhost:${PORT}`);
+      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`Database: ${process.env.DB_PATH || './classroom.db'}`);
       console.log(`Backend server running on http://localhost:${PORT}`);
       
       // Keep alive mechanism
