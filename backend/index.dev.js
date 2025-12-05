@@ -34,6 +34,9 @@ app.use('/api/scheduled-lessons', scheduledLessonsRoutes);
 // Section statistics API
 const sectionStatsRoutes = require('./routes/sectionStats');
 app.use('/api/sections/stats', sectionStatsRoutes);
+// Lesson templates API
+const lessonTemplatesRoutes = require('./routes/lessonTemplatesRoutes');
+app.use('/api/lesson-templates', lessonTemplatesRoutes);
 
 // Helper function to get the current score for a student
 const getCurrentScore = async (studentId) => {
