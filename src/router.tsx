@@ -4,7 +4,7 @@ import Dashboard from './pages/Dashboard';
 import StudentManagement from './pages/StudentManagement';
 import Attendance from './pages/Attendance';
 import StatisticsAndReports from './pages/StatisticsAndReports';
-import LearningManagement from './pages/LearningManagement';
+import LearningAndProgressHub from './pages/LearningAndProgressHub';
 import TextbookPage from './pages/TextbookPage';
 import Settings from './pages/Settings';
 
@@ -31,7 +31,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'learning',
-        element: <LearningManagement />,
+        element: <LearningAndProgressHub />,
       },
       {
         path: 'textbook',

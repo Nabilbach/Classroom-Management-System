@@ -15,7 +15,6 @@ import Dashboard from './pages/Dashboard';
 import LearningAndProgressHub from './pages/LearningAndProgressHub';
 import StudentManagement from './pages/StudentManagement';
 import SectionManagement from './pages/SectionManagement';
-import LessonLog from './pages/LearningManagement';
 import Schedule from './pages/Schedule';
 import StatisticsAndReports from './pages/StatisticsAndReports';
 import Settings from './pages/Settings';
@@ -66,7 +65,6 @@ function App() {
                 <Route path="/student-management" element={<StudentManagement />} />
                 <Route path="/learning-progress" element={<LearningAndProgressHub />} />
                 <Route path="/section-management" element={<SectionManagement />} />
-                <Route path="/learning-management" element={<LessonLog />} />
                 <Route path="/schedule" element={<Schedule />} />
                 <Route path="/textbook" element={<TextbookPage />} />
                 <Route path="/statistics-and-reports" element={<StatisticsAndReports />} />
