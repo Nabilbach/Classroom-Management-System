@@ -11,6 +11,8 @@ const AdminScheduleEntry = require('./adminScheduleEntry');
 const Attendance = require('./attendance');
 const TextbookEntry = require('./textbookEntry');
 const FollowUp = require('./followUp');
+const Curriculum = require('./curriculum');
+const CurriculumItem = require('./curriculumItem');
 
 // Define associations
 Section.hasMany(Lesson, { foreignKey: 'sectionId' });
@@ -24,6 +26,10 @@ LessonLog.belongsTo(Section, { foreignKey: 'sectionId' });
 
 Section.hasMany(Student, { foreignKey: 'sectionId' });
 Student.belongsTo(Section, { foreignKey: 'sectionId' });
+
+// Section - Curriculum association
+Section.belongsTo(Curriculum, { foreignKey: 'curriculumId', as: 'curriculum' });
+Curriculum.hasMany(Section, { foreignKey: 'curriculumId', as: 'sections' });
 
 // ✅ إصلاح العلاقة بين Student و StudentAssessment مع field mapping الصحيح
 Student.hasMany(StudentAssessment, { 
@@ -48,6 +54,10 @@ Attendance.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
 Section.hasMany(Attendance, { foreignKey: 'sectionId' });
 Attendance.belongsTo(Section, { foreignKey: 'sectionId' });
 
+// Curriculum associations
+Curriculum.hasMany(CurriculumItem, { foreignKey: 'curriculumId', as: 'items' });
+CurriculumItem.belongsTo(Curriculum, { foreignKey: 'curriculumId', as: 'curriculum' });
+
 const db = {
   sequelize,
   Sequelize: sequelize.Sequelize,
@@ -63,6 +73,8 @@ const db = {
   Attendance,
   TextbookEntry,
   FollowUp,
+  Curriculum,
+  CurriculumItem,
 };
 
 module.exports = db;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Box, Button, Typography, IconButton, Tooltip } from '@mui/material';
-import { FaHome, FaUsers, FaThLarge, FaCalendarAlt, FaChartBar, FaChartLine, FaCog, FaChevronLeft, FaChevronRight, FaBook, FaGraduationCap } from 'react-icons/fa';
+import { FaHome, FaUsers, FaThLarge, FaCalendarAlt, FaChartBar, FaChartLine, FaCog, FaChevronLeft, FaChevronRight, FaBook, FaGraduationCap, FaListAlt } from 'react-icons/fa';
 
 function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
@@ -35,6 +35,7 @@ function Sidebar() {
     { path: '/section-management', icon: FaThLarge, label: 'إدارة الأقسام' },
     { path: '/schedule', icon: FaCalendarAlt, label: 'الجدول الزمني' },
     { path: '/learning-progress', icon: FaGraduationCap, label: 'إدارة التعلم' },
+    { path: '/curriculum-manager', icon: FaListAlt, label: 'إدارة المناهج' },
     { path: '/textbook', icon: FaBook, label: 'دفتر النصوص' },
     { path: '/statistics-and-reports', icon: FaChartLine, label: 'الإحصائيات والتقارير' },
     { path: '/settings', icon: FaCog, label: 'الإعدادات' },

@@ -49,6 +49,10 @@ app.use('/api/sections/stats', sectionStatsRoutes);
 const lessonTemplatesRoutes = require('./routes/lessonTemplatesRoutes');
 app.use('/api/lesson-templates', lessonTemplatesRoutes);
 
+// Curriculum API
+const curriculumRoutes = require('./routes/curriculum');
+app.use('/api/curriculums', curriculumRoutes);
+
 // Backup status API
 const fs = require('fs');
 const path = require('path');
@@ -256,7 +260,12 @@ app.delete('/api/lesson-logs/:id', async (req, res) => {
 // Routes for Sections
 app.get('/api/sections', async (req, res) => {
   try {
-    const sections = await db.Section.findAll();
+    const sections = await db.Section.findAll({
+      include: [{
+        model: db.Curriculum,
+        as: 'curriculum'
+      }]
+    });
     res.json(sections);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving sections', error: error.message, stack: error.stack });
@@ -266,7 +275,13 @@ app.get('/api/sections', async (req, res) => {
 app.post('/api/sections', async (req, res) => {
   try {
     const newSection = await db.Section.create({ id: Date.now().toString(), ...req.body });
-    res.status(201).json(newSection);
+    const reloadedSection = await db.Section.findByPk(newSection.id, {
+      include: [{
+        model: db.Curriculum,
+        as: 'curriculum'
+      }]
+    });
+    res.status(201).json(reloadedSection);
   } catch (error) {
     res.status(500).json({ message: 'Error creating section', error: error.message, stack: error.stack });
   }
@@ -277,7 +292,12 @@ app.put('/api/sections/:id', async (req, res) => {
     const { id } = req.params;
     const [updated] = await db.Section.update(req.body, { where: { id } });
     if (updated) {
-      const updatedSection = await db.Section.findByPk(id);
+      const updatedSection = await db.Section.findByPk(id, {
+        include: [{
+          model: db.Curriculum,
+          as: 'curriculum'
+        }]
+      });
       res.json(updatedSection);
     } else {
       res.status(404).json({ message: 'Section not found' });

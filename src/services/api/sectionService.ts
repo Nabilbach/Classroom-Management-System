@@ -8,6 +8,9 @@ interface Section {
   teacherName?: string;
   courseName?: string;
   color?: string;
+  curriculumId?: number;
+  curriculum?: { id: number; title: string };
+  lessonProgress?: { [lessonId: string]: 'not-started' | 'in-progress' | 'completed' };
 }
 
 const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:4200';

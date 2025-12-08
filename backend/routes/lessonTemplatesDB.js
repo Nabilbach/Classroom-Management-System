@@ -22,19 +22,23 @@ const transformTemplate = (row) => ({
 const getAllLessonTemplates = async (req, res) => {
   try {
     console.log('📚 جلب جميع قوالب الدروس...');
+    console.log('Query: SELECT * FROM LessonTemplates ORDER BY courseName, level, title');
     
     const rows = await sequelize.query(
       `SELECT * FROM LessonTemplates ORDER BY courseName, level, title`,
       { type: QueryTypes.SELECT }
     );
     
+    console.log(`✅ تم جلب ${rows.length} صف`);
+    
     const templates = rows.map(transformTemplate);
     
-    console.log(`✅ تم جلب ${templates.length} قالب`);
+    console.log(`✅ تم تحويل ${templates.length} قالب`);
     res.json(templates);
   } catch (err) {
     console.error('❌ خطأ في جلب القوالب:', err.message);
-    return res.status(500).json({ error: 'خطأ في جلب قوالب الدروس' });
+    console.error('Stack:', err.stack);
+    return res.status(500).json({ error: 'خطأ في جلب قوالب الدروس', details: err.message });
   }
 };
 

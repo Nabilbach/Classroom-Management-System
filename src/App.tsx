@@ -1,6 +1,6 @@
 // React import not required with new JSX transform
 import React from 'react';
-import { HashRouter as Router, Route, Routes } from 'react-router-dom';
+import { HashRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import MainContent from './components/MainContent';
@@ -21,6 +21,7 @@ import Settings from './pages/Settings';
 import AssessmentSettings from './pages/AssessmentSettings';
 import SectionProgress from './pages/SectionProgress';
 import TextbookPage from './pages/TextbookPageSimple';
+import CurriculumManager from './pages/CurriculumManager';
 
 import PresentationModeBanner from './components/layout/PresentationModeBanner';
 
@@ -71,6 +72,9 @@ function App() {
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/assessment-settings" element={<AssessmentSettings />} />
                 <Route path="/section-progress/:sectionId" element={<SectionProgress />} /> {/* New Route */}
+                <Route path="/curriculum-manager" element={<CurriculumManager />} />
+                {/* Redirect /sections to /section-management to fix broken links */}
+                <Route path="/sections" element={<Navigate to="/section-management" replace />} />
               </Routes>
             </LessonLogProvider>
           </MainContent>

@@ -13,6 +13,23 @@ const Section = sequelize.define('Section', {
   educationalLevel: {
     type: DataTypes.STRING,
     allowNull: true,
+  },
+  specialization: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  curriculumId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Curriculums',
+      key: 'id'
+    }
+  },
+  lessonProgress: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: {}
   }
 });
 

@@ -8,9 +8,8 @@ import { ar } from 'date-fns/locale/ar';
 import { Box, Typography, IconButton, Button } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
-// import { useCurriculum } from '../contexts/CurriculumContext';
 import { ScheduledLesson, AdaptedLesson } from '../types/lessonLogTypes';
-import { fetchScheduledLessons, deleteScheduledLesson } from '../services/api/scheduledLessonService';
+import { fetchScheduledLessons, deleteScheduledLesson, updateScheduledLesson } from '../services/api/scheduledLessonService';
 
 interface LessonProgressSummaryProps {
   scheduledLessons: ScheduledLesson[];
@@ -39,12 +38,12 @@ const LessonProgressSummary: React.FC<LessonProgressSummaryProps> = ({ scheduled
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ fontWeight: 'bold' }}>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">
                 الدرس
               </th>
               {/* Assuming sections are dynamic, need to get section names */}
               {/* For now, just show overall progress */}
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ fontWeight: 'bold' }}>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">
                 التقدم الكلي
               </th>
             </tr>
@@ -60,10 +59,10 @@ const LessonProgressSummary: React.FC<LessonProgressSummaryProps> = ({ scheduled
 
               return (
                 <tr key={lessonGroupId}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" style={{ fontWeight: 'bold' }}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
                     {lessonTitle}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500" style={{ fontWeight: 'bold' }}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-500">
                     {progressPercentage.toFixed(0)}% {progressPercentage === 100 ? '✅' : ''}
                   </td>
                 </tr>
@@ -135,7 +134,16 @@ const LearningAndProgressHub: React.FC = () => {
 
   const handleSaveLesson = async (updatedLesson: AdaptedLesson) => {
     try {
-      // Update the lesson in the scheduled lessons list
+      // 1. Update via API first
+      await updateScheduledLesson(updatedLesson.id, {
+        customTitle: updatedLesson.lessonTitle,
+        stages: updatedLesson.stages,
+        notes: updatedLesson.notes?.map(note => note.text).join('\n') || '',
+        manualSessionNumber: updatedLesson.manualSessionNumber,
+        progress: updatedLesson.progress
+      });
+
+      // 2. Update local state
       setScheduledLessons(prevLessons => 
         prevLessons.map(lesson => 
           lesson.id === updatedLesson.id 
@@ -153,6 +161,9 @@ const LearningAndProgressHub: React.FC = () => {
 
       console.log('تم حفظ الحصة المعدلة:', updatedLesson);
       enqueueSnackbar('تم حفظ تعديلات الدرس بنجاح', { variant: 'success' });
+      
+      // Reload to ensure any new lessons (e.g. from splitting) appear
+      reloadScheduledLessons();
     } catch (error) {
       console.error('خطأ في حفظ الدرس:', error);
       enqueueSnackbar('فشل في حفظ تعديلات الدرس', { variant: 'error' });

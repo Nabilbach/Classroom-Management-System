@@ -24,3 +24,5 @@ router.delete('/:id', deleteLessonTemplate);
 router.post('/import', importLessonTemplates);
 
 module.exports = router;
+
+module.exports = router;

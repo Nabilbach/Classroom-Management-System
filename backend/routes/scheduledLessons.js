@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { ScheduledLesson, Section, TextbookEntry, AdminScheduleEntry } = require('../models');
+const { ScheduledLesson, Section, TextbookEntry, AdminScheduleEntry, CurriculumItem, LessonTemplate } = require('../models');
 const { Op } = require('sequelize');
 
 // Helpers
@@ -107,8 +107,9 @@ async function upsertTextbookEntriesForLesson(lesson) {
     let updated = 0;
     for (const secId of assigned) {
       let secName = String(secId);
+      let sec = null;
       try {
-        const sec = await Section.findByPk(String(secId));
+        sec = await Section.findByPk(String(secId));
         if (sec) secName = sec.name;
       } catch {}
 
@@ -142,6 +143,47 @@ async function upsertTextbookEntriesForLesson(lesson) {
       if (existing) await existing.update(payload);
       else await TextbookEntry.create(payload);
       updated += 1;
+
+      // ---------------------------------------------------------
+      // AUTOMATIC PROGRESS TRACKING LOGIC
+      // ---------------------------------------------------------
+      if (sec && lesson.templateId) {
+        try {
+          const curriculumItem = await CurriculumItem.findOne({ where: { linkedTemplateId: String(lesson.templateId) } });
+          const lessonTemplate = await LessonTemplate.findByPk(String(lesson.templateId));
+          
+          if (curriculumItem && lessonTemplate) {
+            // Check 1: All stages completed?
+            const totalStages = toStagesArray(lessonTemplate.stages).length;
+            const isStagesCompleted = totalStages > 0 && completedStages.length >= totalStages;
+            
+            // Check 2: Last session reached?
+            const estimatedSessions = curriculumItem.estimatedSessions || 1;
+            const currentSessionNumber = lesson.manualSessionNumber || 1;
+            const isSessionsCompleted = currentSessionNumber >= estimatedSessions;
+            
+            if (isStagesCompleted || isSessionsCompleted) {
+               let progress = sec.lessonProgress;
+               // Parse if string (SQLite legacy)
+               if (typeof progress === 'string') {
+                 try { progress = JSON.parse(progress); } catch { progress = {}; }
+               }
+               progress = progress || {};
+               
+               // Update status if not already completed
+               if (progress[curriculumItem.id] !== 'completed') {
+                 progress[curriculumItem.id] = 'completed';
+                 
+                 // Update the section
+                 await sec.update({ lessonProgress: progress });
+                 console.log(`✅ [Auto-Complete] Marked lesson "${curriculumItem.title}" (ID: ${curriculumItem.id}) as completed for section "${sec.name}"`);
+               }
+            }
+          }
+        } catch (err) {
+          console.error('❌ [Auto-Complete] Error checking completion:', err);
+        }
+      }
     }
     return { updated, deleted: 0 };
   } catch (e) {

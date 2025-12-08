@@ -3,7 +3,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Typography, IconButton, Box, MenuItem, Select, InputLabel, FormControl, Stack, Paper, Grid, DialogContentText
 } from '@mui/material';
 import { Delete as DeleteIcon, Add as AddIcon, Warning as WarningIcon } from '@mui/icons-material';
-import { LessonTemplate, updateLessonTemplate, addLessonTemplate, deleteLessonTemplate } from '../services/api/lessonTemplateService';
+import { LessonTemplate, updateLessonTemplate, addLessonTemplate, deleteLessonTemplate } from '../services/api/lessonTemplateServiceDB';
 import type { LessonStage } from '../types/lessonLogTypes';
 
 interface TemplateEditModalProps {
@@ -18,7 +18,11 @@ const TemplateEditModal: React.FC<TemplateEditModalProps> = ({ isOpen, onClose, 
 
   useEffect(() => {
     if (template) {
-      setEditedTemplate(template);
+      // Ensure stages is always an array
+      setEditedTemplate({
+        ...template,
+        stages: Array.isArray(template.stages) ? template.stages : []
+      });
     } else {
       setEditedTemplate({
         id: '',
@@ -30,6 +34,8 @@ const TemplateEditModal: React.FC<TemplateEditModalProps> = ({ isOpen, onClose, 
         level: '',
         weekNumber: 1,
         scheduledSections: [],
+        subject: '',
+        grade: ''
       });
     }
   }, [template]);

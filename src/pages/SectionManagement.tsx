@@ -390,6 +390,7 @@ function SectionManagement() {
                   <div className="space-y-2 text-sm text-gray-600 mb-4">
                     <div className="flex justify-between"><span>المستوى:</span><span className="font-semibold text-gray-800" style={{ fontWeight: 'bold' }}>{section.educationalLevel}</span></div>
                     <div className="flex justify-between"><span>التخصص:</span><span className="font-semibold text-gray-800" style={{ fontWeight: 'bold' }}>{section.specialization}</span></div>
+                    <div className="flex justify-between"><span>المنهاج:</span><span className="font-semibold text-gray-800" style={{ fontWeight: 'bold' }}>{section.curriculum?.title || 'غير محدد'}</span></div>
                     <div className="flex justify-between"><span>الأستاذ:</span><span className="font-semibold text-gray-800" style={{ fontWeight: 'bold' }}>{section.teacherName}</span></div>
                   </div>
                   <div className="text-center border-t border-b py-2 my-3">
@@ -399,7 +400,7 @@ function SectionManagement() {
                   <div className="flex justify-center flex-wrap gap-2 mt-4">
                     <Button size="small" variant="outlined" color="primary" className="flex items-center gap-2" onClick={() => handleViewDetailsClick(section)}><FaEye /> تفاصيل</Button>
                     <Button size="small" variant="outlined" color="warning" className="flex items-center gap-2" onClick={() => handleEditClick(section)} disabled={isLoading}><FaEdit /> تعديل</Button>
-                    {section.courseName && <Link to={`/section-progress/${section.id}`}><Button size="small" variant="outlined" color="success" className="flex items-center gap-2" disabled={isLoading}><FaChartPie /> التقدم</Button></Link>}
+                    {(section.courseName || section.curriculumId) && <Link to={`/section-progress/${section.id}`}><Button size="small" variant="outlined" color="success" className="flex items-center gap-2" disabled={isLoading}><FaChartPie /> التقدم</Button></Link>}
                     <Button size="small" variant="contained" color="error" className="flex items-center gap-2" onClick={() => handleDeleteSection(section.id, section.name)} disabled={isLoading}><FaTrash /> حذف</Button>
                   </div>
                 </CardContent>
@@ -437,12 +438,12 @@ function SectionManagement() {
       <Dialog open={isAddModalOpen} onClose={handleAddModalOpen} maxWidth="xs" fullWidth><DialogTitle sx={{ justifyContent: 'flex-end', fontWeight: 'bold' }}>إضافة قسم</DialogTitle><DialogContent dividers><SectionForm onClose={handleAddModalOpen} addSection={addSection} /></DialogContent></Dialog>
       <Dialog open={isEditModalOpen} onClose={handleEditModalOpen} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ justifyContent: 'flex-end', fontWeight: 'bold' }}>تعديل القسم</DialogTitle>
-        {selectedSection && <DialogContent dividers><SectionForm onClose={handleEditModalOpen} initialData={selectedSection} updateSection={(id, data) => editSection(id, data).finally(handleEditModalOpen)} /></DialogContent>}
+        {selectedSection && <DialogContent dividers><SectionForm onClose={handleEditModalOpen} initialData={selectedSection} updateSection={(updatedSection) => editSection(updatedSection.id, updatedSection).finally(handleEditModalOpen)} /></DialogContent>}
       </Dialog>
       <Dialog open={isDetailModalOpen} onClose={handleDetailModalOpen} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ justifyContent: 'flex-end', fontWeight: 'bold' }}>تفاصيل: {selectedSection?.name}</DialogTitle>
         <DialogContent dividers className="p-4 text-right space-y-2 max-h-[60vh] overflow-y-auto">
-          {selectedSection && <><Typography><strong style={{ fontWeight: 'bold' }}>المستوى:</strong> {selectedSection.educationalLevel}</Typography><Typography><strong style={{ fontWeight: 'bold' }}>التخصص:</strong> {selectedSection.specialization}</Typography><Typography><strong style={{ fontWeight: 'bold' }}>القاعة:</strong> {selectedSection.roomNumber}</Typography><Typography><strong style={{ fontWeight: 'bold' }}>الأستاذ:</strong> {selectedSection.teacherName}</Typography>{selectedSection.courseName && <Typography><strong style={{ fontWeight: 'bold' }}>المقرر:</strong> {selectedSection.courseName}</Typography>}<hr className="my-2" /><Typography className="font-bold" style={{ fontWeight: 'bold' }}>التلاميذ:</Typography><div className="max-h-60 overflow-y-auto pr-2">{students.filter(st => st.sectionId === selectedSection.id).length > 0 ? <ul className="list-disc pr-5">{(students.filter(st => st.sectionId === selectedSection.id).map(student => <li key={student.id}>{student.firstName} {student.lastName}</li>))}</ul> : <Typography>لا يوجد تلاميذ.</Typography>}</div></>}
+          {selectedSection && <><Typography><strong style={{ fontWeight: 'bold' }}>المستوى:</strong> {selectedSection.educationalLevel}</Typography><Typography><strong style={{ fontWeight: 'bold' }}>التخصص:</strong> {selectedSection.specialization}</Typography><Typography><strong style={{ fontWeight: 'bold' }}>المنهاج:</strong> {selectedSection.curriculum?.title || 'غير محدد'}</Typography><Typography><strong style={{ fontWeight: 'bold' }}>القاعة:</strong> {selectedSection.roomNumber}</Typography><Typography><strong style={{ fontWeight: 'bold' }}>الأستاذ:</strong> {selectedSection.teacherName}</Typography>{selectedSection.courseName && <Typography><strong style={{ fontWeight: 'bold' }}>المقرر:</strong> {selectedSection.courseName}</Typography>}<hr className="my-2" /><Typography className="font-bold" style={{ fontWeight: 'bold' }}>التلاميذ:</Typography><div className="max-h-60 overflow-y-auto pr-2">{students.filter(st => st.sectionId === selectedSection.id).length > 0 ? <ul className="list-disc pr-5">{(students.filter(st => st.sectionId === selectedSection.id).map(student => <li key={student.id}>{student.firstName} {student.lastName}</li>))}</ul> : <Typography>لا يوجد تلاميذ.</Typography>}</div></>}
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'flex-start' }}><Button variant="text" color="error" onClick={handleDetailModalOpen}>إغلاق</Button></DialogActions>
       </Dialog>

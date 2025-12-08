@@ -74,6 +74,8 @@ export const migrateLessonToAdapted = (scheduledLesson: ScheduledLesson): Adapte
     manualSessionNumber: scheduledLesson.manualSessionNumber,
     lessonGroupId: scheduledLesson.lessonGroupId,
     notes: parseNotesFromText(scheduledLesson.notes), // Add notes parsing
+    sectionId: scheduledLesson.assignedSections?.[0], // Map first section
+    courseName: scheduledLesson.subject, // Map subject to courseName
   };
 
   return adapted;

@@ -150,6 +150,7 @@ const TemplateLibrary = () => {
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
     setSelectedTemplate(null);
+    load(); // Reload templates after closing modal to reflect changes
   };
 
   const handleDeleteTemplate = async (templateId: string) => {

@@ -3,7 +3,10 @@ import { Modal, Box, Typography, Button, TextField, Checkbox, IconButton, Stack,
 import { useSnackbar } from 'notistack';
 import { useSections } from '../contexts/SectionsContext';
 import { AdaptedLesson, LessonStage } from '../types/lessonLogTypes';
-import { Delete as DeleteIcon, AddComment as AddCommentIcon } from '@mui/icons-material';
+import { Delete as DeleteIcon, AddComment as AddCommentIcon, CallSplit as CallSplitIcon } from '@mui/icons-material';
+import { addScheduledLesson } from '../services/api/scheduledLessonService';
+import { fetchAdminSchedule } from '../services/api/adminScheduleService';
+import { addWeeks, addDays } from 'date-fns';
 import { DateTime } from 'luxon';
 import {
   DndContext,
@@ -264,8 +267,8 @@ const EditLessonModal: React.FC<EditLessonModalProps> = ({ lesson, onClose, onSa
       lessonTitle: editedLessonTitle,
       status: currentStatus,
       stages: lessonStages,
-  // Map UI notes back to domain notes shape
-  notes: lessonNotes.map(n => ({ text: n.text, timestamp: n.timestamp })),
+      // Map UI notes back to domain notes shape
+      notes: lessonNotes.map(n => ({ text: n.text, timestamp: n.timestamp })),
       manualSessionNumber: manualSessionNumber,
     };
 
@@ -275,6 +278,139 @@ const EditLessonModal: React.FC<EditLessonModalProps> = ({ lesson, onClose, onSa
 
     onSave(updatedLesson);
     onClose();
+  };
+
+  const handleSplitAndSave = async () => {
+    if (!lesson) return;
+
+    const completedStages = lessonStages.filter(s => s.isCompleted);
+    const remainingStages = lessonStages.filter(s => !s.isCompleted);
+
+    if (remainingStages.length === 0) {
+      enqueueSnackbar('جميع المراحل مكتملة، لا يوجد شيء لترحيله!', { variant: 'warning' });
+      return;
+    }
+
+    if (completedStages.length === 0) {
+      if (!window.confirm('لم تكمل أي مرحلة! هل تريد ترحيل الدرس بالكامل للحصة القادمة؟')) return;
+    }
+
+    try {
+      // 1. Calculate the next session date based on the schedule
+      let nextDate = addWeeks(new Date(lesson.date), 1); // Default fallback
+      let nextStartTime = '08:00'; // Default start time
+
+      try {
+        const schedule = await fetchAdminSchedule();
+        // Filter for this section
+        const sectionSessions = schedule.filter(s => s.sectionId === lesson.sectionId);
+        
+        if (sectionSessions.length > 0) {
+          const current = new Date(lesson.date);
+          const daysMap: {[key: number]: string} = {
+            0: 'الأحد', 1: 'الإثنين', 2: 'الثلاثاء', 3: 'الأربعاء', 4: 'الخميس', 5: 'الجمعة', 6: 'السبت'
+          };
+          const daysOrder = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+          
+          // Sort sessions by day index and time
+          const sortedSessions = sectionSessions.sort((a, b) => {
+            const dayDiff = daysOrder.indexOf(a.day) - daysOrder.indexOf(b.day);
+            if (dayDiff !== 0) return dayDiff;
+            return a.startTime.localeCompare(b.startTime);
+          });
+
+          const currentDayName = daysMap[current.getDay()];
+          const currentDayIndex = daysOrder.indexOf(currentDayName);
+          
+          // Find next session in the same week
+          // We look for a session that is either on a later day, OR on the same day but later time
+          // Note: Current logic only checked day index. Let's improve it.
+          
+          // Simple approach: Find the first session that is "after" the current one in the sorted list
+          // We need to map the current lesson to a "slot" in the sorted list
+          
+          let nextSessionInWeek = sortedSessions.find(s => {
+             const sDayIndex = daysOrder.indexOf(s.day);
+             return sDayIndex > currentDayIndex;
+          });
+          
+          // If we are on the same day, check if there is a later slot
+          if (!nextSessionInWeek) {
+             // Check for same day but later time? 
+             // For now, let's stick to the day logic as requested "second session of the week" usually implies a different day or slot
+          }
+
+          if (nextSessionInWeek) {
+             const nextDayIndex = daysOrder.indexOf(nextSessionInWeek.day);
+             const diff = nextDayIndex - currentDayIndex;
+             nextDate = addDays(current, diff);
+             nextStartTime = nextSessionInWeek.startTime;
+          } else {
+             // Wrap to next week's first session
+             if (sortedSessions.length > 0) {
+               const firstSession = sortedSessions[0];
+               const firstDayIndex = daysOrder.indexOf(firstSession.day);
+               const diff = (7 - currentDayIndex) + firstDayIndex;
+               nextDate = addDays(current, diff);
+               nextStartTime = firstSession.startTime;
+             }
+          }
+        }
+      } catch (err) {
+        console.error('Error calculating next session date, using default 1 week:', err);
+      }
+
+      // Adjust the time of nextDate to match nextStartTime
+      const [hours, minutes] = nextStartTime.split(':').map(Number);
+      nextDate.setHours(hours, minutes, 0, 0);
+
+      // Calculate next session number
+      const currentSessionNumber = lesson.manualSessionNumber || 1;
+      const nextSessionNumber = currentSessionNumber + 1;
+      
+      // Clean title from previous "(تكملة)" if exists to avoid repetition
+      const cleanTitle = editedLessonTitle.replace(/\s*\(تكملة\)\s*/g, '').trim();
+
+      // 2. Create the next lesson with remaining stages
+      const newLessonPayload = {
+        date: nextDate.toISOString(),
+        startTime: nextStartTime,
+        customTitle: cleanTitle, // Use clean title without suffix
+        subject: lesson.courseName || '', // Use subject to match backend schema
+        assignedSections: lesson.sectionId ? [lesson.sectionId] : [], // Use assignedSections array
+        stages: remainingStages.map(s => ({ ...s, isCompleted: false })), 
+        lessonGroupId: lesson.lessonGroupId || lesson.id, 
+        originalLessonId: lesson.id,
+        progress: 0,
+        status: 'planned',
+        completionStatus: lesson.sectionId ? { [lesson.sectionId]: 'planned' } : {},
+        manualSessionNumber: nextSessionNumber // Increment session number
+      };
+
+      console.log('Splitting lesson. New payload:', newLessonPayload);
+
+      // We need to cast this because addScheduledLesson expects specific backend types
+      await addScheduledLesson(newLessonPayload as any);
+
+      // 3. Update current lesson to keep ONLY completed stages
+      const updatedCurrentLesson: AdaptedLesson = {
+        ...lesson,
+        lessonTitle: editedLessonTitle,
+        status: currentStatus,
+        stages: completedStages,
+        notes: lessonNotes.map(n => ({ text: n.text, timestamp: n.timestamp })),
+        manualSessionNumber: manualSessionNumber,
+        progress: 100, // Since we moved the rest, this one is now "done"
+      };
+
+      onSave(updatedCurrentLesson);
+      enqueueSnackbar('تم تقسيم الدرس وترحيل المراحل المتبقية للحصة القادمة', { variant: 'success' });
+      onClose();
+
+    } catch (error) {
+      console.error('Failed to split lesson:', error);
+      enqueueSnackbar('فشل في ترحيل الدرس', { variant: 'error' });
+    }
   };
 
   const handleStageCompletion = (index: number) => {
@@ -476,6 +612,15 @@ const EditLessonModal: React.FC<EditLessonModalProps> = ({ lesson, onClose, onSa
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
           <Button variant="outlined" onClick={onClose}>
             إلغاء
+          </Button>
+          <Button 
+            variant="contained" 
+            color="secondary" 
+            onClick={handleSplitAndSave}
+            startIcon={<CallSplitIcon sx={{ transform: 'scaleX(-1)' }} />} // Flip icon for RTL
+            title="حفظ المراحل المكتملة وترحيل الباقي لحصة جديدة الأسبوع القادم"
+          >
+            حفظ وترحيل المتبقي
           </Button>
           <Button variant="contained" onClick={handleSave}>
             حفظ

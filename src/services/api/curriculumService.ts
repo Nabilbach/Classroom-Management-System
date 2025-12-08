@@ -1,58 +1,63 @@
-// تعريف واجهة Lesson محلياً
-interface Lesson {
-  id: string;
+import axios from 'axios';
+
+const API_URL = 'http://localhost:4200/api/curriculums';
+
+export interface CurriculumItem {
+  id?: number;
+  curriculumId: number;
   title: string;
-  content?: string;
-  duration?: number;
+  order: number;
+  unitTitle?: string;
+  estimatedSessions?: number;
+  linkedTemplateId?: number;
+  status?: 'pending' | 'in_progress' | 'completed';
 }
 
-const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:4200';
+export interface Curriculum {
+  id?: number;
+  title: string;
+  subject: string;
+  educationalLevel: string;
+  description?: string;
+  items?: CurriculumItem[];
+}
 
-const LESSONS_ENDPOINT = `${API_BASE_URL}/api/lessons`;
+export const curriculumService = {
+  getAll: async () => {
+    const response = await axios.get<Curriculum[]>(API_URL);
+    return response.data;
+  },
 
-// Helper for handling responses
-const handleResponse = async <T>(response: Response): Promise<T> => {
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Something went wrong');
+  getById: async (id: number) => {
+    const response = await axios.get<Curriculum>(`${API_URL}/${id}`);
+    return response.data;
+  },
+
+  create: async (data: Curriculum) => {
+    const response = await axios.post<Curriculum>(API_URL, data);
+    return response.data;
+  },
+
+  addItem: async (curriculumId: number, item: Omit<CurriculumItem, 'curriculumId'>) => {
+    const response = await axios.post<CurriculumItem>(`${API_URL}/${curriculumId}/items`, item);
+    return response.data;
+  },
+
+  addItemsBulk: async (curriculumId: number, items: Omit<CurriculumItem, 'curriculumId'>[]) => {
+    const response = await axios.post<CurriculumItem[]>(`${API_URL}/${curriculumId}/items/bulk`, { items });
+    return response.data;
+  },
+
+  updateItem: async (itemId: number, data: Partial<CurriculumItem>) => {
+    const response = await axios.put<CurriculumItem>(`${API_URL}/items/${itemId}`, data);
+    return response.data;
+  },
+
+  deleteItem: async (itemId: number) => {
+    await axios.delete(`${API_URL}/items/${itemId}`);
+  },
+
+  deleteCurriculum: async (id: number) => {
+    await axios.delete(`${API_URL}/${id}`);
   }
-  return response.json();
-};
-
-export const fetchLessons = async (): Promise<Lesson[]> => {
-  const response = await fetch(LESSONS_ENDPOINT);
-  return handleResponse<Lesson[]>(response);
-};
-
-export const createLesson = async (lessonData: Omit<Lesson, 'id'>): Promise<Lesson> => { // Changed Omit to only 'id'
-  const response = await fetch(LESSONS_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(lessonData),
-  });
-  return handleResponse<Lesson>(response);
-};
-
-export const updateLesson = async (lessonId: string, lessonData: Partial<Lesson>): Promise<Lesson> => {
-  const response = await fetch(`${LESSONS_ENDPOINT}/${lessonId}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(lessonData),
-  });
-  return handleResponse<Lesson>(response);
-};
-
-export const deleteLesson = async (lessonId: string): Promise<void> => {
-  const response = await fetch(`${LESSONS_ENDPOINT}/${lessonId}`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'Something went wrong');
-  }
-  // No content for successful delete
 };

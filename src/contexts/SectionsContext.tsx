@@ -20,6 +20,8 @@ export interface Section {
   roomNumber?: string;
   teacherName?: string;
   courseName?: string;
+  curriculumId?: number;
+  curriculum?: { id: number; title: string };
   lessonProgress?: { [lessonId: string]: 'not-started' | 'in-progress' | 'completed' };
 }
 

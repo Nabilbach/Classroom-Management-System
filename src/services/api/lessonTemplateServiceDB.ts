@@ -209,9 +209,17 @@ export const addLessonTemplate = async (templateData: Omit<LessonTemplate, 'id'>
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: templateData.title,
+          // Ensure backend fields are populated
+          courseName: templateData.courseName || templateData.subject,
+          level: templateData.level || templateData.grade,
+          estimatedSessions: templateData.estimatedSessions || (templateData.duration ? Math.ceil(templateData.duration / 50) : 1),
+          description: templateData.description || templateData.content || '',
+          weekNumber: templateData.weekNumber,
+          
+          // Keep new fields
           subject: templateData.subject || templateData.courseName,
           grade: templateData.grade || templateData.level,
-          duration: templateData.duration || templateData.estimatedSessions ? templateData.estimatedSessions * 50 : 50,
+          duration: templateData.duration || (templateData.estimatedSessions ? templateData.estimatedSessions * 50 : 50),
           objectives: templateData.objectives || [],
           content: templateData.content || templateData.description || '',
           stages: templateData.stages || [],

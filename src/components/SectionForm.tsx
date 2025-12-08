@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Input, Button, Typography, Select, Option } from "@material-tailwind/react";
 import { useCurriculum } from '../contexts/CurriculumContext';
 import { useSections, Section } from '../contexts/SectionsContext'; // Import useSections and Section interface
+import { curriculumService, Curriculum } from '../services/api/curriculumService';
 
 interface SectionFormProps {
   onClose: () => void;
@@ -14,21 +15,42 @@ function SectionForm({ onClose, addSection, updateSection, initialData }: Sectio
   const [sectionName, setSectionName] = useState(initialData?.name || '');
   const [educationalLevel, setEducationalLevel] = useState(initialData?.educationalLevel || '');
   const [specialization, setSpecialization] = useState(initialData?.specialization || '');
-  const [roomNumber, setRoomNumber] = useState(initialData?.roomNumber || '');
-  const [teacherName, setTeacherName] = useState(initialData?.teacherName || '');
-  const [courseName, setCourseName] = useState(initialData?.courseName || ''); // New state for courseName
+  const [teacherName, setTeacherName] = useState(initialData?.teacherName || 'نبيل بشيري');
+  const [curriculumId, setCurriculumId] = useState<number | undefined>(initialData?.curriculumId);
+  const [availableCurriculums, setAvailableCurriculums] = useState<Curriculum[]>([]);
 
-  const { lessons } = useCurriculum(); // Get lessons to extract unique course names
   const { isLoading: sectionsLoading } = useSections(); // Get isLoading from useSections
+
+  React.useEffect(() => {
+    if (initialData) {
+      setSectionName(initialData.name || '');
+      setEducationalLevel(initialData.educationalLevel || '');
+      setSpecialization(initialData.specialization || '');
+      setTeacherName(initialData.teacherName || 'نبيل بشيري');
+      setCurriculumId(initialData.curriculumId);
+    }
+  }, [initialData]);
+
+  React.useEffect(() => {
+    const loadCurriculums = async () => {
+      try {
+        const data = await curriculumService.getAll();
+        setAvailableCurriculums(data);
+      } catch (error) {
+        console.error('Failed to load curriculums', error);
+      }
+    };
+    loadCurriculums();
+  }, []);
 
   const educationalLevels = ['أولى إعدادي', 'ثانية إعدادي', 'ثالثة إعدادي', 'جذع مشترك', 'أولى بكالوريا', 'ثانية بكالوريا'];
   const specializations = ['علمي', 'أدبي', 'تقني', 'أصيل'];
 
   // Get unique course names from lessons
-  const uniqueCourseNames = React.useMemo(() => {
-    const names = Array.from(new Set(lessons.map(lesson => lesson.courseName).filter(Boolean)));
-    return names;
-  }, [lessons]);
+  // const uniqueCourseNames = React.useMemo(() => {
+  //   const names = Array.from(new Set(lessons.map(lesson => lesson.courseName).filter(Boolean)));
+  //   return names;
+  // }, [lessons]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,9 +66,8 @@ function SectionForm({ onClose, addSection, updateSection, initialData }: Sectio
     
     // Include optional fields only if they have values
     if (specialization) sectionData.specialization = specialization;
-    if (roomNumber) sectionData.roomNumber = roomNumber;
     if (teacherName) sectionData.teacherName = teacherName;
-    if (courseName) sectionData.courseName = courseName;
+    if (curriculumId) sectionData.curriculumId = curriculumId;
 
     if (initialData) {
       // Editing existing section
@@ -112,17 +133,19 @@ function SectionForm({ onClose, addSection, updateSection, initialData }: Sectio
       </div>
       <div className="mb-4">
         <Typography variant="small" color="blue-gray" className="mb-2 font-semibold text-right">
-          رقم القاعة/الغرفة
+          المنهاج الدراسي
         </Typography>
-        <Input
-          placeholder="رقم القاعة/الغرفة"
-          value={roomNumber}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRoomNumber(e.target.value)}
-          fullWidth
+        <Select
+          value={curriculumId ? curriculumId.toString() : ''}
+          onChange={(value: string) => setCurriculumId(parseInt(value))}
           className="text-right"
           labelProps={{ className: "hidden" }}
-          crossOrigin={undefined}
-        />
+          label="اختر المنهاج"
+        >
+          {availableCurriculums.map((curr) => (
+            <Option key={curr.id} value={curr.id?.toString() || ''}>{curr.title}</Option>
+          ))}
+        </Select>
       </div>
       <div className="mb-4">
         <Typography variant="small" color="blue-gray" className="mb-2 font-semibold text-right">
@@ -137,34 +160,6 @@ function SectionForm({ onClose, addSection, updateSection, initialData }: Sectio
           labelProps={{ className: "hidden" }}
           crossOrigin={undefined}
         />
-      </div>
-      {/* New Select for Course Name */}
-      <div className="mb-4">
-        <Typography variant="small" color="blue-gray" className="mb-2 font-semibold text-right">
-          المقرر المخصص
-        </Typography>
-        <Select
-          value={courseName}
-          onChange={(value: string) => setCourseName(value)}
-          className="text-right"
-          labelProps={{ className: "hidden" }}
-          label="اختر المقرر"
-          disabled={sectionsLoading} // Disable when loading
-        >
-          <Option value="">لا يوجد</Option>
-          {uniqueCourseNames.map((name) => (
-            <Option key={name} value={name}>{name}</Option>
-          ))}
-        </Select>
-      </div>
-      <div className="mb-4">
-        <Button
-          variant="filled"
-          fullWidth
-          className="mb-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md font-semibold py-3 px-6 transition-colors duration-200"
-        >
-          إضافة جدول الحصص
-        </Button>
       </div>
       <div className="flex justify-start gap-2">
         <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md font-semibold py-3 px-6 transition-colors duration-200" disabled={sectionsLoading}> {/* Disable when loading */}

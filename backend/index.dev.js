@@ -9,12 +9,27 @@ const SequelizeLib = require('sequelize');
 const { Op } = require('sequelize');
 
 const app = express();
-const PORT = process.env.PORT || 4201; // Development port
+const PORT = process.env.PORT || 4200; // Development port changed to 4200 to avoid conflict with Vite (4201)
 
 // Middleware
 app.use(cors());
 app.use(express.json({ charset: 'utf-8' }));
 app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
+
+// Root route for health check
+app.get('/', (req, res) => {
+  res.send('Backend server is running correctly in Development Mode');
+});
+
+// Serve favicon.ico to prevent 404 errors
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
+// Config API
+app.get('/api/config', (req, res) => {
+  res.json({
+    presentationMode: process.env.PRESENTATION_MODE === 'true'
+  });
+});
 
 // Set default charset for responses
 app.use((req, res, next) => {
@@ -37,6 +52,20 @@ app.use('/api/sections/stats', sectionStatsRoutes);
 // Lesson templates API
 const lessonTemplatesRoutes = require('./routes/lessonTemplatesRoutes');
 app.use('/api/lesson-templates', lessonTemplatesRoutes);
+
+// Curriculum API
+const curriculumRoutes = require('./routes/curriculum');
+app.use('/api/curriculums', curriculumRoutes);
+
+// Backup status API (Mock for Dev)
+app.get('/api/backup-status', (req, res) => {
+  res.json({
+    isRunning: true,
+    lastBackup: new Date().toISOString(),
+    nextBackup: null,
+    backupCount: 0
+  });
+});
 
 // Helper function to get the current score for a student
 const getCurrentScore = async (studentId) => {
@@ -152,7 +181,12 @@ app.delete('/api/lesson-logs/:id', async (req, res) => {
 // Routes for Sections
 app.get('/api/sections', async (req, res) => {
   try {
-    const sections = await db.Section.findAll();
+    const sections = await db.Section.findAll({
+      include: [{
+        model: db.Curriculum,
+        as: 'curriculum'
+      }]
+    });
     res.json(sections);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving sections', error: error.message, stack: error.stack });
@@ -162,7 +196,13 @@ app.get('/api/sections', async (req, res) => {
 app.post('/api/sections', async (req, res) => {
   try {
     const newSection = await db.Section.create({ id: Date.now().toString(), ...req.body });
-    res.status(201).json(newSection);
+    const reloadedSection = await db.Section.findByPk(newSection.id, {
+      include: [{
+        model: db.Curriculum,
+        as: 'curriculum'
+      }]
+    });
+    res.status(201).json(reloadedSection);
   } catch (error) {
     res.status(500).json({ message: 'Error creating section', error: error.message, stack: error.stack });
   }
@@ -171,14 +211,22 @@ app.post('/api/sections', async (req, res) => {
 app.put('/api/sections/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`Updating section ${id} with data:`, JSON.stringify(req.body, null, 2));
     const [updated] = await db.Section.update(req.body, { where: { id } });
     if (updated) {
-      const updatedSection = await db.Section.findByPk(id);
+      const updatedSection = await db.Section.findByPk(id, {
+        include: [{
+          model: db.Curriculum,
+          as: 'curriculum'
+        }]
+      });
+      console.log('Updated section result:', JSON.stringify(updatedSection, null, 2));
       res.json(updatedSection);
     } else {
       res.status(404).json({ message: 'Section not found' });
     }
   } catch (error) {
+    console.error('Error updating section:', error);
     res.status(500).json({ message: 'Error updating section', error: error.message, stack: error.stack });
   }
 });
@@ -645,6 +693,26 @@ preMigrateCleanup()
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Backend server running on http://localhost:${PORT}`);
+      
+      // Test the API immediately
+      setTimeout(() => {
+        const http = require('http');
+        const opts = {
+          hostname: 'localhost',
+          port: PORT,
+          path: '/api/lesson-templates',
+          method: 'GET'
+        };
+        const testReq = http.request(opts, (res) => {
+          let d = '';
+          res.on('data', c => d += c);
+          res.on('end', () => {
+            console.log(`🧪 API Test: Status ${res.statusCode}, Got ${d.length} bytes`);
+          });
+        });
+        testReq.on('error', e => console.error(`🧪 API Test Error: ${e.message}`));
+        testReq.end();
+      }, 1000);
       
       // Keep alive mechanism
       setInterval(() => {

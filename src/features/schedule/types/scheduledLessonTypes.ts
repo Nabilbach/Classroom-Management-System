@@ -30,4 +30,6 @@ export interface AdaptedLesson {
   manualSessionNumber?: number;
   lessonGroupId?: string;
   notes?: { timestamp: string; text: string; }[];
+  sectionId?: string; // Added for split logic
+  courseName?: string; // Added for split logic
 }
