@@ -21,6 +21,16 @@ app.get('/', (req, res) => {
   res.send('Backend server is running correctly in Development Mode');
 });
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', mode: 'development' });
+});
+
+// API Health check endpoint (for frontend proxy)
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', mode: 'development' });
+});
+
 // Serve favicon.ico to prevent 404 errors
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
@@ -56,6 +66,10 @@ app.use('/api/lesson-templates', lessonTemplatesRoutes);
 // Curriculum API
 const curriculumRoutes = require('./routes/curriculum');
 app.use('/api/curriculums', curriculumRoutes);
+
+// Current Lesson API
+const currentLessonRoutes = require('./routes/currentLesson');
+app.use('/api/schedule', currentLessonRoutes);
 
 // Backup status API (Mock for Dev)
 app.get('/api/backup-status', (req, res) => {
@@ -684,6 +698,136 @@ const ensureAttendanceIndexes = async () => {
     console.warn('ensureAttendanceIndexes warning:', e?.message || e);
   }
 };
+
+// Endpoint: return count of open followups for a section
+app.get('/api/sections/:sectionId/followups-count', async (req, res) => {
+  try {
+    const { sectionId } = req.params;
+    // find students in section
+    const students = await db.Student.findAll({ where: { sectionId }, attributes: ['id'] });
+    const studentIds = students.map(s => s.id);
+    if (studentIds.length === 0) return res.json({ count: 0 });
+    const count = await db.FollowUp.count({ where: { studentId: studentIds, is_open: true } });
+    res.json({ count });
+  } catch (error) {
+    console.error('Error fetching section followup counts:', error);
+    res.status(500).json({ message: 'Error fetching followup counts', error: error.message });
+  }
+});
+
+// GET /api/sections/:sectionId/assessment-grid
+// Returns for a section the latest per-student per-element scores and final score normalized to 0..10
+app.get('/api/sections/:sectionId/assessment-grid', async (req, res) => {
+  try {
+    const { sectionId } = req.params;
+    if (!sectionId) return res.status(400).json({ message: 'sectionId is required' });
+
+    // Find students in this section
+    const students = await db.Student.findAll({ where: { sectionId } });
+    const studentIds = students.map(s => s.id);
+
+    if (studentIds.length === 0) return res.json({ students: [] });
+
+    // Fetch latest assessment for each student (take the most recent by date)
+    const assessments = await db.StudentAssessment.findAll({
+      where: { studentId: studentIds },
+      order: [['date', 'DESC']]
+    });
+
+    // Map latest per student
+    const latestByStudent = {};
+    assessments.forEach(a => {
+      if (!latestByStudent[a.studentId]) latestByStudent[a.studentId] = a;
+    });
+
+    // Helper: normalize element value to 0..10
+    const normalizeTo10 = (v) => {
+      if (v == null) return null;
+      const n = Number(v);
+      if (!Number.isFinite(n)) return null;
+      if (n <= 1) return Math.round(n * 10 * 100) / 100;
+      if (n <= 10) return Math.round(n * 100) / 100;
+      if (n <= 100) return Math.round((n / 100) * 10 * 100) / 100;
+      return Math.round(Math.max(0, Math.min(10, n)) * 100) / 100;
+    };
+
+    // Collect all keys and compute per-key maxima (based on latest assessments)
+    const allKeys = new Set();
+    students.forEach(s => {
+      const a = latestByStudent[s.id];
+      if (a && a.scores) {
+        try {
+          const obj = typeof a.scores === 'string' ? JSON.parse(a.scores) : a.scores;
+          Object.keys(obj || {}).forEach(k => allKeys.add(k));
+        } catch (e) {}
+      }
+    });
+    const keys = Array.from(allKeys);
+
+    const maxPerKey = {};
+    keys.forEach(k => { maxPerKey[k] = 0; });
+    students.forEach(s => {
+      const a = latestByStudent[s.id];
+      if (!a || !a.scores) return;
+      let obj = {};
+      try { obj = typeof a.scores === 'string' ? JSON.parse(a.scores) : a.scores; } catch (e) { obj = a.scores || {}; }
+      keys.forEach(k => {
+        const v = normalizeTo10(obj[k]);
+        if (v != null && v > (maxPerKey[k] || 0)) maxPerKey[k] = v;
+      });
+    });
+
+    const sumMax = keys.reduce((acc, k) => acc + (maxPerKey[k] || 0), 0);
+    const scaleFactor = sumMax > 0 ? (10 / sumMax) : 1;
+
+    const grid = students.map(s => {
+      const latest = latestByStudent[s.id];
+      let elementScores = {};
+      let finalScore = null;
+
+      if (latest && latest.scores) {
+        let scoresObj = {};
+        try {
+          scoresObj = typeof latest.scores === 'string' ? JSON.parse(latest.scores) : latest.scores;
+        } catch (e) {
+          scoresObj = latest.scores || {};
+        }
+
+        const scaledVals = [];
+        keys.forEach(k => {
+          const raw = normalizeTo10(scoresObj[k]);
+          if (raw == null) {
+            elementScores[k] = null;
+          } else {
+            const scaled = Math.round(raw * scaleFactor * 100) / 100;
+            elementScores[k] = scaled;
+            scaledVals.push(scaled);
+          }
+        });
+
+        if (scaledVals.length > 0) {
+          finalScore = Math.round(Math.min(10, scaledVals.reduce((a, b) => a + b, 0)) * 100) / 100;
+        }
+      }
+
+      return {
+        studentId: s.id,
+        familyName: s.lastName || '',
+        fullName: `${s.firstName || ''} ${s.lastName || ''}`.trim(),
+        pathwayNumber: s.pathwayNumber || s.pathway_number || '',
+        classOrder: s.classOrder || s.class_order || null,
+        latestAssessmentDate: latest ? latest.date : null,
+        elementScores,
+        finalScore
+      };
+    });
+
+    res.json({ sectionId, grid, generatedAt: new Date().toISOString() });
+  } catch (error) {
+    console.error('Error building assessment grid:', error);
+    res.status(500).json({ message: 'Error building assessment grid', error: error.message });
+  }
+});
 
 // Start the server
 preMigrateCleanup()

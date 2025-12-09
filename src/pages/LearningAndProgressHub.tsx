@@ -6,7 +6,7 @@ import EditLessonModal from '../components/EditLessonModal';
 import { startOfWeek, addWeeks, subWeeks, endOfWeek, format } from 'date-fns';
 import { ar } from 'date-fns/locale/ar';
 import { Box, Typography, IconButton, Button } from '@mui/material';
-import { ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { ChevronLeft, ChevronRight, Delete as DeleteIcon } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import { ScheduledLesson, AdaptedLesson } from '../types/lessonLogTypes';
 import { fetchScheduledLessons, deleteScheduledLesson, updateScheduledLesson } from '../services/api/scheduledLessonService';
@@ -74,6 +74,8 @@ const LessonProgressSummary: React.FC<LessonProgressSummaryProps> = ({ scheduled
     </Box>
   );
 };
+
+import LearningAnalytics from '../components/LearningAnalytics';
 
 const LearningAndProgressHub: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -172,135 +174,88 @@ const LearningAndProgressHub: React.FC = () => {
     setEditingLesson(null);
   };
 
+  const handleDeleteLesson = async (lessonId: string) => {
+    try {
+      await deleteScheduledLesson(lessonId);
+      enqueueSnackbar('تم حذف الحصة بنجاح', { variant: 'success' });
+      reloadScheduledLessons();
+    } catch (error) {
+      console.error('Failed to delete lesson:', error);
+      enqueueSnackbar('فشل في حذف الحصة', { variant: 'error' });
+    }
+  };
+
   return (
     <div className="w-full h-full px-2" dir="rtl">
-      {/* Modern Header with Gradient */}
+      {/* Compact Header */}
       <Box 
         sx={{ 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          borderRadius: '16px',
-          p: 3,
-          mb: 3,
-          boxShadow: '0 8px 24px rgba(102, 126, 234, 0.15)',
+          bgcolor: 'white',
+          borderRadius: '12px',
+          p: 1.5,
+          mb: 2,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          border: '1px solid #e5e7eb'
         }}
       >
-        <Typography 
-          variant="h4" 
-          sx={{ 
-            color: 'white',
-            fontWeight: 'bold',
-            mb: 2,
-            textShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          }}
-        >
-          📚 مركز إدارة التعلم والتقدم
-        </Typography>
-        
-        {/* Week Navigation Bar */}
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            bgcolor: 'rgba(255, 255, 255, 0.15)',
-            backdropFilter: 'blur(10px)',
-            borderRadius: '12px',
-            p: 2,
-            border: '1px solid rgba(255, 255, 255, 0.2)'
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton 
-              onClick={goToPreviousWeek}
-              sx={{ 
-                bgcolor: 'rgba(255, 255, 255, 0.2)',
-                color: 'white',
-                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.3)' }
-              }}
-            >
-              <ChevronRight />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1f2937' }}>
+            📚 إدارة التعلم
+          </Typography>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#f3f4f6', borderRadius: '8px', p: 0.5 }}>
+            <IconButton size="small" onClick={goToPreviousWeek}>
+              <ChevronRight fontSize="small" />
             </IconButton>
-            
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              gap: 1,
-              bgcolor: 'rgba(255, 255, 255, 0.9)',
-              px: 3,
-              py: 1,
-              borderRadius: '8px'
-            }}>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#667eea' }}>
-                {weekRangeText}
-              </Typography>
-            </Box>
-            
-            <IconButton 
-              onClick={goToNextWeek}
-              sx={{ 
-                bgcolor: 'rgba(255, 255, 255, 0.2)',
-                color: 'white',
-                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.3)' }
-              }}
-            >
-              <ChevronLeft />
+            <Typography variant="body2" sx={{ fontWeight: 'bold', px: 1, minWidth: '140px', textAlign: 'center' }}>
+              {weekRangeText}
+            </Typography>
+            <IconButton size="small" onClick={goToNextWeek}>
+              <ChevronLeft fontSize="small" />
             </IconButton>
           </Box>
+        </Box>
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button 
-              variant="contained" 
-              onClick={goToCurrentWeek}
-              sx={{ 
-                bgcolor: 'white',
-                color: '#667eea',
-                fontWeight: 'bold',
-                px: 3,
-                '&:hover': { 
-                  bgcolor: '#f0f0f0',
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                },
-                transition: 'all 0.3s ease'
-              }}
-            >
-              📅 الأسبوع الحالي
-            </Button>
-            
-            <Button 
-              variant="contained" 
-              color="error" 
-              onClick={handleClearCalendar}
-              sx={{ 
-                fontWeight: 'bold',
-                px: 3,
-                bgcolor: '#ef4444',
-                '&:hover': { 
-                  bgcolor: '#dc2626',
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
-                },
-                transition: 'all 0.3s ease'
-              }}
-            >
-              🗑️ مسح التقويم
-            </Button>
-          </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button 
+            size="small"
+            variant="outlined" 
+            onClick={goToCurrentWeek}
+            sx={{ color: '#4b5563', borderColor: '#d1d5db' }}
+          >
+            الأسبوع الحالي
+          </Button>
+          
+          <IconButton 
+            size="small"
+            color="error" 
+            onClick={handleClearCalendar}
+            title="مسح التقويم"
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
         </Box>
       </Box>
 
       {/* Main Content Grid */}
-      <div className="flex flex-col md:flex-row gap-4 h-full">
-        <div className="w-full md:w-96 bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg overflow-auto h-full border border-gray-100">
+      <div className="flex flex-col md:flex-row gap-4 min-h-[calc(100vh-100px)]">
+        <div className="w-full md:w-80 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 flex flex-col">
           <TemplateLibrary />
         </div>
 
-        <div className="flex-1 bg-gradient-to-br from-white to-blue-50 rounded-xl shadow-lg overflow-auto h-full border border-blue-100">
+        <div className="flex-1 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 flex flex-col">
           <CalendarGrid currentWeekStart={currentWeekStart} scheduledLessons={scheduledLessons} onRefresh={reloadScheduledLessons} />
         </div>
       </div>
-  <LessonProgressSummary scheduledLessons={scheduledLessons} />
-      <StatisticsFooter />
+      
+      <LearningAnalytics 
+        scheduledLessons={scheduledLessons} 
+        onEditLesson={(lesson) => setEditingLesson(lesson)}
+        onDeleteLesson={handleDeleteLesson}
+      />
 
       {editingLesson && (
         <EditLessonModal

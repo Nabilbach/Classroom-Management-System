@@ -51,7 +51,7 @@ class CurrentLessonService {
     }
 
     try {
-      const response = await fetch('http://localhost:4200/api/schedule/current-lesson');
+      const response = await fetch('/api/schedule/current-lesson');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       
       const result = await response.json();

@@ -1,12 +1,12 @@
-import { Box, Paper, Typography, IconButton } from '@mui/material';
-import { Delete as DeleteIcon } from '@mui/icons-material';
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, isWithinInterval, getDay, isSameWeek } from 'date-fns';
+import { Box, Paper, Typography, IconButton, Button, Menu, MenuItem, ListItemText, ListItemIcon } from '@mui/material';
+import { Delete as DeleteIcon, RestoreFromTrash as RestoreIcon, History as HistoryIcon, Warning as WarningIcon } from '@mui/icons-material';
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, isWithinInterval, getDay, isSameWeek, isSameDay, isBefore, startOfDay, parseISO } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useSnackbar } from 'notistack'; // Import useSnackbar
 // Scheduled lessons mutations are performed via the API service directly
 import { addScheduledLesson as addScheduledLessonAPI, updateScheduledLesson as updateScheduledLessonAPI, deleteScheduledLesson as deleteScheduledLessonAPI } from '../services/api/scheduledLessonService';
 import { fetchAdminSchedule, AdminScheduleEntry } from '../services/api/adminScheduleService';
-import { useSections } from '../contexts/SectionsContext';
+import { useSections, Section } from '../contexts/SectionsContext';
 import { AdaptedLesson, ScheduledLesson } from '../types/lessonLogTypes';
 import { migrateLessonToAdapted } from '../utils/lessonLogMigrationUtils';
 import EditLessonModal from './EditLessonModal';
@@ -42,11 +42,11 @@ const LessonCard = ({ lesson, onDoubleClick, onDelete, allScheduledLessons }: { 
   const displayStatus = useMemo(() => calculateLessonStatus(lesson.stages), [lesson.stages]);
 
   const statusColorMap: { [key: string]: { bg: string, border: string, text: string } } = {
-    'not-planned': { bg: '#f3f4f6', border: '#d1d5db', text: '#6b7280' },
-    planned: { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' },
-    'in-progress': { bg: '#fef3c7', border: '#f59e0b', text: '#92400e' },
-    completed: { bg: '#d1fae5', border: '#10b981', text: '#065f46' },
-    cancelled: { bg: '#fee2e2', border: '#ef4444', text: '#991b1b' },
+    'not-planned': { bg: '#f9fafb', border: '#9ca3af', text: '#4b5563' }, // Gray
+    planned: { bg: '#eff6ff', border: '#3b82f6', text: '#1e40af' },      // Blue
+    'in-progress': { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' }, // Amber
+    completed: { bg: '#ecfdf5', border: '#10b981', text: '#065f46' },     // Emerald
+    cancelled: { bg: '#fef2f2', border: '#ef4444', text: '#991b1b' },     // Red
   };
 
   const statusColors = statusColorMap[displayStatus] || statusColorMap['not-planned'];
@@ -79,6 +79,30 @@ const LessonCard = ({ lesson, onDoubleClick, onDelete, allScheduledLessons }: { 
     completed: 'مكتمل',
   };
 
+  const calculatedProgress = useMemo(() => {
+    if (lesson.stages && lesson.stages.length > 0) {
+      const completed = lesson.stages.filter(s => s.isCompleted).length;
+      return Math.round((completed / lesson.stages.length) * 100);
+    }
+    return lesson.progress || 0;
+  }, [lesson.stages, lesson.progress]);
+
+  // Level 2: Plan vs Reality Check
+  const syncStatus = useMemo(() => {
+    if (!lesson.date) return 'unknown';
+    
+    const today = startOfDay(new Date());
+    const lessonDate = parseISO(lesson.date);
+    const isCompleted = displayStatus === 'completed' || calculatedProgress === 100;
+    
+    // If lesson is in the past (before today) and NOT completed -> Delayed
+    if (isBefore(lessonDate, today) && !isCompleted) {
+      return 'delayed';
+    }
+    
+    return 'on-track';
+  }, [lesson.date, displayStatus, calculatedProgress]);
+
   return (
     <Paper
       onDoubleClick={() => onDoubleClick(lesson)}
@@ -88,35 +112,23 @@ const LessonCard = ({ lesson, onDoubleClick, onDelete, allScheduledLessons }: { 
         e.dataTransfer.setData('application/json', JSON.stringify({ type: 'lesson', lessonId: lesson.id }));
       }}
       sx={{
-        p: 1.5,
-        mb: 1.5,
-        borderRadius: '12px',
-        background: `linear-gradient(135deg, ${statusColors.bg} 0%, #ffffff 100%)`,
-        border: '2px solid',
-        borderColor: statusColors.border,
+        p: 1,
+        mb: 1,
+        borderRadius: '6px',
+        bgcolor: statusColors.bg,
+        borderLeft: `4px solid ${statusColors.border}`,
+        borderTop: '1px solid #e5e7eb',
+        borderRight: '1px solid #e5e7eb',
+        borderBottom: '1px solid #e5e7eb',
         cursor: 'grab',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
         position: 'relative',
         overflow: 'hidden',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: '4px',
-          bgcolor: statusColors.border,
-        },
-        '&:active': {
-          cursor: 'grabbing',
-          transform: 'scale(0.98)'
-        },
-        '&:hover': { 
-          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
-          transform: 'translateY(-2px)',
-          borderColor: statusColors.border,
-        },
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.2s ease',
+        '&:hover': {
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+          transform: 'translateY(-1px)'
+        }
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
@@ -126,9 +138,27 @@ const LessonCard = ({ lesson, onDoubleClick, onDelete, allScheduledLessons }: { 
             fontWeight: 'bold', 
             fontSize: '0.9rem',
             color: statusColors.text,
-            pr: 1
+            pr: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5
           }}
         >
+          {syncStatus === 'delayed' && (
+            <WarningIcon 
+              sx={{ 
+                fontSize: '1rem', 
+                color: '#ef4444',
+                animation: 'pulse 2s infinite',
+                '@keyframes pulse': {
+                  '0%': { opacity: 1 },
+                  '50%': { opacity: 0.5 },
+                  '100%': { opacity: 1 },
+                }
+              }} 
+              titleAccess="متأخر عن الخطة"
+            />
+          )}
           {lesson.lessonTitle}
         </Typography>
         {sessionNumber !== null && (
@@ -203,16 +233,20 @@ const LessonCard = ({ lesson, onDoubleClick, onDelete, allScheduledLessons }: { 
           borderRadius: '9999px', 
           height: '8px',
           overflow: 'hidden',
-          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
+          position: 'relative'
         }}>
           <Box sx={{
             background: `linear-gradient(90deg, ${statusColors.border} 0%, ${statusColors.text} 100%)`,
             height: '100%',
             borderRadius: 'inherit',
-            width: `${lesson.progress}%`,
+            width: `${calculatedProgress}%`,
             transition: 'width 0.5s ease-in-out',
           }} />
         </Box>
+        <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 'bold', color: statusColors.text, minWidth: '24px' }}>
+          {calculatedProgress}%
+        </Typography>
       </Box>
     </Paper>
   );
@@ -226,11 +260,43 @@ interface CalendarGridProps {
 
 const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduledLessons, onRefresh }) => {
   const { sections, isLoading } = useSections();
-  const { enqueueSnackbar } = useSnackbar(); // Use useSnackbar hook
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar(); // Use useSnackbar hook
   const [editingLesson, setEditingLesson] = useState<AdaptedLesson | null>(null);
   // const [isDropping, setIsDropping] = useState<string | null>(null);
   const [dragOverCell, setDragOverCell] = useState<string | null>(null); // For drag-over visual feedback
   const [adminSchedule, setAdminSchedule] = useState<AdminScheduleEntry[]>([]);
+  
+  // Deleted lessons history for persistent undo
+  const [deletedLessonsHistory, setDeletedLessonsHistory] = useState<ScheduledLesson[]>([]);
+  const [restoreMenuAnchor, setRestoreMenuAnchor] = useState<null | HTMLElement>(null);
+  const [sortedSections, setSortedSections] = useState<Section[]>([]);
+
+  useEffect(() => {
+    setSortedSections(sections);
+  }, [sections]);
+
+  const handleSortByDay = (dayDate: Date) => {
+    const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const dayName = dayNames[dayDate.getDay()];
+
+    const sorted = [...sections].sort((a, b) => {
+      const getStartTime = (sectionId: string) => {
+        const entries = adminSchedule.filter(e => e.sectionId === sectionId && e.day === dayName);
+        if (entries.length === 0) return '23:59'; // Late time for no schedule
+        // Sort entries by time just in case and pick first
+        entries.sort((e1, e2) => e1.startTime.localeCompare(e2.startTime));
+        return entries[0].startTime;
+      };
+
+      const timeA = getStartTime(a.id);
+      const timeB = getStartTime(b.id);
+
+      return timeA.localeCompare(timeB);
+    });
+
+    setSortedSections(sorted);
+    enqueueSnackbar(`تم ترتيب الأقسام حسب توقيت يوم ${format(dayDate, 'EEEE', { locale: ar })}`, { variant: 'info' });
+  };
 
   // تحميل الجدول الزمني
   useEffect(() => {
@@ -266,16 +332,56 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
   }, [sections]);
 
   const handleDeleteLesson = async (lessonId: string) => {
-    if (window.confirm('هل أنت متأكد من حذف هذه الحصة؟')) {
-      try {
-        await deleteScheduledLessonAPI(lessonId);
-        enqueueSnackbar('تم حذف الحصة بنجاح.', { variant: 'success' });
-        await onRefresh?.();
-      } catch (error) {
-        console.error('Failed to delete lesson:', error);
-        alert('فشل في حذف الدرس');
-      }
+    const lessonToDelete = scheduledLessons.find(l => l.id === lessonId);
+    if (!lessonToDelete) return;
+
+    try {
+      // Add to history before deleting
+      setDeletedLessonsHistory(prev => [lessonToDelete, ...prev].slice(0, 10)); // Keep last 10
+
+      await deleteScheduledLessonAPI(lessonId);
+      await onRefresh?.();
+      
+      enqueueSnackbar('تم حذف الحصة', { 
+          variant: 'success',
+          action: (key) => (
+              <Button color="inherit" size="small" onClick={async () => {
+                  closeSnackbar(key);
+                  try {
+                      // Remove id and LessonTemplate to match Omit<ScheduledLesson, 'id' | 'LessonTemplate'>
+                      const { id, LessonTemplate, ...rest } = lessonToDelete;
+                      await addScheduledLessonAPI(rest);
+                      await onRefresh?.();
+                      // Remove from history if restored via toast
+                      setDeletedLessonsHistory(prev => prev.filter(l => l.id !== lessonToDelete.id));
+                      enqueueSnackbar('تم استعادة الحصة', { variant: 'success' });
+                  } catch(e) {
+                      console.error('Failed to restore lesson:', e);
+                      enqueueSnackbar('فشل استعادة الحصة', { variant: 'error' });
+                  }
+              }}>
+                  تراجع
+              </Button>
+          )
+      });
+    } catch (error) {
+      console.error('Failed to delete lesson:', error);
+      enqueueSnackbar('فشل في حذف الدرس', { variant: 'error' });
     }
+  };
+
+  const handleRestoreFromHistory = async (lesson: ScheduledLesson) => {
+      try {
+          const { id, LessonTemplate, ...rest } = lesson;
+          await addScheduledLessonAPI(rest);
+          await onRefresh?.();
+          setDeletedLessonsHistory(prev => prev.filter(l => l.id !== lesson.id));
+          enqueueSnackbar('تم استعادة الحصة من المحذوفات', { variant: 'success' });
+          setRestoreMenuAnchor(null);
+      } catch (e) {
+          console.error('Failed to restore lesson:', e);
+          enqueueSnackbar('فشل استعادة الحصة', { variant: 'error' });
+      }
   };
 
   const weekDays = useMemo(() => {
@@ -334,19 +440,34 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
       const originalLesson = scheduledLessons.find(sl => String(sl.id) === lessonIdToFind);
 
       if (originalLesson) {
+        // Prevent duplication in same slot
+        if (originalLesson.date === date && originalLesson.assignedSections.includes(sectionId)) {
+          return;
+        }
+
         const sameWeek = isSameWeek(new Date(date), new Date(originalLesson.date), { weekStartsOn: 1 });
         if (sameWeek) {
           // Clone into a new scheduled lesson within same week
           const groupId = originalLesson.lessonGroupId || originalLesson.templateId || String(originalLesson.id);
           const targetDate = new Date(date);
-          const lessonsInSameGroupSameWeek = (scheduledLessons || [])
-            .filter(sl => (sl.lessonGroupId || sl.templateId || String(sl.id)) === groupId)
-            .filter(sl => isSameWeek(new Date(sl.date), targetDate, { weekStartsOn: 1 }));
+          
+          // Determine session number
+          let nextNumber = originalLesson.manualSessionNumber;
+          
+          // Only increment if staying in the same section
+          // If moving to a different section, keep the number constant.
+          const isSameSection = originalLesson.assignedSections.includes(sectionId);
+          
+          if (isSameSection) {
+             const lessonsInSameGroupSameWeek = (scheduledLessons || [])
+                .filter(sl => (sl.lessonGroupId || sl.templateId || String(sl.id)) === groupId)
+                .filter(sl => isSameWeek(new Date(sl.date), targetDate, { weekStartsOn: 1 }));
 
-          const existingNumbers = lessonsInSameGroupSameWeek
-            .map(sl => (typeof sl.manualSessionNumber === 'number' ? sl.manualSessionNumber : undefined))
-            .filter((n): n is number => typeof n === 'number');
-          const nextNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 2;
+             const existingNumbers = lessonsInSameGroupSameWeek
+                .map(sl => (typeof sl.manualSessionNumber === 'number' ? sl.manualSessionNumber : undefined))
+                .filter((n): n is number => typeof n === 'number');
+             nextNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 2;
+          }
 
           // نسخ جميع المراحل (الرئيسية والإضافية) مع إعادة تعيين حالة الاكتمال للمراحل الرئيسية
           const clonedStages = originalLesson.stages.map(stage => ({
@@ -477,25 +598,46 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
 
   return (
     <Box sx={{ p: 2 }}>
-      {/* Enhanced Calendar Header */}
-      <Box sx={{ 
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        borderRadius: '12px',
-        p: 2,
-        mb: 3,
-        boxShadow: '0 4px 16px rgba(102, 126, 234, 0.2)'
-      }}>
-        <Typography 
-          variant="h6" 
-          sx={{ 
-            color: 'white', 
-            fontWeight: 'bold',
-            textAlign: 'center'
-          }}
-        >
-          📅 جدول التقويم الأسبوعي
-        </Typography>
-      </Box>
+      {/* Undo Button Area */}
+      {deletedLessonsHistory.length > 0 && (
+        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              startIcon={<HistoryIcon />}
+              onClick={(e) => setRestoreMenuAnchor(e.currentTarget)}
+              variant="outlined"
+              color="primary"
+              size="small"
+              sx={{ borderRadius: '8px' }}
+            >
+              تراجع عن الحذف ({deletedLessonsHistory.length})
+            </Button>
+            <Menu
+              anchorEl={restoreMenuAnchor}
+              open={Boolean(restoreMenuAnchor)}
+              onClose={() => setRestoreMenuAnchor(null)}
+              PaperProps={{
+                elevation: 3,
+                sx: { borderRadius: '12px', mt: 1 }
+              }}
+            >
+              <Typography variant="subtitle2" sx={{ px: 2, py: 1, borderBottom: '1px solid #eee', fontWeight: 'bold' }}>
+                العناصر المحذوفة مؤخراً
+              </Typography>
+              {deletedLessonsHistory.map((lesson) => (
+                <MenuItem key={lesson.id} onClick={() => handleRestoreFromHistory(lesson)}>
+                  <ListItemIcon>
+                    <RestoreIcon fontSize="small" color="primary" />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={lesson.customTitle || 'درس بدون عنوان'} 
+                    secondary={`${format(new Date(lesson.date), 'yyyy-MM-dd')} - ${lesson.subject}`} 
+                    primaryTypographyProps={{ fontWeight: 'medium' }}
+                  />
+                </MenuItem>
+              ))}
+            </Menu>
+        </Box>
+      )}
       
       <Box sx={{ display: 'block' }}>
         <Box sx={{ 
@@ -506,9 +648,9 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
           overflowY: 'auto', 
           overflowX: 'auto', 
           maxHeight: 'calc(100vh - 160px)',
-          bgcolor: '#f9fafb',
-          p: 1,
-          borderRadius: '12px'
+          bgcolor: '#ffffff',
+          p: 0,
+          borderRadius: '0'
         }}>
           {/* Header - القسم */}
           <Paper sx={{ 
@@ -517,43 +659,78 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
             position: 'sticky', 
             top: 0, 
             right: 0, 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
+            bgcolor: '#f3f4f6',
+            color: '#374151',
             zIndex: 10, 
             p: 1.5,
             borderRadius: '8px',
-            boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
+            border: '1px solid #e5e7eb'
           }}>
             🏫 الأقسام
           </Paper>
           
           {/* Headers - الأيام */}
-          {weekDays.map(dayDate => (
+          {weekDays.map(dayDate => {
+            const isToday = isSameDay(dayDate, new Date());
+            return (
             <Paper 
               key={dayDate.toISOString()} 
+              onClick={() => handleSortByDay(dayDate)}
               sx={{ 
                 textAlign: 'center', 
                 fontWeight: 'bold', 
                 position: 'sticky', 
                 top: 0, 
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
+                bgcolor: isToday ? '#eff6ff' : '#f3f4f6',
+                color: isToday ? '#1d4ed8' : '#374151',
                 zIndex: 9, 
                 p: 1.5,
                 borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
+                border: isToday ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                cursor: 'pointer',
+                '&:hover': {
+                  bgcolor: isToday ? '#dbeafe' : '#e5e7eb',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                },
+                transition: 'all 0.2s ease',
+                boxShadow: isToday ? '0 0 15px rgba(59, 130, 246, 0.4)' : 'none',
+                animation: isToday ? 'pulse-border 2s infinite' : 'none',
+                '@keyframes pulse-border': {
+                  '0%': { borderColor: '#3b82f6' },
+                  '50%': { borderColor: '#93c5fd' },
+                  '100%': { borderColor: '#3b82f6' },
+                }
               }}
             >
-              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+              <Typography variant="body1" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
                 {format(dayDate, 'EEEE', { locale: ar })}
+                {isToday && (
+                  <Box component="span" sx={{ 
+                    fontSize: '0.65rem', 
+                    bgcolor: '#3b82f6', 
+                    color: 'white', 
+                    px: 0.8, 
+                    py: 0.2, 
+                    borderRadius: '10px',
+                    animation: 'pulse-badge 1.5s infinite',
+                    '@keyframes pulse-badge': {
+                      '0%': { opacity: 1 },
+                      '50%': { opacity: 0.7 },
+                      '100%': { opacity: 1 },
+                    }
+                  }}>
+                    اليوم
+                  </Box>
+                )}
               </Typography>
-              <Typography variant="body2" sx={{ fontSize: '0.85rem', opacity: 0.9 }}>
+              <Typography variant="body2" sx={{ fontSize: '0.85rem', color: isToday ? '#1e40af' : '#6b7280' }}>
                 {format(dayDate, 'd MMMM', { locale: ar })}
               </Typography>
             </Paper>
-          ))}
+          );})}
 
-          {sections.map(section => (
+          {sortedSections.map(section => (
             <React.Fragment key={section.id}>
               {/* Section Name Cell */}
               <Paper sx={{ 
@@ -562,14 +739,16 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
                 p: 2, 
                 position: 'sticky', 
                 right: 0, 
-                background: 'linear-gradient(135deg, #f0f4ff 0%, #e0eaff 100%)',
+                bgcolor: '#ffffff',
                 zIndex: 5, 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center',
                 borderRadius: '8px',
                 borderRight: '4px solid #667eea',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
+                border: '1px solid #e5e7eb',
+                borderRightWidth: '4px',
+                borderRightColor: '#667eea'
               }}>
                 {section.name}
               </Paper>
@@ -595,6 +774,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
 
                       const dateString = format(dayDate, 'yyyy-MM-dd');
                       const cellId = `${dateString}-${section.id}`;
+                      const isToday = isSameDay(dayDate, new Date());
                       const isDraggedOver = dragOverCell === cellId;
                       const cellLessons: AdaptedLesson[] = filteredScheduledLessons
                         .filter(lesson => lesson && lesson.assignedSections && lesson.assignedSections.includes(section.id) && lesson.date === dateString)
@@ -609,21 +789,20 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ currentWeekStart, scheduled
                           onDragLeave={handleDragLeave}
                           sx={{
                             minHeight: '120px',
-                            p: 1.5,
-                            background: isDraggedOver 
-                              ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)'
+                            p: 1,
+                            bgcolor: isDraggedOver 
+                              ? 'rgba(102, 126, 234, 0.1)'
                               : (isScheduledDay 
-                                  ? `linear-gradient(135deg, ${backgroundColor} 0%, rgba(255,255,255,0.8) 100%)` 
-                                  : 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)'),
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            border: isDraggedOver ? '2px dashed #667eea' : '1px solid #e5e7eb',
+                                  ? (isToday ? backgroundColor.replace('0.4', '0.6') : backgroundColor) 
+                                  : (isToday ? '#f8fafc' : '#ffffff')),
+                            transition: 'all 0.2s ease',
+                            border: isDraggedOver 
+                              ? '2px dashed #667eea' 
+                              : (isToday ? '2px solid #bfdbfe' : '1px solid #f3f4f6'),
                             borderRadius: '8px',
-                            boxShadow: isDraggedOver 
-                              ? '0 8px 24px rgba(102, 126, 234, 0.3)' 
-                              : '0 2px 4px rgba(0, 0, 0, 0.04)',
+                            boxShadow: isToday ? 'inset 0 0 10px rgba(59, 130, 246, 0.05)' : 'none',
                             '&:hover': {
-                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                              transform: 'translateY(-1px)'
+                              bgcolor: isScheduledDay ? backgroundColor : '#f9fafb',
                             }
                           }}
                         >
